@@ -226,6 +226,8 @@ main :: IO ()
 main = do
   (packages, packageLev, ignoreChecks, fromStart) <- options welcome parser
 
+  cd ".."
+
   processChecks ignoreChecks fromStart
 
   newVersion <- case packageLev of
