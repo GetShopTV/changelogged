@@ -6,6 +6,8 @@
 import Turtle
 import Prelude hiding (FilePath, log)
 
+import qualified Control.Foldl as Fold
+
 import Data.Text (pack, Text)
 import qualified Data.Text as T
 import Data.Tuple.Select
@@ -67,46 +69,45 @@ levelFromText _ = error "Unsupported level of changes. See supported with -h or 
 bumpPackage :: Text -> Text -> IO ()
 bumpPackage version packageName = do
   printf ("- Updating version for "%s%"\n") packageName
-  stdout (inshell processing empty)
+  stdout (inproc "sed" ["-i", "-r", expr, file] empty)
   where
     packageFile = fromText packageName
     file = format fp $ packageFile </> packageFile <.> "cabal"
-    processing = "sed -i -r \"s/(^version:[^0-9]*)[0-9][0-9.]*/\\1" <> version <> "/\" " <> file
+    expr = "s/(^version:[^0-9]*)[0-9][0-9.]*/\\1" <> version <> "/"
 
 bumpPackages :: Text -> [Text] -> IO ()
 bumpPackages version packages = do
   curVersion <- currentVersion
-  stdout $ inshell (report curVersion) empty
+  stdout $ inproc "echo" ["-e", (report curVersion)] empty
 
   printf ("Updating packages version to "%s%"\n") version
   mapM_ (bumpPackage version) packages
   
   where
-    report v = "echo \"Version: " <> v <> " -> " <> yellow <> version <> nc <> "\""
+    report v = "Version: " <> v <> " -> " <> yellow <> version <> nc
 
 changelogIsUp :: Text -> Mode -> IO Bool
 changelogIsUp item mode = do
-  line <- strict $ inshell grepPR empty
-  case T.length line of
+  grepLen <- fold (inproc "grep" [item, changelogFile] empty) Fold.length
+  case grepLen of
     0 -> do
-      stdout $ inshell report empty
+      stdout $ inproc "echo" ["-e", report] empty
       return False
     _ -> return True
   where
-    report = "echo \"- " <> showText mode <> " " <> cyan <> item <> nc <> " is missing in changelog\""
-    grepPR = "grep \"" <> item <> "\" " <> changelogFile
+    report = "- " <> showText mode <> " " <> cyan <> item <> nc <> " is missing in changelog"
 
 gitLatestHistory :: Bool -> IO Text
 gitLatestHistory start = do
-  tmpFile <- strict $ inshell "mktemp" empty
+  tmpFile <- strict $ inproc "mktemp" [] empty
   case start of
-    False -> liftIO $ append (process tmpFile) (inshell history empty)
-    True  -> liftIO $ append (process tmpFile) (inshell allHistory empty)
+    False -> liftIO $ append (process tmpFile) $ inproc "grep" ["-v", "\"Merge branch\""] (inshell history empty)
+    True  -> liftIO $ append (process tmpFile) $
+      inproc "grep" ["-v", "\"Merge branch\""] (inproc "git" ["log", "--oneline", "--first-parent"] empty)
   return $ T.stripEnd tmpFile
   where
     process = fromText . T.stripEnd
-    history = "git log --oneline --first-parent $( " <> latestGitTag <> " )..HEAD | grep -v \"Merge branch\""
-    allHistory = "git log --oneline --first-parent | grep -v \"Merge branch\""
+    history = "git log --oneline --first-parent $( " <> latestGitTag <> " )..HEAD"
 
 checkChangelogF :: Bool -> IO Bool
 checkChangelogF start = do
@@ -114,15 +115,17 @@ checkChangelogF start = do
   
   history <- gitLatestHistory start
   
-  pulls <- strict $ inshell (pullGrep history) empty
-  singles <- strict $ inshell (singleGrep history) empty
+  pulls <- strict $
+    inproc "egrep" ["-o", "#[0-9]+"] (inproc "egrep" ["-o", pullExpr, history] empty)
+  singles <- strict $
+    inproc "egrep" ["-o", "^[0-9a-f]+"] (inproc "egrep" ["-o", singleExpr, history] empty)
   
   flagsPR <- mapM (\i -> changelogIsUp i PR) (T.split (== '\n') pulls)
   flagsCommit <- mapM (\i -> changelogIsUp i Commit) (T.split (== '\n') singles)
   return $ foldr1 (&&) (flagsPR ++ flagsCommit)
   where
-    pullGrep hist = "egrep -o 'pull request #[0-9]+' " <> hist <> " | egrep -o '#[0-9]+'"
-    singleGrep hist = "egrep '^[0-9a-f]+\\s[^(Merge)]' " <> hist <> " | egrep -o '^[0-9a-f]+'"
+    pullExpr = "pull request #[0-9]+"
+    singleExpr = "^[0-9a-f]+\\s[^(Merge)]"
 
 generateVersion :: Level -> IO Text
 generateVersion lev = do
@@ -170,9 +173,9 @@ welcome = Description $ "---\n"
         <> "But it will refuse to do it if it's not sure changelogs are up to date."
 
 processChecks :: Bool -> Bool -> IO ()
-processChecks True _ = stdout (inshell warn empty)
+processChecks True _ = stdout (inproc "echo" ["-e", warn] empty)
   where
-    warn = "echo \"" <> yellow <> "WARNING: skipping checks for changelogs." <> nc <> "\""
+    warn = yellow <> "WARNING: skipping checks for changelogs." <> nc
 processChecks False start = do
   case start of
     True -> echo "Checking changelogs from start of project"
@@ -180,34 +183,32 @@ processChecks False start = do
   upToDate <- checkChangelogF start
   case upToDate of
     False -> do
-      stdout (inshell pfail empty)
-      stdout (inshell dieText empty)
+      stdout (inproc "echo" ["-e", pfail] empty)
+      stdout (inproc "echo" ["-e", dieText] empty)
       exit ExitSuccess
-    True -> stdout (inshell pwin empty)
+    True -> stdout (inproc "echo" ["-e", pwin] empty)
   where
-    pfail = "echo \"" <> yellow <> "WARNING: " <> changelogFile <> " is out of date." <> nc <> "\""
-    pwin = "echo \"" <> green <> changelogFile <> " is up to date." <> nc <> "\""
-    dieText = "echo \"" <> red <>
-              "ERROR: changelog is not up-to-date. Use -c or --no-check options if you want to ignore changelog checks."
-              <> nc <> "\""
+    pfail = yellow <> "WARNING: " <> changelogFile <> " is out of date." <> nc
+    pwin = green <> changelogFile <> " is up to date." <> nc
+    dieText = red <> "ERROR: changelog is not up-to-date. Use -c or --no-check options if you want to ignore changelog checks." <> nc
 
 generateVersionByChangelog :: Bool -> IO Text
 generateVersionByChangelog True = do
   echo "You are running it with no explicit version modifiers and changelog checks. It can result in anything. Please retry"
   exit ExitSuccess
 generateVersionByChangelog False = do
-  major <- strict $ inshell checkMajor empty
-  minor <- strict $ inshell checkMinor empty
-  fixes <- strict $ inshell checkFix empty
-  docs  <- strict $ inshell checkDoc empty
+  major <- fold (inproc "grep" ["Major changes"] unreleased) Fold.length
+  minor <- fold (inproc "grep" ["Minor changes"] unreleased) Fold.length
+  fixes <- fold (inproc "grep" ["Fixes"] unreleased) Fold.length
+  docs  <- fold (inproc "grep" ["Docs"] unreleased) Fold.length
   curVersion <- currentVersion
   
-  case T.length major of
-    0 -> case T.length minor of
-      0 -> case T.length fixes of
-        0 -> case T.length docs of
+  case major of
+    0 -> case minor of
+      0 -> case fixes of
+        0 -> case docs of
           0 -> do
-            stdout (inshell noNews empty)
+            stdout (inproc "echo" ["-e", noNews] empty)
             return curVersion
           _ -> generateVersion Doc
         _ -> generateVersion Fix
@@ -215,12 +216,10 @@ generateVersionByChangelog False = do
     _ -> generateVersion Major
   
   where
-    noNews = "echo \"" <> yellow <> "WARNING: keep old version since " <>
-              changelogFile <>" apparently does not contain any new entries." <> nc <> "\""
-    checkMajor =  "sed '/^[0-9]\\.[0-9]/q' " <> changelogFile <> " | grep 'Major changes'"
-    checkMinor = "sed '/^[0-9]\\.[0-9]/q' " <> changelogFile <> " | grep 'Minor changes'"
-    checkFix = "sed '/^[0-9]\\.[0-9]/q' " <> changelogFile <> " | grep 'Fixes'"
-    checkDoc = "sed '/^[0-9]\\.[0-9]/q' " <> changelogFile <> " | grep 'Docs'"
+    noNews = yellow <> "WARNING: keep old version since " <>
+              changelogFile <>" apparently does not contain any new entries." <> nc
+    expr =  "/^[0-9]\\.[0-9]/q"
+    unreleased = (inproc "sed" [expr, changelogFile] empty)
 
 main :: IO ()
 main = do
@@ -237,10 +236,9 @@ main = do
   case packages of
     Just project -> bumpPackages newVersion (T.split (==' ') project)
     Nothing -> case ignoreChecks of
-      True -> stdout (inshell warnNoCheck empty)
-      False -> stdout (inshell warnCheck empty)
+      True  -> stdout (inproc "echo" ["-e", warnNoCheck] empty)
+      False -> stdout (inproc "echo" ["-e", warnCheck] empty)
 
   where
-    warnNoCheck = "echo \"" <> yellow <> "WARNING: No packages specified." <> nc <> "\""
-    warnCheck = "echo \"" <> yellow <> "WARNING: No packages specified, so only check " <>
-              changelogFile <> "." <> nc <> "\""
+    warnNoCheck = yellow <> "WARNING: No packages specified." <> nc
+    warnCheck = yellow <> "WARNING: No packages specified, so only check " <> changelogFile <> "." <> nc
