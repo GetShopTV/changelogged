@@ -12,6 +12,7 @@ import Data.Text (pack, Text)
 import qualified Data.Text as T
 import Data.Tuple.Select
 
+data Part = API | Project
 data Level = App | Major | Minor | Fix | Doc
 data Mode = PR | Commit
 
@@ -36,6 +37,9 @@ showText = pack . show
 
 changelogFile :: Text
 changelogFile = "CHANGELOG.md"
+
+apiChangelogFile :: Text
+apiChangelogFile = "API_CHANGELOG.md"
 
 checkChangelogs :: Bool
 checkChangelogs = True
@@ -86,16 +90,19 @@ bumpPackages version packages = do
   where
     report v = "Version: " <> v <> " -> " <> yellow <> version <> nc
 
-changelogIsUp :: Text -> Mode -> IO Bool
-changelogIsUp item mode = do
-  grepLen <- fold (inproc "grep" [item, changelogFile] empty) Fold.length
+changelogIsUp :: Text -> Mode -> Part -> IO Bool
+changelogIsUp item mode part = do
+  grepLen <- case part of
+    Project -> fold (inproc "grep" [item, changelogFile] empty) Fold.length
+    API -> fold (inproc "grep" [item, apiChangelogFile] empty) Fold.length
   case grepLen of
     0 -> do
-      stdout $ inproc "echo" ["-e", report] empty
+      stdout $ inproc "echo" ["-e", report part] empty
       return False
     _ -> return True
   where
-    report = "- " <> showText mode <> " " <> cyan <> item <> nc <> " is missing in changelog"
+    report Project = "- " <> showText mode <> " " <> cyan <> item <> nc <> " is missing in changelog"
+    report API = "- " <> showText mode <> " " <> cyan <> item <> nc <> " is missing in API changelog"
 
 gitLatestHistory :: Bool -> IO Text
 gitLatestHistory start = do
@@ -109,9 +116,36 @@ gitLatestHistory start = do
     process = fromText . T.stripEnd
     history = "git log --oneline --first-parent $( " <> latestGitTag <> " )..HEAD"
 
+checkApiChangelogF :: Bool -> IO Bool
+checkApiChangelogF start = do
+  printf ("Checking "%s%"\n") apiChangelogFile
+  
+  history <- gitLatestHistory start
+
+  commits <- strict $ inproc "egrep" ["-o", "^[0-9a-f]+", history] empty
+  
+  flags <- mapM (eval history) (T.split (== '\n') (T.stripEnd commits))
+  return $ foldr1 (&&) flags
+  where
+    eval hist commit = do
+      linePresent <- fold
+        (inproc "grep" ["getshoptv/v1/swagger.json"]--[getSwaggerFileName . getSettings]
+          (inproc "git" ["show", "--stat", commit] empty))
+        Fold.length
+      case linePresent of
+        0 -> return True
+        _ -> do
+          pull <- strict $
+            inproc "egrep" ["-o", "#[0-9]+"] $
+              inproc "egrep" ["-o", "pull request #[0-9]+"] $
+                inproc "grep" [commit, hist] empty
+          case T.length pull of
+            0 -> changelogIsUp commit Commit API
+            _ -> changelogIsUp (T.stripEnd pull) PR API
+
 checkChangelogF :: Bool -> IO Bool
 checkChangelogF start = do
-  printf ("Checking "%s%"\n") (changelogFile)
+  printf ("Checking "%s%"\n") changelogFile
   
   history <- gitLatestHistory start
   
@@ -120,8 +154,8 @@ checkChangelogF start = do
   singles <- strict $
     inproc "egrep" ["-o", "^[0-9a-f]+"] (inproc "egrep" ["-o", singleExpr, history] empty)
   
-  flagsPR <- mapM (\i -> changelogIsUp i PR) (T.split (== '\n') pulls)
-  flagsCommit <- mapM (\i -> changelogIsUp i Commit) (T.split (== '\n') singles)
+  flagsPR <- mapM (\i -> changelogIsUp i PR Project) (T.split (== '\n') pulls)
+  flagsCommit <- mapM (\i -> changelogIsUp i Commit Project) (T.split (== '\n') singles)
   return $ foldr1 (&&) (flagsPR ++ flagsCommit)
   where
     pullExpr = "pull request #[0-9]+"
@@ -182,15 +216,23 @@ processChecks False start = do
     False -> return ()
   upToDate <- checkChangelogF start
   case upToDate of
+    False -> stdout (inproc "echo" ["-e", pfail Project] empty)
+    True -> stdout (inproc "echo" ["-e", pwin API] empty)
+  apiUpToDate <- checkApiChangelogF start
+  case apiUpToDate of
+    False -> stdout (inproc "echo" ["-e", pfail API] empty)
+    True -> stdout (inproc "echo" ["-e", pwin API] empty)
+  case apiUpToDate && upToDate of
     False -> do
-      stdout (inproc "echo" ["-e", pfail] empty)
       stdout (inproc "echo" ["-e", dieText] empty)
       exit ExitSuccess
-    True -> stdout (inproc "echo" ["-e", pwin] empty)
+
   where
-    pfail = yellow <> "WARNING: " <> changelogFile <> " is out of date." <> nc
-    pwin = green <> changelogFile <> " is up to date." <> nc
-    dieText = red <> "ERROR: changelog is not up-to-date. Use -c or --no-check options if you want to ignore changelog checks." <> nc
+    pfail Project = yellow <> "WARNING: " <> changelogFile <> " is out of date." <> nc
+    pfail API = yellow <> "WARNING: " <> apiChangelogFile <> " is out of date." <> nc
+    pwin Project = green <> changelogFile <> " is up to date." <> nc
+    pwin API = green <> apiChangelogFile <> " is up to date." <> nc
+    dieText = red <> "ERROR: some changelogs are not up-to-date. Use -c or --no-check options if you want to ignore changelog checks." <> nc
 
 generateVersionByChangelog :: Bool -> IO Text
 generateVersionByChangelog True = do
@@ -241,4 +283,4 @@ main = do
 
   where
     warnNoCheck = yellow <> "WARNING: No packages specified." <> nc
-    warnCheck = yellow <> "WARNING: No packages specified, so only check " <> changelogFile <> "." <> nc
+    warnCheck = yellow <> "WARNING: No packages specified, so only check changelogs" <> nc
