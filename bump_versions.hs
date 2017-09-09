@@ -2,15 +2,21 @@
 -- stack --install-ghc runghc --package turtle
 
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 import Turtle
 import Prelude hiding (FilePath, log)
 
+import qualified Data.Yaml as Yaml
+
 import qualified Control.Foldl as Fold
 
 import Data.Text (pack, Text)
+import Data.Text.Lazy (toStrict)
 import qualified Data.Text as T
 import Data.Tuple.Select
+
+import GHC.Generics
 
 data Part = API | Project
 data Level = App | Major | Minor | Fix | Doc
@@ -19,6 +25,20 @@ data Mode = PR | Commit
 instance Show Mode where
   show PR = "Pull request"
   show Commit = "Single commit"
+
+data Paths = Paths {
+  -- Path to swagger file of API
+  swaggerFileName :: Maybe Text
+  } deriving (Show, Generic)
+
+instance Yaml.FromJSON Paths
+
+loadPaths :: IO Paths
+loadPaths = do
+  ms <- Yaml.decodeFileEither "./paths"
+  case ms of
+    Left err -> error (show err)
+    Right paths -> return paths
 
 -- color sequences
 red :: Text
@@ -116,8 +136,8 @@ gitLatestHistory start = do
     process = fromText . T.stripEnd
     history = "git log --oneline --first-parent $( " <> latestGitTag <> " )..HEAD"
 
-checkApiChangelogF :: Bool -> IO Bool
-checkApiChangelogF start = do
+checkApiChangelogF :: Bool -> Text -> IO Bool
+checkApiChangelogF start swaggerFile = do
   printf ("Checking "%s%"\n") apiChangelogFile
   
   history <- gitLatestHistory start
@@ -129,7 +149,7 @@ checkApiChangelogF start = do
   where
     eval hist commit = do
       linePresent <- fold
-        (inproc "grep" ["getshoptv/v1/swagger.json"]--[getSwaggerFileName . getSettings]
+        (inproc "grep" [swaggerFile]
           (inproc "git" ["show", "--stat", commit] empty))
         Fold.length
       case linePresent of
@@ -206,11 +226,11 @@ welcome = Description $ "---\n"
         <> "It can infer version from changelog.\n"
         <> "But it will refuse to do it if it's not sure changelogs are up to date."
 
-processChecks :: Bool -> Bool -> IO ()
-processChecks True _ = stdout (inproc "echo" ["-e", warn] empty)
+processChecks :: Bool -> Bool -> Paths -> IO ()
+processChecks True _ _ = stdout (inproc "echo" ["-e", warn] empty)
   where
     warn = yellow <> "WARNING: skipping checks for changelogs." <> nc
-processChecks False start = do
+processChecks False start paths = do
   case start of
     True -> echo "Checking changelogs from start of project"
     False -> return ()
@@ -218,7 +238,11 @@ processChecks False start = do
   case upToDate of
     False -> stdout (inproc "echo" ["-e", pfail Project] empty)
     True -> stdout (inproc "echo" ["-e", pwin API] empty)
-  apiUpToDate <- checkApiChangelogF start
+  apiUpToDate <- case swaggerFileName paths of
+    Nothing -> do
+      echo "Do not check API changelog, no swagger file added to paths.dhall"
+      return True
+    Just file -> checkApiChangelogF start file
   case apiUpToDate of
     False -> stdout (inproc "echo" ["-e", pfail API] empty)
     True -> stdout (inproc "echo" ["-e", pwin API] empty)
@@ -267,9 +291,11 @@ main :: IO ()
 main = do
   (packages, packageLev, ignoreChecks, fromStart) <- options welcome parser
 
+  paths <- loadPaths
+
   cd ".."
 
-  processChecks ignoreChecks fromStart
+  processChecks ignoreChecks fromStart paths
 
   newVersion <- case packageLev of
     Nothing -> generateVersionByChangelog ignoreChecks
