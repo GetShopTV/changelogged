@@ -110,8 +110,8 @@ bumpPackages version packages = do
   where
     report v = "Version: " <> v <> " -> " <> yellow <> version <> nc
 
-changelogIsUp :: Text -> Mode -> Part -> IO Bool
-changelogIsUp item mode part = do
+changelogIsUp :: Text -> Mode -> Part -> Text -> IO Bool
+changelogIsUp item mode part message = do
   grepLen <- case part of
     Project -> fold (inproc "grep" [item, changelogFile] empty) Fold.length
     API -> fold (inproc "grep" [item, apiChangelogFile] empty) Fold.length
@@ -121,8 +121,20 @@ changelogIsUp item mode part = do
       return False
     _ -> return True
   where
-    report Project = "- " <> showText mode <> " " <> cyan <> item <> nc <> " is missing in changelog"
-    report API = "- " <> showText mode <> " " <> cyan <> item <> nc <> " is missing in API changelog"
+    report Project = "- " <> showText mode <> " " <> cyan <> item <> nc <> " is missing in changelog: " <> message
+    report API = "- " <> showText mode <> " " <> cyan <> item <> nc <> " is missing in API changelog: " <> message
+
+commitMessage :: Mode -> Text -> IO Text
+commitMessage _ "" = return ""
+commitMessage mode commit = do
+  raw <- strict $ inproc "grep" ["^\\s"] $
+                    inproc "sed" ["-n", sedString] $
+                      inproc "git" ["show", commit] empty
+  return $ T.stripEnd $ T.stripStart raw
+  where
+    sedString = case mode of
+      PR -> "8p"
+      Commit -> "5p"
 
 gitLatestHistory :: Bool -> IO Text
 gitLatestHistory start = do
@@ -160,8 +172,12 @@ checkApiChangelogF start swaggerFile = do
               inproc "egrep" ["-o", "pull request #[0-9]+"] $
                 inproc "grep" [commit, hist] empty
           case T.length pull of
-            0 -> changelogIsUp commit Commit API
-            _ -> changelogIsUp (T.stripEnd pull) PR API
+            0 -> do
+              message <- commitMessage Commit commit
+              changelogIsUp commit Commit API message
+            _ -> do
+              message <- commitMessage PR commit
+              changelogIsUp (T.stripEnd pull) PR API message
 
 checkChangelogF :: Bool -> IO Bool
 checkChangelogF start = do
@@ -169,13 +185,17 @@ checkChangelogF start = do
   
   history <- gitLatestHistory start
   
+  pullCommits <- strict $
+    inproc "egrep" ["-o", "^[0-9a-f]+"] (inproc "egrep" [pullExpr, history] empty)
   pulls <- strict $
     inproc "egrep" ["-o", "#[0-9]+"] (inproc "egrep" ["-o", pullExpr, history] empty)
   singles <- strict $
     inproc "egrep" ["-o", "^[0-9a-f]+"] (inproc "egrep" ["-o", singleExpr, history] empty)
   
-  flagsPR <- mapM (\i -> changelogIsUp i PR Project) (T.split (== '\n') pulls)
-  flagsCommit <- mapM (\i -> changelogIsUp i Commit Project) (T.split (== '\n') singles)
+  pullHeaders <- mapM (commitMessage PR) (map T.stripEnd (T.split (== '\n') pullCommits))
+  singleHeaders <- mapM (commitMessage Commit) (map T.stripEnd (T.split (== '\n') singles))
+  flagsPR <- mapM (\(i,m) -> changelogIsUp i PR Project m) (zip (T.split (== '\n') pulls) pullHeaders)
+  flagsCommit <- mapM (\(i, m) -> changelogIsUp i Commit Project m) (zip (T.split (== '\n') singles) singleHeaders)
   return $ foldr1 (&&) (flagsPR ++ flagsCommit)
   where
     pullExpr = "pull request #[0-9]+"
