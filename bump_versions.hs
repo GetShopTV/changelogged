@@ -232,11 +232,12 @@ generateVersion lev = do
     fourthD v = sel4 $ delimited v
     fifthD v  = sel5 $ delimited v
 
-parser :: Parser (Maybe Text, Maybe Text, Bool, Bool)
-parser = (,,,) <$> optional (optText "packages" 'p' "List of packages to bump.")
-               <*> optional (optText "level" 'l' "Level of changes")
-               <*> switch  "no-check"  'c' "Do not check changelogs."
-               <*> switch  "from-bc"  'e' "Check changelogs from start of project"
+parser :: Parser (Maybe Text, Maybe Text, Bool, Bool, Bool)
+parser = (,,,,) <$> optional (optText "packages" 'p' "List of packages to bump.")
+                <*> optional (optText "level" 'l' "Level of changes.")
+                <*> switch  "no-check"  'c' "Do not check changelogs."
+                <*> switch  "from-bc"  'e' "Check changelogs from start of project."
+                <*> switch  "force"  'f' "Bump version even if changelogs are outdated. Cannot be mixed with -c."
 
 welcome :: Description
 welcome = Description $ "---\n"
@@ -246,11 +247,11 @@ welcome = Description $ "---\n"
         <> "It can infer version from changelog.\n"
         <> "But it will refuse to do it if it's not sure changelogs are up to date."
 
-processChecks :: Bool -> Bool -> Paths -> IO ()
-processChecks True _ _ = stdout (inproc "echo" ["-e", warn] empty)
+processChecks :: Bool -> Bool -> Paths -> Bool -> IO ()
+processChecks True _ _ _ = stdout (inproc "echo" ["-e", warn] empty)
   where
     warn = yellow <> "WARNING: skipping checks for changelogs." <> nc
-processChecks False start paths = do
+processChecks False start paths force = do
   case start of
     True -> echo "Checking changelogs from start of project"
     False -> return ()
@@ -269,7 +270,9 @@ processChecks False start paths = do
   case apiUpToDate && upToDate of
     False -> do
       stdout (inproc "echo" ["-e", dieText] empty)
-      exit ExitSuccess
+      case force of
+        False -> exit ExitSuccess
+        True -> return ()
 
   where
     pfail Project = yellow <> "WARNING: " <> changelogFile <> " is out of date." <> nc
@@ -309,13 +312,13 @@ generateVersionByChangelog False = do
 
 main :: IO ()
 main = do
-  (packages, packageLev, ignoreChecks, fromStart) <- options welcome parser
+  (packages, packageLev, ignoreChecks, fromStart, force) <- options welcome parser
 
   paths <- loadPaths
 
   cd ".."
 
-  processChecks ignoreChecks fromStart paths
+  processChecks ignoreChecks fromStart paths force
 
   newVersion <- case packageLev of
     Nothing -> generateVersionByChangelog ignoreChecks
