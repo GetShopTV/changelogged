@@ -18,6 +18,8 @@ import Data.Tuple.Select
 
 import GHC.Generics
 
+import System.Console.ANSI
+
 data Part = API | Project
 data Level = App | Major | Minor | Fix | Doc
 data Mode = PR | Commit
@@ -39,18 +41,6 @@ loadPaths = do
   case ms of
     Left err -> error (show err)
     Right paths -> return paths
-
--- color sequences
-red :: Text
-red = "\\033[0;31m"
-green :: Text
-green = "\\033[0;32m"
-yellow :: Text
-yellow = "\\033[0;33m"
-cyan :: Text
-cyan = "\\033[0;36m"
-nc :: Text
-nc = "\\033[0m" -- No Color
 
 showText :: Show a => a -> Text
 showText = pack . show
@@ -102,13 +92,13 @@ bumpPackage version packageName = do
 bumpPackages :: Text -> [Text] -> IO ()
 bumpPackages version packages = do
   curVersion <- currentVersion
-  stdout $ inproc "echo" ["-e", (report curVersion)] empty
+  printf ("Version: "%s%" -> ") curVersion
+  setSGR [SetColor Foreground Vivid Yellow]
+  printf (s%"\n") version
+  setSGR [Reset]
 
   printf ("Updating packages version to "%s%"\n") version
   mapM_ (bumpPackage version) packages
-  
-  where
-    report v = "Version: " <> v <> " -> " <> yellow <> version <> nc
 
 changelogIsUp :: Text -> Mode -> Part -> Text -> IO Bool
 changelogIsUp item mode part message = do
@@ -117,12 +107,15 @@ changelogIsUp item mode part message = do
     API -> fold (inproc "grep" [item, apiChangelogFile] empty) Fold.length
   case grepLen of
     0 -> do
-      stdout $ inproc "echo" ["-e", report part] empty
+      printf ("- "%s%" ") (showText mode)
+      setSGR [SetColor Foreground Vivid Cyan]
+      printf s item
+      setSGR [Reset]
+      case part of
+        Project -> printf (" id missing in changelog: "%s%".\n") message
+        API -> printf (" id missing in API changelog: "%s%".\n") message
       return False
     _ -> return True
-  where
-    report Project = "- " <> showText mode <> " " <> cyan <> item <> nc <> " is missing in changelog: " <> message
-    report API = "- " <> showText mode <> " " <> cyan <> item <> nc <> " is missing in API changelog: " <> message
 
 commitMessage :: Mode -> Text -> IO Text
 commitMessage _ "" = return ""
@@ -248,42 +241,55 @@ welcome = Description $ "---\n"
         <> "But it will refuse to do it if it's not sure changelogs are up to date."
 
 processChecks :: Bool -> Bool -> Paths -> Bool -> IO ()
-processChecks True _ _ _ = stdout (inproc "echo" ["-e", warn] empty)
-  where
-    warn = yellow <> "WARNING: skipping checks for changelogs." <> nc
+processChecks True _ _ _ = do
+  setSGR [SetColor Foreground Vivid Yellow]
+  echo "WARNING: skipping checks for changelog."
+  setSGR [Reset]
 processChecks False start paths force = do
   case start of
     True -> echo "Checking changelogs from start of project"
     False -> return ()
   upToDate <- checkChangelogF start
   case upToDate of
-    False -> stdout (inproc "echo" ["-e", pfail Project] empty)
-    True -> stdout (inproc "echo" ["-e", pwin API] empty)
+    False -> do
+      setSGR [SetColor Foreground Vivid Yellow]
+      printf ("WARNING: "%s%" is out of date.\n") changelogFile
+      setSGR [Reset]
+    True -> do
+      setSGR [SetColor Foreground Vivid Yellow]
+      printf (s%" is up to date.") changelogFile
+      setSGR [Reset]
   apiUpToDate <- case swaggerFileName paths of
     Nothing -> do
-      echo "Do not check API changelog, no swagger file added to paths.dhall"
+      setSGR [SetColor Foreground Vivid Yellow]
+      echo "Do not check API changelog, no swagger file added to ./paths"
+      setSGR [Reset]
       return True
     Just file -> checkApiChangelogF start file
   case apiUpToDate of
-    False -> stdout (inproc "echo" ["-e", pfail API] empty)
-    True -> stdout (inproc "echo" ["-e", pwin API] empty)
+    False -> do
+      setSGR [SetColor Foreground Vivid Yellow]
+      printf ("WARNING: "%s%" is out of date.\n") apiChangelogFile
+      setSGR [Reset]
+    True -> do
+      setSGR [SetColor Foreground Vivid Yellow]
+      printf (s%" is up to date.") apiChangelogFile
+      setSGR [Reset]
   case apiUpToDate && upToDate of
     False -> do
-      stdout (inproc "echo" ["-e", dieText] empty)
+      setSGR [SetColor Foreground Vivid Red]
+      echo "ERROR: some changelogs are not up-to-date. Use -c or --no-check options if you want to ignore changelog checks."
+      setSGR [Reset]
       case force of
         False -> exit ExitSuccess
         True -> return ()
-
-  where
-    pfail Project = yellow <> "WARNING: " <> changelogFile <> " is out of date." <> nc
-    pfail API = yellow <> "WARNING: " <> apiChangelogFile <> " is out of date." <> nc
-    pwin Project = green <> changelogFile <> " is up to date." <> nc
-    pwin API = green <> apiChangelogFile <> " is up to date." <> nc
-    dieText = red <> "ERROR: some changelogs are not up-to-date. Use -c or --no-check options if you want to ignore changelog checks." <> nc
+    True -> return ()
 
 generateVersionByChangelog :: Bool -> IO Text
 generateVersionByChangelog True = do
+  setSGR [SetColor Foreground Vivid Yellow]
   echo "You are running it with no explicit version modifiers and changelog checks. It can result in anything. Please retry"
+  setSGR [Reset]
   exit ExitSuccess
 generateVersionByChangelog False = do
   major <- fold (inproc "grep" ["Major changes"] unreleased) Fold.length
@@ -297,7 +303,9 @@ generateVersionByChangelog False = do
       0 -> case fixes of
         0 -> case docs of
           0 -> do
-            stdout (inproc "echo" ["-e", noNews] empty)
+            setSGR [SetColor Foreground Vivid Yellow]
+            printf ("WARNING: keep old version since "%s%" apparently does not contain any new entries.\n") changelogFile
+            setSGR [Reset]
             return curVersion
           _ -> generateVersion Doc
         _ -> generateVersion Fix
@@ -305,8 +313,6 @@ generateVersionByChangelog False = do
     _ -> generateVersion Major
   
   where
-    noNews = yellow <> "WARNING: keep old version since " <>
-              changelogFile <>" apparently does not contain any new entries." <> nc
     expr =  "/^[0-9]\\.[0-9]/q"
     unreleased = (inproc "sed" [expr, changelogFile] empty)
 
@@ -327,9 +333,11 @@ main = do
   case packages of
     Just project -> bumpPackages newVersion (T.split (==' ') project)
     Nothing -> case ignoreChecks of
-      True  -> stdout (inproc "echo" ["-e", warnNoCheck] empty)
-      False -> stdout (inproc "echo" ["-e", warnCheck] empty)
-
-  where
-    warnNoCheck = yellow <> "WARNING: No packages specified." <> nc
-    warnCheck = yellow <> "WARNING: No packages specified, so only check changelogs" <> nc
+      True  -> do
+        setSGR [SetColor Foreground Vivid Yellow]
+        echo "WARNING: no packages specified."
+        setSGR [Reset]
+      False -> do
+        setSGR [SetColor Foreground Vivid Yellow]
+        echo "WARNING: no packages specified, so only check changelogs"
+        setSGR [Reset]
