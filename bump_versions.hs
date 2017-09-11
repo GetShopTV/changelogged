@@ -140,9 +140,9 @@ gitLatestHistory :: Bool -> IO Text
 gitLatestHistory start = do
   tmpFile <- strict $ inproc "mktemp" [] empty
   case start of
-    False -> liftIO $ append (process tmpFile) $ inproc "grep" ["-v", "\"Merge branch\""] (inshell history empty)
+    False -> liftIO $ append (process tmpFile) $ inproc "grep" ["-v", "Merge branch"] (inshell history empty)
     True  -> liftIO $ append (process tmpFile) $
-      inproc "grep" ["-v", "\"Merge branch\""] (inproc "git" ["log", "--oneline", "--first-parent"] empty)
+      inproc "grep" ["-v", "Merge branch"] (inproc "git" ["log", "--oneline", "--first-parent"] empty)
   return $ T.stripEnd tmpFile
   where
     process = fromText . T.stripEnd
