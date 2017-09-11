@@ -1,8 +1,4 @@
-#!/usr/bin/env stack
--- stack --install-ghc runghc --package turtle
-
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DeriveGeneric #-}
+module Bump where
 
 import Turtle
 import Prelude hiding (FilePath, log)
@@ -16,49 +12,12 @@ import Data.Text.Lazy (toStrict)
 import qualified Data.Text as T
 import Data.Tuple.Select
 
+import System.Console.ANSI (Color(..))
+
 import GHC.Generics
 
-import System.Console.ANSI
-
-coloredPrint :: Color -> Text -> IO ()
-coloredPrint color line = do
-  setSGR [SetColor Foreground Vivid color]
-  printf s line
-  setSGR [Reset]
-
-data Part = API | Project
-data Level = App | Major | Minor | Fix | Doc
-data Mode = PR | Commit
-
-instance Show Mode where
-  show PR = "Pull request"
-  show Commit = "Single commit"
-
-data Paths = Paths {
-  -- Path to swagger file of API
-  swaggerFileName :: Maybe Text
-  } deriving (Show, Generic)
-
-instance Yaml.FromJSON Paths
-
-loadPaths :: IO Paths
-loadPaths = do
-  ms <- Yaml.decodeFileEither "./paths"
-  case ms of
-    Left err -> error (show err)
-    Right paths -> return paths
-
-showText :: Show a => a -> Text
-showText = pack . show
-
-changelogFile :: Text
-changelogFile = "CHANGELOG.md"
-
-apiChangelogFile :: Text
-apiChangelogFile = "API_CHANGELOG.md"
-
-checkChangelogs :: Bool
-checkChangelogs = True
+import Types
+import Settings
 
 latestGitTag :: Text
 latestGitTag = "git describe --tags origin/master"
@@ -67,24 +26,6 @@ currentVersion :: IO Text
 currentVersion = do
   ver <- strict $ inshell (latestGitTag <> " | cut -c 2-") empty
   return $ T.stripEnd ver
-
-levelFromText :: Text -> Level
-levelFromText "app" = App
-levelFromText "App" = App
-levelFromText "APP" = App
-levelFromText "major" = Major
-levelFromText "Major" = Major
-levelFromText "MAJOR" = Major
-levelFromText "minor" = Minor
-levelFromText "Minor" = Minor
-levelFromText "MINOR" = Minor
-levelFromText "fix" = Fix
-levelFromText "Fix" = Fix
-levelFromText "FIX" = Fix
-levelFromText "doc" = Doc
-levelFromText "Doc" = Doc
-levelFromText "DOC" = Doc
-levelFromText _ = error "Unsupported level of changes. See supported with -h or --help."
 
 bumpPackage :: Text -> Text -> IO ()
 bumpPackage version packageName = do
@@ -227,21 +168,6 @@ generateVersion lev = do
     fourthD v = sel4 $ delimited v
     fifthD v  = sel5 $ delimited v
 
-parser :: Parser (Maybe Text, Maybe Text, Bool, Bool, Bool)
-parser = (,,,,) <$> optional (optText "packages" 'p' "List of packages to bump.")
-                <*> optional (optText "level" 'l' "Level of changes.")
-                <*> switch  "no-check"  'c' "Do not check changelogs."
-                <*> switch  "from-bc"  'e' "Check changelogs from start of project."
-                <*> switch  "force"  'f' "Bump version even if changelogs are outdated. Cannot be mixed with -c."
-
-welcome :: Description
-welcome = Description $ "---\n"
-        <> "This script can check your changelogs and bump versions in project.\n"
-        <> "It assumes to be run in root directory of project and that changelog is here.\n"
-        <> "You can specify these levels of changes: app, major, minor, fix, doc.\n"
-        <> "It can infer version from changelog.\n"
-        <> "But it will refuse to do it if it's not sure changelogs are up to date."
-
 processChecks :: Bool -> Bool -> Paths -> Bool -> IO ()
 processChecks True _ _ _ = coloredPrint Yellow "WARNING: skipping checks for changelog.\n"
 processChecks False start paths force = do
@@ -294,23 +220,3 @@ generateVersionByChangelog False = do
   where
     expr =  "/^[0-9]\\.[0-9]/q"
     unreleased = (inproc "sed" [expr, changelogFile] empty)
-
-main :: IO ()
-main = do
-  (packages, packageLev, ignoreChecks, fromStart, force) <- options welcome parser
-
-  paths <- loadPaths
-
-  cd ".."
-
-  processChecks ignoreChecks fromStart paths force
-
-  newVersion <- case packageLev of
-    Nothing -> generateVersionByChangelog ignoreChecks
-    Just lev -> generateVersion (levelFromText lev)
-
-  case packages of
-    Just project -> bumpPackages newVersion (T.split (==' ') project)
-    Nothing -> case ignoreChecks of
-      True  -> coloredPrint Yellow "WARNING: no packages specified.\n"
-      False -> coloredPrint Yellow "WARNING: no packages specified, so only check changelogs.\n"
