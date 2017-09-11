@@ -20,6 +20,12 @@ import GHC.Generics
 
 import System.Console.ANSI
 
+coloredPrint :: Color -> Text -> IO ()
+coloredPrint color line = do
+  setSGR [SetColor Foreground Vivid color]
+  printf s line
+  setSGR [Reset]
+
 data Part = API | Project
 data Level = App | Major | Minor | Fix | Doc
 data Mode = PR | Commit
@@ -93,9 +99,7 @@ bumpPackages :: Text -> [Text] -> IO ()
 bumpPackages version packages = do
   curVersion <- currentVersion
   printf ("Version: "%s%" -> ") curVersion
-  setSGR [SetColor Foreground Vivid Yellow]
-  printf (s%"\n") version
-  setSGR [Reset]
+  coloredPrint Yellow (version <> "\n")
 
   printf ("Updating packages version to "%s%"\n") version
   mapM_ (bumpPackage version) packages
@@ -108,9 +112,7 @@ changelogIsUp item mode part message = do
   case grepLen of
     0 -> do
       printf ("- "%s%" ") (showText mode)
-      setSGR [SetColor Foreground Vivid Cyan]
-      printf s item
-      setSGR [Reset]
+      coloredPrint Cyan item
       case part of
         Project -> printf (" id missing in changelog: "%s%".\n") message
         API -> printf (" id missing in API changelog: "%s%".\n") message
@@ -241,45 +243,26 @@ welcome = Description $ "---\n"
         <> "But it will refuse to do it if it's not sure changelogs are up to date."
 
 processChecks :: Bool -> Bool -> Paths -> Bool -> IO ()
-processChecks True _ _ _ = do
-  setSGR [SetColor Foreground Vivid Yellow]
-  echo "WARNING: skipping checks for changelog."
-  setSGR [Reset]
+processChecks True _ _ _ = coloredPrint Yellow "WARNING: skipping checks for changelog.\n"
 processChecks False start paths force = do
   case start of
     True -> echo "Checking changelogs from start of project"
     False -> return ()
   upToDate <- checkChangelogF start
   case upToDate of
-    False -> do
-      setSGR [SetColor Foreground Vivid Yellow]
-      printf ("WARNING: "%s%" is out of date.\n") changelogFile
-      setSGR [Reset]
-    True -> do
-      setSGR [SetColor Foreground Vivid Yellow]
-      printf (s%" is up to date.") changelogFile
-      setSGR [Reset]
+    False -> coloredPrint Yellow ("WARNING: " <> changelogFile <> " is out of date.\n")
+    True -> coloredPrint Green (changelogFile <> " is up to date.\n")
   apiUpToDate <- case swaggerFileName paths of
     Nothing -> do
-      setSGR [SetColor Foreground Vivid Yellow]
-      echo "Do not check API changelog, no swagger file added to ./paths"
-      setSGR [Reset]
+      coloredPrint Yellow "Do not check API changelog, no swagger file added to ./paths.\n"
       return True
     Just file -> checkApiChangelogF start file
   case apiUpToDate of
-    False -> do
-      setSGR [SetColor Foreground Vivid Yellow]
-      printf ("WARNING: "%s%" is out of date.\n") apiChangelogFile
-      setSGR [Reset]
-    True -> do
-      setSGR [SetColor Foreground Vivid Yellow]
-      printf (s%" is up to date.") apiChangelogFile
-      setSGR [Reset]
+    False -> coloredPrint Yellow ("WARNING: " <> apiChangelogFile <> " is out of date.\n")
+    True -> coloredPrint Green $ (apiChangelogFile<>" is up to date.\n")
   case apiUpToDate && upToDate of
     False -> do
-      setSGR [SetColor Foreground Vivid Red]
-      echo "ERROR: some changelogs are not up-to-date. Use -c or --no-check options if you want to ignore changelog checks."
-      setSGR [Reset]
+      coloredPrint Red "ERROR: some changelogs are not up-to-date. Use -c or --no-check options if you want to ignore changelog checks.\n"
       case force of
         False -> exit ExitSuccess
         True -> return ()
@@ -287,9 +270,7 @@ processChecks False start paths force = do
 
 generateVersionByChangelog :: Bool -> IO Text
 generateVersionByChangelog True = do
-  setSGR [SetColor Foreground Vivid Yellow]
-  echo "You are running it with no explicit version modifiers and changelog checks. It can result in anything. Please retry"
-  setSGR [Reset]
+  coloredPrint Yellow "You are running it with no explicit version modifiers and changelog checks. It can result in anything. Please retry.\n"
   exit ExitSuccess
 generateVersionByChangelog False = do
   major <- fold (inproc "grep" ["Major changes"] unreleased) Fold.length
@@ -303,9 +284,7 @@ generateVersionByChangelog False = do
       0 -> case fixes of
         0 -> case docs of
           0 -> do
-            setSGR [SetColor Foreground Vivid Yellow]
-            printf ("WARNING: keep old version since "%s%" apparently does not contain any new entries.\n") changelogFile
-            setSGR [Reset]
+            coloredPrint Yellow ("WARNING: keep old version since " <> changelogFile <> " apparently does not contain any new entries.\n")
             return curVersion
           _ -> generateVersion Doc
         _ -> generateVersion Fix
@@ -333,11 +312,5 @@ main = do
   case packages of
     Just project -> bumpPackages newVersion (T.split (==' ') project)
     Nothing -> case ignoreChecks of
-      True  -> do
-        setSGR [SetColor Foreground Vivid Yellow]
-        echo "WARNING: no packages specified."
-        setSGR [Reset]
-      False -> do
-        setSGR [SetColor Foreground Vivid Yellow]
-        echo "WARNING: no packages specified, so only check changelogs"
-        setSGR [Reset]
+      True  -> coloredPrint Yellow "WARNING: no packages specified.\n"
+      False -> coloredPrint Yellow "WARNING: no packages specified, so only check changelogs.\n"
