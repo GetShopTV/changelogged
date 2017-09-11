@@ -3,18 +3,13 @@ module Bump where
 import Turtle
 import Prelude hiding (FilePath, log)
 
-import qualified Data.Yaml as Yaml
-
 import qualified Control.Foldl as Fold
 
-import Data.Text (pack, Text)
-import Data.Text.Lazy (toStrict)
+import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Tuple.Select
 
 import System.Console.ANSI (Color(..))
-
-import GHC.Generics
 
 import Types
 import Settings
@@ -188,7 +183,7 @@ processChecks False start paths force = do
     True -> coloredPrint Green $ (apiChangelogFile<>" is up to date.\n")
   case apiUpToDate && upToDate of
     False -> do
-      coloredPrint Red "ERROR: some changelogs are not up-to-date. Use -c or --no-check options if you want to ignore changelog checks.\n"
+      coloredPrint Red "ERROR: some changelogs are not up-to-date. Use -c or --no-check options if you want to ignore changelog checks and -f to bump anyway.\n"
       case force of
         False -> exit ExitSuccess
         True -> return ()

@@ -9,7 +9,11 @@ import GHC.Generics
 
 data Paths = Paths {
   -- Path to swagger file of API
-  swaggerFileName :: Maybe Text
+    swaggerFileName  :: Maybe Text
+  -- Default package names
+  , defaultPackages  :: Maybe [Text]
+  -- Paths to files where API version must be bumped with names of corresponding variables.
+  , apiPathsWithVars :: Maybe [(Text, Text)]
   } deriving (Show, Generic)
 
 instance Yaml.FromJSON Paths

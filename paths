@@ -1,2 +1,0 @@
-# This is example file. Config is parsed as strict YAML.
-swaggerFileName : "$YOUR_DIRECTORY/swagger.json"
