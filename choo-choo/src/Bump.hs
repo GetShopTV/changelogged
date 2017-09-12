@@ -12,14 +12,19 @@ import Data.Tuple.Select
 import System.Console.ANSI (Color(..))
 
 import Types
-import Settings
 
 latestGitTag :: Text
 latestGitTag = "git describe --tags origin/master"
 
-currentVersion :: IO Text
-currentVersion = do
-  ver <- strict $ inshell (latestGitTag <> " | cut -c 2-") empty
+currentVersion :: Part -> Maybe Text -> IO Text
+currentVersion Project _ = do
+  ver <- strict $ inproc "cut" ["-c", "2-"] (inproc "git" ["describe", "--tags", "origin/master"] empty)
+  return $ T.stripEnd ver
+currentVersion API Nothing = do
+  coloredPrint Green "Do not bump API, no swagger file specified in ./paths.\n"
+  return ""
+currentVersion API (Just swagger) = do
+  ver <- strict $ inproc "egrep" ["-o", "[0-9][0-9.]*"] (inproc "egrep" ["\"version\": \"[0-9][0-9.]*\"", swagger] empty)
   return $ T.stripEnd ver
 
 bumpPackage :: Text -> Text -> IO ()
@@ -33,12 +38,27 @@ bumpPackage version packageName = do
 
 bumpPackages :: Text -> [Text] -> IO ()
 bumpPackages version packages = do
-  curVersion <- currentVersion
+  curVersion <- currentVersion Project Nothing
   printf ("Version: "%s%" -> ") curVersion
   coloredPrint Yellow (version <> "\n")
 
   printf ("Updating packages version to "%s%"\n") version
   mapM_ (bumpPackage version) packages
+
+bumpApiPart :: Text -> (Text, Text) -> IO ()
+bumpApiPart version (file, var) = do
+    printf ("- Updating API version for "%s%"\n") file
+    case snd (T.breakOnEnd "." file) of
+      "hs" -> do
+        _ <- strict $ inproc "sed" ["-i", "-r", hsExpr, file] empty
+        return ()
+      "json" -> do
+        _ <- strict $ inproc "sed" ["-i", "-r", jsonExpr, file] empty
+        return ()
+      _ -> coloredPrint Red ("ERROR: Didn't bump version in " <> file <> " : only .hs and .json supported, sorry.")
+  where
+    jsonExpr = "s/(^\\s*\"" <> var <> "\": )\"[0-9][0-9.]*\"/\\1\"" <> version <> "\"/"
+    hsExpr = "s/(^" <> var <> " = )\\\"[0-9][0-9.]*\\\"/\\1\"" <> version <> "\"/"
 
 changelogIsUp :: Text -> Mode -> Part -> Text -> IO Bool
 changelogIsUp item mode part message = do
@@ -132,9 +152,9 @@ checkChangelogF start = do
     pullExpr = "pull request #[0-9]+"
     singleExpr = "^[0-9a-f]+\\s[^(Merge)]"
 
-generateVersion :: Level -> IO Text
-generateVersion lev = do
-  current <- currentVersion
+generateVersion :: Level -> Part -> Maybe Text -> IO Text
+generateVersion lev part mbSwagger = do
+  current <- currentVersion part mbSwagger
   return $ bump current
   where
     tuplify :: [Int] -> (Int, Int, Int, Int, Int)
@@ -163,9 +183,9 @@ generateVersion lev = do
     fourthD v = sel4 $ delimited v
     fifthD v  = sel5 $ delimited v
 
-processChecks :: Bool -> Bool -> Paths -> Bool -> IO ()
+processChecks :: Bool -> Bool -> Bool -> Maybe Text -> IO ()
 processChecks True _ _ _ = coloredPrint Yellow "WARNING: skipping checks for changelog.\n"
-processChecks False start paths force = do
+processChecks False start force swagger = do
   case start of
     True -> echo "Checking changelogs from start of project"
     False -> return ()
@@ -173,7 +193,7 @@ processChecks False start paths force = do
   case upToDate of
     False -> coloredPrint Yellow ("WARNING: " <> changelogFile <> " is out of date.\n")
     True -> coloredPrint Green (changelogFile <> " is up to date.\n")
-  apiUpToDate <- case swaggerFileName paths of
+  apiUpToDate <- case swagger of
     Nothing -> do
       coloredPrint Yellow "Do not check API changelog, no swagger file added to ./paths.\n"
       return True
@@ -189,29 +209,33 @@ processChecks False start paths force = do
         True -> return ()
     True -> return ()
 
-generateVersionByChangelog :: Bool -> IO Text
-generateVersionByChangelog True = do
+generateVersionByChangelog :: Bool -> Part -> Maybe Text -> IO Text
+generateVersionByChangelog True _ _ = do
   coloredPrint Yellow "You are running it with no explicit version modifiers and changelog checks. It can result in anything. Please retry.\n"
   exit ExitSuccess
-generateVersionByChangelog False = do
+generateVersionByChangelog False part mbSwagger = do
   major <- fold (inproc "grep" ["Major changes"] unreleased) Fold.length
   minor <- fold (inproc "grep" ["Minor changes"] unreleased) Fold.length
   fixes <- fold (inproc "grep" ["Fixes"] unreleased) Fold.length
   docs  <- fold (inproc "grep" ["Docs"] unreleased) Fold.length
-  curVersion <- currentVersion
+  curVersion <- currentVersion part mbSwagger
   
   case major of
     0 -> case minor of
       0 -> case fixes of
         0 -> case docs of
           0 -> do
-            coloredPrint Yellow ("WARNING: keep old version since " <> changelogFile <> " apparently does not contain any new entries.\n")
+            case part of
+              Project -> coloredPrint Yellow ("WARNING: keep old version since " <> changelogFile <> " apparently does not contain any new entries.\n")
+              API -> coloredPrint Yellow ("WARNING: keep old API version since " <> apiChangelogFile <> " apparently does not contain any new entries.\n")
             return curVersion
-          _ -> generateVersion Doc
-        _ -> generateVersion Fix
-      _ -> generateVersion Minor
-    _ -> generateVersion Major
+          _ -> generateVersion Doc Project Nothing
+        _ -> generateVersion Fix Project Nothing
+      _ -> generateVersion Minor Project Nothing
+    _ -> generateVersion Major Project Nothing
   
   where
     expr =  "/^[0-9]\\.[0-9]/q"
-    unreleased = (inproc "sed" [expr, changelogFile] empty)
+    unreleased = case part of
+      Project -> inproc "sed" [expr, changelogFile] empty
+      API -> inproc "sed" [expr, apiChangelogFile] empty

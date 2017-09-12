@@ -51,12 +51,13 @@ levelFromText "DOC" = Doc
 levelFromText _ = error "Unsupported level of changes. See supported with -h or --help."
 
 
-parser :: Parser (Maybe Text, Maybe Text, Bool, Bool, Bool)
-parser = (,,,,) <$> optional (optText "packages" 'p' "List of packages to bump.")
-                <*> optional (optText "level" 'l' "Level of changes.")
-                <*> switch  "no-check"  'c' "Do not check changelogs."
-                <*> switch  "from-bc"  'e' "Check changelogs from start of project."
-                <*> switch  "force"  'f' "Bump version even if changelogs are outdated. Cannot be mixed with -c."
+parser :: Parser (Maybe Text, Maybe Text, Maybe Text, Bool, Bool, Bool)
+parser = (,,,,,) <$> optional (optText "packages" 'p' "List of packages to bump.")
+                 <*> optional (optText "level" 'l' "Level of changes.")
+                 <*> optional (optText "api" 'a' "Level of changes in API.")
+                 <*> switch  "no-check"  'c' "Do not check changelogs."
+                 <*> switch  "from-bc"  'e' "Check changelogs from start of project."
+                 <*> switch  "force"  'f' "Bump version even if changelogs are outdated. Cannot be mixed with -c."
 
 welcome :: Description
 welcome = Description $ "---\n"

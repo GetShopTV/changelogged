@@ -20,13 +20,14 @@ You can specify these levels of changes: app, major, minor, fix, doc.
 It can infer version from changelog.
 But it will refuse to do it if it's not sure changelogs are up to date.
 
-Usage: bump_versions.hs [-p|--packages PACKAGES] [-l|--level LEVEL]
-                        [-c|--no-check] [-e|--from-bc] [-f|--force]
+Usage: choo-choo-exe [-p|--packages PACKAGES] [-l|--level LEVEL] [-a|--api API]
+                     [-c|--no-check] [-e|--from-bc] [-f|--force]
 
 Available options:
   -h,--help                Show this help text
   -p,--packages PACKAGES   List of packages to bump.
   -l,--level LEVEL         Level of changes.
+  -a,--api API             Level of changes in API.
   -c,--no-check            Do not check changelogs.
   -e,--from-bc             Check changelogs from start of project.
   -f,--force               Bump version even if changelogs are outdated. Cannot
