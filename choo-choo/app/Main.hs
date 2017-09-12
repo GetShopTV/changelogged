@@ -36,22 +36,25 @@ main = do
         "" -> Nothing
         ver -> Just ver
   
-  case packages of
-    Just project -> bumpPackages newVersion (T.split (==' ') project)
-    Nothing -> case defaultPackages paths of
-      Just defaults -> do
-        coloredPrint Green "Bump packages found in ./paths.\n"
-        bumpPackages newVersion defaults
-        case packagesPathsWithVars paths of
-          Nothing -> return ()
-          Just anotherFiles -> mapM_ (bumpPart API newVersion) anotherFiles
-      Nothing -> coloredPrint Yellow "WARNING: no packages specified.\n"
+  case newVersion of
+    "!" -> return ()
+    version -> case packages of
+      Just project -> bumpPackages version (T.split (==' ') project)
+      Nothing -> case defaultPackages paths of
+        Just defaults -> do
+          coloredPrint Green "Bump packages found in ./paths.\n"
+          bumpPackages version defaults
+          case packagesPathsWithVars paths of
+            Nothing -> return ()
+            Just anotherFiles -> mapM_ (bumpPart API version) anotherFiles
+        Nothing -> coloredPrint Yellow "WARNING: no packages specified.\n"
 
   case apiPathsWithVars paths of
     Nothing -> do
       coloredPrint Green "If you want to bump API version, specify paths in ./paths\n"
       return ()
     Just apiPathList -> case newApiVersion of
+      Just "!" -> return ()
       Just ver -> do
         curVersion <- currentVersion API (swaggerFileName paths)
         printf ("Version: "%s%" -> ") curVersion

@@ -219,9 +219,12 @@ processChecks False start force swagger = do
     True -> return ()
 
 generateVersionByChangelog :: Bool -> Part -> Maybe (Text, Text) -> IO Text
-generateVersionByChangelog True _ _ = do
-  coloredPrint Yellow "You are running it with no explicit version modifiers and changelog checks. It can result in anything. Please retry.\n"
-  exit ExitSuccess
+generateVersionByChangelog True API _ = do
+  coloredPrint Yellow "You are bumping API version with no explicit version modifiers and changelog checks. It can result in anything. Please retry.\n"
+  return "!"
+generateVersionByChangelog True Project _ = do
+  coloredPrint Yellow "You are bumping version with no explicit version modifiers and changelog checks. It can result in anything. Please retry.\n"
+  return "!"
 generateVersionByChangelog False part mbSwagger = do
   major <- fold (inproc "grep" ["Major changes"] unreleased) Fold.length
   minor <- fold (inproc "grep" ["Minor changes"] unreleased) Fold.length
