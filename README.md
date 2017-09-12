@@ -12,8 +12,8 @@ It will check changelog correctly if only all it's entries mention their PR or c
 And it will infer version if only changes marked with modifiers "Major changes", "Minor changes", "Fixes" and "Docs".
 `API_CHANGELOG.md` will be checked only if swagger file (or any other file : file changed <=> API changed) with version variable presents in `./paths`
 Same if you want to bump API version.
-For `.json` files in swaggerFileName assumed existence of string "version": "{{ version }}"
-For `.Haskell` files - apiVersion = "<version>"
+For `.json` files in swaggerFileName assumed existence of string "<var>": "{{ version }}"
+For `.Haskell` files - <var> = "<version>"
 
 And then every time to run in call `stack exec choo-choo-exe` from root of repository.
 

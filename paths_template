@@ -1,5 +1,5 @@
 # indicator file for API changes.
-swaggerFileName : "{{ filename }}"
+swaggerFileName : ["{{ file_name }}", "{{ variable_name }}"]
 # default names of packages to bump.
 defaultPackages : ["{{ package_name }}"]
 # paths to files where to bump API version with corresponding variables.

@@ -16,16 +16,20 @@ import Types
 latestGitTag :: Text
 latestGitTag = "git describe --tags origin/master"
 
-currentVersion :: Part -> Maybe Text -> IO Text
+currentVersion :: Part -> Maybe (Text, Text) -> IO Text
 currentVersion Project _ = do
   ver <- strict $ inproc "cut" ["-c", "2-"] (inproc "git" ["describe", "--tags", "origin/master"] empty)
   return $ T.stripEnd ver
 currentVersion API Nothing = do
   coloredPrint Green "Do not bump API, no swagger file specified in ./paths.\n"
   return ""
-currentVersion API (Just swagger) = do
+currentVersion API (Just (swagger, var)) = do
   ver <- case snd (T.breakOnEnd "." swagger) of
-    "json" -> strict $ inproc "egrep" ["-o", "[0-9][0-9.]*"] (inproc "egrep" ["\"version\": \"[0-9][0-9.]*\"", swagger] empty)
+    "json" -> strict $ inproc "egrep" ["-o", "[0-9][0-9.]*"] (inproc "egrep" ["\"" <> var <> "\": \"[0-9][0-9.]*\"", swagger] empty)
+    "hs" -> strict $ inproc "egrep" ["-o", "[0-9][0-9.]*"] (inproc "egrep" [var <> " = \"[0-9][0-9.]*\"", swagger] empty)
+    _ -> do
+      coloredPrint Red ("ERROR: invalid indicator file " <> swagger <> " : only .hs and .json supported, sorry.")
+      return ""
   return $ T.stripEnd ver
 
 bumpPackage :: Text -> Text -> IO ()
@@ -153,7 +157,7 @@ checkChangelogF start = do
     pullExpr = "pull request #[0-9]+"
     singleExpr = "^[0-9a-f]+\\s[^(Merge)]"
 
-generateVersion :: Level -> Part -> Maybe Text -> IO Text
+generateVersion :: Level -> Part -> Maybe (Text, Text) -> IO Text
 generateVersion lev part mbSwagger = do
   current <- currentVersion part mbSwagger
   return $ bump current
@@ -210,7 +214,7 @@ processChecks False start force swagger = do
         True -> return ()
     True -> return ()
 
-generateVersionByChangelog :: Bool -> Part -> Maybe Text -> IO Text
+generateVersionByChangelog :: Bool -> Part -> Maybe (Text, Text) -> IO Text
 generateVersionByChangelog True _ _ = do
   coloredPrint Yellow "You are running it with no explicit version modifiers and changelog checks. It can result in anything. Please retry.\n"
   exit ExitSuccess

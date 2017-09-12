@@ -18,7 +18,7 @@ main = do
 
   cd ".."
   
-  processChecks ignoreChecks fromStart force (swaggerFileName paths)
+  processChecks ignoreChecks fromStart force (fst <$> swaggerFileName paths)
 
   newVersion <- case packageLev of
     Nothing -> generateVersionByChangelog ignoreChecks Project Nothing
