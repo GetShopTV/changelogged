@@ -24,7 +24,8 @@ currentVersion API Nothing = do
   coloredPrint Green "Do not bump API, no swagger file specified in ./paths.\n"
   return ""
 currentVersion API (Just swagger) = do
-  ver <- strict $ inproc "egrep" ["-o", "[0-9][0-9.]*"] (inproc "egrep" ["\"version\": \"[0-9][0-9.]*\"", swagger] empty)
+  ver <- case snd (T.breakOnEnd "." swagger) of
+    "json" -> strict $ inproc "egrep" ["-o", "[0-9][0-9.]*"] (inproc "egrep" ["\"version\": \"[0-9][0-9.]*\"", swagger] empty)
   return $ T.stripEnd ver
 
 bumpPackage :: Text -> Text -> IO ()
