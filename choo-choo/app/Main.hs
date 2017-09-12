@@ -39,10 +39,13 @@ main = do
   case packages of
     Just project -> bumpPackages newVersion (T.split (==' ') project)
     Nothing -> case defaultPackages paths of
-        Just defaults -> do
-          coloredPrint Green "Bump packages found in ./paths.\n"
-          bumpPackages newVersion defaults
-        Nothing -> coloredPrint Yellow "WARNING: no packages specified.\n"
+      Just defaults -> do
+        coloredPrint Green "Bump packages found in ./paths.\n"
+        bumpPackages newVersion defaults
+        case packagesPathsWithVars paths of
+          Nothing -> return ()
+          Just anotherFiles -> mapM_ (bumpPart API newVersion) anotherFiles
+      Nothing -> coloredPrint Yellow "WARNING: no packages specified.\n"
 
   case apiPathsWithVars paths of
     Nothing -> do
@@ -54,6 +57,6 @@ main = do
         printf ("Version: "%s%" -> ") curVersion
         coloredPrint Yellow (ver <> "\n")
         printf ("Updating API version to "%s%"\n") ver
-        mapM_ (bumpApiPart ver) apiPathList
+        mapM_ (bumpPart API ver) apiPathList
       Nothing -> coloredPrint Red "Cannot determine current API version, add swagger file name to ./paths.\n"
     

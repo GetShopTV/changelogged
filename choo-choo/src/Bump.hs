@@ -50,9 +50,11 @@ bumpPackages version packages = do
   printf ("Updating packages version to "%s%"\n") version
   mapM_ (bumpPackage version) packages
 
-bumpApiPart :: Text -> (Text, Text) -> IO ()
-bumpApiPart version (file, var) = do
-    printf ("- Updating API version for "%s%"\n") file
+bumpPart :: Part -> Text -> (Text, Text) -> IO ()
+bumpPart part version (file, var) = do
+    case part of
+      API -> printf ("- Updating API version for "%s%"\n") file
+      Project -> printf ("- Updating version for "%s%"\n") file
     case snd (T.breakOnEnd "." file) of
       "hs" -> do
         _ <- strict $ inproc "sed" ["-i", "-r", hsExpr, file] empty
@@ -60,7 +62,9 @@ bumpApiPart version (file, var) = do
       "json" -> do
         _ <- strict $ inproc "sed" ["-i", "-r", jsonExpr, file] empty
         return ()
-      _ -> coloredPrint Red ("ERROR: Didn't bump version in " <> file <> " : only .hs and .json supported, sorry.")
+      _ -> case part of
+        API -> coloredPrint Red ("ERROR: Didn't bump API version in " <> file <> " : only .hs and .json supported, sorry.")
+        Project -> coloredPrint Red ("ERROR: Didn't bump version in " <> file <> " : only .hs and .json supported, sorry.")
   where
     jsonExpr = "s/(^\\s*\"" <> var <> "\": )\"[0-9][0-9.]*\"/\\1\"" <> version <> "\"/"
     hsExpr = "s/(^" <> var <> " = )\\\"[0-9][0-9.]*\\\"/\\1\"" <> version <> "\"/"

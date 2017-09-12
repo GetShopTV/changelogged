@@ -12,6 +12,8 @@ data Paths = Paths {
     swaggerFileName  :: Maybe (Text, Text)
   -- Default package names
   , defaultPackages  :: Maybe [Text]
+  -- paths to files except for .cabal files where to bump version with corresponding variables.
+  , packagesPathsWithVars :: Maybe [(Text, Text)]
   -- Paths to files where API version must be bumped with names of corresponding variables.
   , apiPathsWithVars :: Maybe [(Text, Text)]
   } deriving (Show, Generic)

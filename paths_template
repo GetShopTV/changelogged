@@ -2,5 +2,7 @@
 swaggerFileName : ["{{ file_name }}", "{{ variable_name }}"]
 # default names of packages to bump.
 defaultPackages : ["{{ package_name }}"]
-# paths to files where to bump API version with corresponding variables.
+# paths to files except for .cabal files where to bump version with corresponding variables. Optional.
+{{ packagesPathsWithVars : [["{{ file_name }}", "{{ variable_name }}"]]}}
+# paths to files where to bump API version with corresponding variables. Optional.
 apiPathsWithVars : [["{{ file_name }}", "{{ variable_name }}"]]
