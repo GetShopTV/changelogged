@@ -8,8 +8,12 @@ import qualified Data.Yaml as Yaml
 import GHC.Generics
 
 data Paths = Paths {
+  -- Changelog file name
+    changeLog :: Maybe Text
+  -- API changelog file name
+  , apiChangeLog :: Maybe Text
   -- Path to swagger file of API
-    swaggerFileName  :: Maybe (Text, Text)
+  , swaggerFileName  :: Maybe (Text, Text)
   -- Default package names
   , defaultPackages  :: Maybe [Text]
   -- paths to files except for .cabal files where to bump version with corresponding variables.

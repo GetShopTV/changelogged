@@ -69,11 +69,9 @@ bumpPart part version (file, var) = do
     jsonExpr = "s/(^\\s*\"" <> var <> "\": )\"[0-9][0-9.]*\"/\\1\"" <> version <> "\"/"
     hsExpr = "s/(^" <> var <> " = )\\\"[0-9][0-9.]*\\\"/\\1\"" <> version <> "\"/"
 
-changelogIsUp :: Text -> Mode -> Part -> Text -> IO Bool
-changelogIsUp item mode part message = do
-  grepLen <- case part of
-    Project -> fold (inproc "grep" [item, changelogFile] empty) Fold.length
-    API -> fold (inproc "grep" [item, apiChangelogFile] empty) Fold.length
+changelogIsUp :: Text -> Mode -> Part -> Text -> Text -> IO Bool
+changelogIsUp item mode part message changelog = do
+  grepLen <- fold (inproc "grep" [item, changelog] empty) Fold.length
   case grepLen of
     0 -> do
       printf ("- "%s%" ") (showText mode)
@@ -108,9 +106,9 @@ gitLatestHistory start = do
     process = fromText . T.stripEnd
     history = "git log --oneline --first-parent $( " <> latestGitTag <> " )..HEAD"
 
-checkApiChangelogF :: Bool -> Text -> IO Bool
-checkApiChangelogF start swaggerFile = do
-  printf ("Checking "%s%"\n") apiChangelogFile
+checkApiChangelogF :: Bool -> Text -> Text -> IO Bool
+checkApiChangelogF start swaggerFile changelog = do
+  printf ("Checking "%s%"\n") changelog
   
   history <- gitLatestHistory start
 
@@ -134,14 +132,14 @@ checkApiChangelogF start swaggerFile = do
           case T.length pull of
             0 -> do
               message <- commitMessage Commit commit
-              changelogIsUp commit Commit API message
+              changelogIsUp commit Commit API message changelog
             _ -> do
               message <- commitMessage PR commit
-              changelogIsUp (T.stripEnd pull) PR API message
+              changelogIsUp (T.stripEnd pull) PR API message changelog
 
-checkChangelogF :: Bool -> IO Bool
-checkChangelogF start = do
-  printf ("Checking "%s%"\n") changelogFile
+checkChangelogF :: Bool -> Text -> IO Bool
+checkChangelogF start changelog = do
+  printf ("Checking "%s%"\n") changelog
   
   history <- gitLatestHistory start
   
@@ -154,8 +152,8 @@ checkChangelogF start = do
   
   pullHeaders <- mapM (commitMessage PR) (map T.stripEnd (T.split (== '\n') pullCommits))
   singleHeaders <- mapM (commitMessage Commit) (map T.stripEnd (T.split (== '\n') singles))
-  flagsPR <- mapM (\(i,m) -> changelogIsUp i PR Project m) (zip (T.split (== '\n') pulls) pullHeaders)
-  flagsCommit <- mapM (\(i, m) -> changelogIsUp i Commit Project m) (zip (T.split (== '\n') singles) singleHeaders)
+  flagsPR <- mapM (\(i,m) -> changelogIsUp i PR Project m changelog) (zip (T.split (== '\n') pulls) pullHeaders)
+  flagsCommit <- mapM (\(i, m) -> changelogIsUp i Commit Project m changelog) (zip (T.split (== '\n') singles) singleHeaders)
   return $ foldr1 (&&) (flagsPR ++ flagsCommit)
   where
     pullExpr = "pull request #[0-9]+"
@@ -192,24 +190,24 @@ generateVersion lev part mbSwagger = do
     fourthD v = sel4 $ delimited v
     fifthD v  = sel5 $ delimited v
 
-processChecks :: Bool -> Bool -> Bool -> Maybe Text -> IO ()
-processChecks True _ _ _ = coloredPrint Yellow "WARNING: skipping checks for changelog.\n"
-processChecks False start force swagger = do
+processChecks :: Bool -> Bool -> Bool -> Maybe Text -> Text -> Text -> IO ()
+processChecks True _ _ _ _ _ = coloredPrint Yellow "WARNING: skipping checks for changelog.\n"
+processChecks False start force swagger changelog apiChangelog = do
   case start of
     True -> echo "Checking changelogs from start of project"
     False -> return ()
-  upToDate <- checkChangelogF start
+  upToDate <- checkChangelogF start changelog
   case upToDate of
-    False -> coloredPrint Yellow ("WARNING: " <> changelogFile <> " is out of date.\n")
-    True -> coloredPrint Green (changelogFile <> " is up to date.\n")
+    False -> coloredPrint Yellow ("WARNING: " <> changelog <> " is out of date.\n")
+    True -> coloredPrint Green (changelog <> " is up to date.\n")
   apiUpToDate <- case swagger of
     Nothing -> do
       coloredPrint Yellow "Do not check API changelog, no swagger file added to ./paths.\n"
       return True
-    Just file -> checkApiChangelogF start file
+    Just file -> checkApiChangelogF start file apiChangelog
   case apiUpToDate of
-    False -> coloredPrint Yellow ("WARNING: " <> apiChangelogFile <> " is out of date.\n")
-    True -> coloredPrint Green $ (apiChangelogFile<>" is up to date.\n")
+    False -> coloredPrint Yellow ("WARNING: " <> apiChangelog <> " is out of date.\n")
+    True -> coloredPrint Green $ (apiChangelog<>" is up to date.\n")
   case apiUpToDate && upToDate of
     False -> do
       coloredPrint Red "ERROR: some changelogs are not up-to-date. Use -c or --no-check options if you want to ignore changelog checks and -f to bump anyway.\n"
@@ -218,14 +216,14 @@ processChecks False start force swagger = do
         True -> return ()
     True -> return ()
 
-generateVersionByChangelog :: Bool -> Part -> Maybe (Text, Text) -> IO Text
-generateVersionByChangelog True API _ = do
+generateVersionByChangelog :: Bool -> Part -> Maybe (Text, Text) -> Text -> IO Text
+generateVersionByChangelog True API _ _ = do
   coloredPrint Yellow "You are bumping API version with no explicit version modifiers and changelog checks. It can result in anything. Please retry.\n"
   return "!"
-generateVersionByChangelog True Project _ = do
+generateVersionByChangelog True Project _ _ = do
   coloredPrint Yellow "You are bumping version with no explicit version modifiers and changelog checks. It can result in anything. Please retry.\n"
   return "!"
-generateVersionByChangelog False part mbSwagger = do
+generateVersionByChangelog False part mbSwagger changelogFile = do
   major <- fold (inproc "grep" ["Major changes"] unreleased) Fold.length
   minor <- fold (inproc "grep" ["Minor changes"] unreleased) Fold.length
   fixes <- fold (inproc "grep" ["Fixes"] unreleased) Fold.length
@@ -239,7 +237,7 @@ generateVersionByChangelog False part mbSwagger = do
           0 -> do
             case part of
               Project -> coloredPrint Yellow ("WARNING: keep old version since " <> changelogFile <> " apparently does not contain any new entries.\n")
-              API -> coloredPrint Yellow ("WARNING: keep old API version since " <> apiChangelogFile <> " apparently does not contain any new entries.\n")
+              API -> coloredPrint Yellow ("WARNING: keep old API version since " <> changelogFile <> " apparently does not contain any new entries.\n")
             return curVersion
           _ -> generateVersion Doc Project Nothing
         _ -> generateVersion Fix Project Nothing
@@ -248,6 +246,4 @@ generateVersionByChangelog False part mbSwagger = do
   
   where
     expr =  "/^[0-9]\\.[0-9]/q"
-    unreleased = case part of
-      Project -> inproc "sed" [expr, changelogFile] empty
-      API -> inproc "sed" [expr, apiChangelogFile] empty
+    unreleased = inproc "sed" [expr, changelogFile] empty

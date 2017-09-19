@@ -3,6 +3,7 @@ module Main where
 import qualified Data.Text as T
 
 import Turtle
+import Data.Maybe (fromMaybe)
 
 import System.Console.ANSI (Color(..))
 
@@ -19,14 +20,16 @@ main = do
   cd ".."
   
   processChecks ignoreChecks fromStart force (fst <$> swaggerFileName paths)
+                (fromMaybe "CHANGELOG.md" (changeLog paths))
+                (fromMaybe "API_CHANGELOG.md" (apiChangeLog paths))
 
   newVersion <- case packageLev of
-    Nothing -> generateVersionByChangelog ignoreChecks Project Nothing
+    Nothing -> generateVersionByChangelog ignoreChecks Project Nothing (fromMaybe "CHANGELOG.md" (changeLog paths))
     Just lev -> generateVersion (levelFromText lev) Project Nothing
   
   newApiVersion <- case apiLev of
     Nothing -> do
-      newV <- generateVersionByChangelog ignoreChecks API (swaggerFileName paths)
+      newV <- generateVersionByChangelog ignoreChecks API (swaggerFileName paths) (fromMaybe "API_CHANGELOG.md" (apiChangeLog paths))
       return $ case newV of
         "" -> Nothing
         ver -> Just ver

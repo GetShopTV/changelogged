@@ -26,12 +26,6 @@ instance Show Mode where
 showText :: Show a => a -> Text
 showText = pack . show
 
-changelogFile :: Text
-changelogFile = "CHANGELOG.md"
-
-apiChangelogFile :: Text
-apiChangelogFile = "API_CHANGELOG.md"
-
 levelFromText :: Text -> Level
 levelFromText "app" = App
 levelFromText "App" = App

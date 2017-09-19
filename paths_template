@@ -1,3 +1,7 @@
+# changelog file name
+changeLog : {{ file_name }}
+# API changelog file name
+apiChangeLog : {{ file_name }}
 # indicator file for API changes.
 swaggerFileName : ["{{ file_name }}", "{{ variable_name }}"]
 # default names of packages to bump.
