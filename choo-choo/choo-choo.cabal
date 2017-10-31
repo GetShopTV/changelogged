@@ -19,10 +19,9 @@ library
     Bump
     Types
     Settings
-                        
+
   build-depends:       base >= 4.7 && < 5
                      , turtle
-                     , tuple
                      , ansi-terminal
                      , text
                      , yaml

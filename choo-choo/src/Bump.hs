@@ -7,14 +7,10 @@ import qualified Control.Foldl as Fold
 
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Tuple.Select
 
 import System.Console.ANSI (Color(..))
 
 import Types
-
-latestGitTag :: Text
-latestGitTag = "git describe --tags origin/master"
 
 currentVersion :: Part -> Maybe (Text, Text) -> IO Text
 currentVersion Project _ = do
@@ -97,14 +93,15 @@ commitMessage mode commit = do
 gitLatestHistory :: Bool -> IO Text
 gitLatestHistory start = do
   tmpFile <- strict $ inproc "mktemp" [] empty
-  case start of
-    False -> liftIO $ append (process tmpFile) $ inproc "grep" ["-v", "Merge branch"] (inshell history empty)
-    True  -> liftIO $ append (process tmpFile) $
+  latestGitTag <- strict $ inproc "git" ["describe", "--tags", "origin/master"] empty
+  if start
+    then liftIO $ append (process tmpFile) $
       inproc "grep" ["-v", "Merge branch"] (inproc "git" ["log", "--oneline", "--first-parent"] empty)
+    else liftIO $ append (process tmpFile) $
+      inproc "grep" ["-v", "Merge branch"] (inproc "git" ["log", "--oneline", "--first-parent", T.stripEnd latestGitTag <> "..HEAD"] empty)
   return $ T.stripEnd tmpFile
   where
     process = fromText . T.stripEnd
-    history = "git log --oneline --first-parent $( " <> latestGitTag <> " )..HEAD"
 
 checkApiChangelogF :: Bool -> Text -> Text -> IO Bool
 checkApiChangelogF start swaggerFile changelog = do
@@ -142,7 +139,7 @@ checkChangelogF start changelog = do
   printf ("Checking "%s%"\n") changelog
   
   history <- gitLatestHistory start
-  
+
   pullCommits <- strict $
     inproc "egrep" ["-o", "^[0-9a-f]+"] (inproc "egrep" [pullExpr, history] empty)
   pulls <- strict $
@@ -162,7 +159,7 @@ checkChangelogF start changelog = do
 generateVersion :: Level -> Part -> Maybe (Text, Text) -> IO Text
 generateVersion lev part mbSwagger = do
   current <- currentVersion part mbSwagger
-  return $ bump current
+  return $ bump (delimited current)
   where
     tuplify :: [Int] -> (Int, Int, Int, Int, Int)
     tuplify [] = (0,0,0,0,0)
@@ -176,45 +173,39 @@ generateVersion lev part mbSwagger = do
     delimited :: Text -> (Int, Int, Int, Int, Int)
     delimited ver = tuplify $ map (read . T.unpack) (T.split (=='.') ver)
     
-    bump :: Text -> Text
-    bump v = T.intercalate "." $ map showText $ case lev of
-      App -> [firstD v + 1, 0]
-      Major -> [firstD v, secondD v + 1, 0]
-      Minor -> [firstD v, secondD v, thirdD v + 1, 0]
-      Fix -> [firstD v, secondD v, thirdD v, fourthD v + 1, 0]
-      Doc -> [firstD v, secondD v, thirdD v, fourthD v, fifthD v + 1]
-    
-    firstD v  = sel1 $ delimited v
-    secondD v = sel2 $ delimited v
-    thirdD v  = sel3 $ delimited v
-    fourthD v = sel4 $ delimited v
-    fifthD v  = sel5 $ delimited v
+    bump :: (Int, Int, Int, Int, Int) -> Text
+    bump (app, major, minor, fix, doc) = T.intercalate "." $ map showText $ case lev of
+      App -> [app + 1, 0]
+      Major -> [app, major + 1, 0]
+      Minor -> [app, major, minor + 1, 0]
+      Fix -> [app, major, minor, fix + 1, 0]
+      Doc -> [app, major, minor, fix, doc + 1]
 
 processChecks :: Bool -> Bool -> Bool -> Maybe Text -> Text -> Text -> IO ()
 processChecks True _ _ _ _ _ = coloredPrint Yellow "WARNING: skipping checks for changelog.\n"
 processChecks False start force swagger changelog apiChangelog = do
-  case start of
-    True -> echo "Checking changelogs from start of project"
-    False -> return ()
+  if start
+    then echo "Checking changelogs from start of project"
+    else return ()
   upToDate <- checkChangelogF start changelog
-  case upToDate of
-    False -> coloredPrint Yellow ("WARNING: " <> changelog <> " is out of date.\n")
-    True -> coloredPrint Green (changelog <> " is up to date.\n")
+  if upToDate
+    then coloredPrint Green (changelog <> " is up to date.\n")
+    else coloredPrint Yellow ("WARNING: " <> changelog <> " is out of date.\n")
   apiUpToDate <- case swagger of
     Nothing -> do
       coloredPrint Yellow "Do not check API changelog, no swagger file added to ./paths.\n"
       return True
     Just file -> checkApiChangelogF start file apiChangelog
-  case apiUpToDate of
-    False -> coloredPrint Yellow ("WARNING: " <> apiChangelog <> " is out of date.\n")
-    True -> coloredPrint Green $ (apiChangelog<>" is up to date.\n")
-  case apiUpToDate && upToDate of
-    False -> do
+  if apiUpToDate
+    then coloredPrint Green $ (apiChangelog<>" is up to date.\n")
+    else coloredPrint Yellow ("WARNING: " <> apiChangelog <> " is out of date.\n")
+  if not (apiUpToDate && upToDate)
+    then do
       coloredPrint Red "ERROR: some changelogs are not up-to-date. Use -c or --no-check options if you want to ignore changelog checks and -f to bump anyway.\n"
-      case force of
-        False -> exit ExitSuccess
-        True -> return ()
-    True -> return ()
+      if not force
+        then exit ExitSuccess
+        else return ()
+    else return ()
 
 generateVersionByChangelog :: Bool -> Part -> Maybe (Text, Text) -> Text -> IO Text
 generateVersionByChangelog True API _ _ = do
