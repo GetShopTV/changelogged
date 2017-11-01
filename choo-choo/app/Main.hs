@@ -3,11 +3,13 @@ module Main where
 import qualified Data.Text as T
 
 import Turtle
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, fromJust)
 
 import System.Console.ANSI (Color(..))
 
-import Bump
+import CheckLog.Check
+import Bump.API
+import Bump.Project
 import Types
 import Settings
 
@@ -24,32 +26,32 @@ main = do
                 (fromMaybe "API_CHANGELOG.md" (apiChangeLog paths))
 
   newVersion <- case packageLev of
-    Nothing -> generateVersionByChangelog ignoreChecks Project Nothing (fromMaybe "CHANGELOG.md" (changeLog paths))
-    Just lev -> generateVersion (levelFromText lev) Project Nothing
+    Nothing -> generateVersionByChangelog ignoreChecks (fromMaybe "CHANGELOG.md" (changeLog paths))
+    Just lev -> Just <$> generateVersion (levelFromText lev)
   
   newApiVersion <- case apiLev of
-    Nothing -> do
-      newV <- generateVersionByChangelog ignoreChecks API (swaggerFileName paths) (fromMaybe "API_CHANGELOG.md" (apiChangeLog paths))
-      return $ case newV of
-        "" -> Nothing
-        ver -> Just ver
-    Just lev -> do
-      newV <- generateVersion (levelFromText lev) API (swaggerFileName paths)
-      return $ case newV of
-        "" -> Nothing
-        ver -> Just ver
+    Nothing -> case swaggerFileName paths of
+      Just swagger -> generateAPIVersionByChangelog ignoreChecks swagger (fromMaybe "API_CHANGELOG.md" (apiChangeLog paths))
+      Nothing -> do
+        coloredPrint Yellow "Cannot generate API version - no file with previous version specified in .paths (swaggerFileName)."
+        return Nothing
+    Just lev -> case swaggerFileName paths of
+        Just swagger -> Just <$> generateAPIVersion (levelFromText lev) swagger
+        Nothing -> do
+          coloredPrint Yellow "Cannot generate API version - no file with previous version specified in .paths (swaggerFileName)."
+          return Nothing
   
   case newVersion of
-    "!" -> return ()
-    version -> case packages of
+    Nothing -> return ()
+    Just version -> case packages of
       Just project -> bumpPackages version (T.split (==' ') project)
       Nothing -> case defaultPackages paths of
         Just defaults -> do
           coloredPrint Green "Bump packages found in ./paths.\n"
           bumpPackages version defaults
           case packagesPathsWithVars paths of
+            Just files -> mapM_ (bumpPart version) files
             Nothing -> return ()
-            Just anotherFiles -> mapM_ (bumpPart API version) anotherFiles
         Nothing -> coloredPrint Yellow "WARNING: no packages specified.\n"
 
   case apiPathsWithVars paths of
@@ -57,12 +59,11 @@ main = do
       coloredPrint Green "If you want to bump API version, specify paths in ./paths\n"
       return ()
     Just apiPathList -> case newApiVersion of
-      Just "!" -> return ()
+      Nothing -> return ()
       Just ver -> do
-        curVersion <- currentVersion API (swaggerFileName paths)
+        curVersion <- currentAPIVersion (fromJust $ swaggerFileName paths) -- guaranted, must be gone with refactoring.
         printf ("Version: "%s%" -> ") curVersion
         coloredPrint Yellow (ver <> "\n")
         printf ("Updating API version to "%s%"\n") ver
-        mapM_ (bumpPart API ver) apiPathList
-      Nothing -> coloredPrint Red "Cannot determine current API version, add swagger file name to ./paths.\n"
+        mapM_ (bumpAPIPart ver) apiPathList
     

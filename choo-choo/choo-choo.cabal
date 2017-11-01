@@ -16,7 +16,12 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:
-    Bump
+    CheckLog.Check
+    CheckLog.Common
+    Bump.Common
+    Bump.API
+    Bump.Project
+    Utils
     Types
     Settings
 

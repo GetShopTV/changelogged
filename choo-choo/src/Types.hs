@@ -4,16 +4,10 @@ module Types where
 
 import Data.Text (Text, pack)
 
-import Prelude hiding (FilePath)
-import Turtle
-
 import System.Console.ANSI
 
-coloredPrint :: Color -> Text -> IO ()
-coloredPrint color line = do
-  setSGR [SetColor Foreground Vivid color]
-  printf s line
-  setSGR [Reset]
+import Prelude hiding (FilePath)
+import Turtle
 
 data Part = API | Project
 data Level = App | Major | Minor | Fix | Doc
@@ -44,6 +38,11 @@ levelFromText "Doc" = Doc
 levelFromText "DOC" = Doc
 levelFromText _ = error "Unsupported level of changes. See supported with -h or --help."
 
+coloredPrint :: Color -> Text -> IO ()
+coloredPrint color line = do
+  setSGR [SetColor Foreground Vivid color]
+  printf s line
+  setSGR [Reset]
 
 parser :: Parser (Maybe Text, Maybe Text, Maybe Text, Bool, Bool, Bool)
 parser = (,,,,,) <$> optional (optText "packages" 'p' "List of packages to bump.")
