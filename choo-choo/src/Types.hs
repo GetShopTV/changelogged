@@ -2,15 +2,22 @@
 
 module Types where
 
-import Data.Text (Text, pack)
+import Data.Char (toLower)
+import Data.List (intercalate)
+import Data.Text (Text)
+import qualified Data.Text as Text
 
 import System.Console.ANSI
+import Options.Applicative hiding (switch)
 
 import Prelude hiding (FilePath)
-import Turtle
+import Turtle hiding (option)
 
 data Part = API | Project
+  
 data Level = App | Major | Minor | Fix | Doc
+  deriving (Show, Enum, Bounded)
+
 data Mode = PR | Commit
 
 instance Show Mode where
@@ -18,25 +25,7 @@ instance Show Mode where
   show Commit = "Single commit"
 
 showText :: Show a => a -> Text
-showText = pack . show
-
-levelFromText :: Text -> Level
-levelFromText "app" = App
-levelFromText "App" = App
-levelFromText "APP" = App
-levelFromText "major" = Major
-levelFromText "Major" = Major
-levelFromText "MAJOR" = Major
-levelFromText "minor" = Minor
-levelFromText "Minor" = Minor
-levelFromText "MINOR" = Minor
-levelFromText "fix" = Fix
-levelFromText "Fix" = Fix
-levelFromText "FIX" = Fix
-levelFromText "doc" = Doc
-levelFromText "Doc" = Doc
-levelFromText "DOC" = Doc
-levelFromText _ = error "Unsupported level of changes. See supported with -h or --help."
+showText = Text.pack . show
 
 coloredPrint :: Color -> Text -> IO ()
 coloredPrint color line = do
@@ -44,13 +33,59 @@ coloredPrint color line = do
   printf s line
   setSGR [Reset]
 
-parser :: Parser (Maybe Text, Maybe Text, Maybe Text, Bool, Bool, Bool)
-parser = (,,,,,) <$> optional (optText "packages" 'p' "List of packages to bump.")
-                 <*> optional (optText "level" 'l' "Level of changes.")
-                 <*> optional (optText "api" 'a' "Level of changes in API.")
-                 <*> switch  "no-check"  'c' "Do not check changelogs."
-                 <*> switch  "from-bc"  'e' "Check changelogs from start of project."
-                 <*> switch  "force"  'f' "Bump version even if changelogs are outdated. Cannot be mixed with -c."
+data Options = Options
+  { optPackages      :: Maybe [Text]
+  , optPackagesLevel :: Maybe Level
+  , optApiLevel      :: Maybe Level
+  , optNoCheck       :: Bool
+  , optFromBC        :: Bool
+  , optForce         :: Bool
+  }
+
+-- |
+-- >>> availableLevels
+-- [App,Major,Minor,Fix,Doc]
+availableLevels :: [Level]
+availableLevels = [minBound..maxBound]
+
+-- |
+-- >>> availableLevelsStr
+-- "(app major minor fix doc)"
+availableLevelsStr :: String
+availableLevelsStr
+  = "(" <> intercalate " " (map (map toLower . show) availableLevels) <> ")"
+
+readLevel :: ReadM Level
+readLevel = eitherReader (r . map toLower)
+  where
+    r "app"   = Right App
+    r "major" = Right Major
+    r "minor" = Right Minor
+    r "fix"   = Right Fix
+    r "doc"   = Right Doc
+    r lvl = Left $
+         "Unknown level of changes: " <> show lvl <> ".\n"
+      <> "Use one of " <> availableLevelsStr <> ".\n"
+
+parser :: Parser Options
+parser = Options
+  <$> optional packages
+  <*> optional packagesLevel
+  <*> optional apiLevel
+  <*> switch  "no-check"  'c' "Do not check changelogs."
+  <*> switch  "from-bc"  'e' "Check changelogs from start of project."
+  <*> switch  "force"  'f' "Bump version even if changelogs are outdated. Cannot be mixed with -c."
+  where
+    packages = Text.words <$> optText
+      "packages" 'p' "List of packages to bump (separated by space)."
+    packagesLevel = option readLevel $
+         long "level"
+      <> short 'l'
+      <> help ("Level of changes (for packages). One of " <> availableLevelsStr)
+    apiLevel = option readLevel $
+         long "api-level"
+      <> short 'a'
+      <> help ("Level of changes (for API). One of " <> availableLevelsStr)
 
 welcome :: Description
 welcome = Description $ "---\n"
