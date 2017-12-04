@@ -14,8 +14,8 @@ import System.Console.ANSI (Color(..))
 import Types
 import CheckLog.Common
 
-checkChangelogF :: Bool -> Text -> IO Bool
-checkChangelogF start changelog = do
+checkChangelogF :: WarningFormat -> Bool -> Text -> IO Bool
+checkChangelogF fmt start changelog = do
   printf ("Checking "%s%"\n") changelog
   history <- gitLatestHistory start
   
@@ -28,15 +28,15 @@ checkChangelogF start changelog = do
   
   pullHeaders <- mapM (commitMessage PR . T.stripEnd) (T.split (== '\n') pullCommits)
   singleHeaders <- mapM (commitMessage Commit . T.stripEnd) (T.split (== '\n') singles)
-  flagsPR <- mapM (\(i,m) -> changelogIsUp i PR Project m changelog) (zip (T.split (== '\n') pulls) pullHeaders)
-  flagsCommit <- mapM (\(i, m) -> changelogIsUp i Commit Project m changelog) (zip (T.split (== '\n') singles) singleHeaders)
+  flagsPR <- mapM (\(i,m) -> changelogIsUp fmt i PR Project m changelog) (zip (T.split (== '\n') pulls) pullHeaders)
+  flagsCommit <- mapM (\(i, m) -> changelogIsUp fmt i Commit Project m changelog) (zip (T.split (== '\n') singles) singleHeaders)
   return $ and (flagsPR ++ flagsCommit)
   where
     pullExpr = "pull request #[0-9]+"
     singleExpr = "^[0-9a-f]+\\s[^(Merge)]"
 
-checkApiChangelogF :: Bool -> Text -> Text -> IO Bool
-checkApiChangelogF start swaggerFile changelog = do
+checkApiChangelogF :: WarningFormat -> Bool -> Text -> Text -> IO Bool
+checkApiChangelogF fmt start swaggerFile changelog = do
   printf ("Checking "%s%"\n") changelog
   
   history <- gitLatestHistory start
@@ -61,16 +61,16 @@ checkApiChangelogF start swaggerFile changelog = do
           case T.length pull of
             0 -> do
               message <- commitMessage Commit commit
-              changelogIsUp commit Commit API message changelog
+              changelogIsUp fmt commit Commit API message changelog
             _ -> do
               message <- commitMessage PR commit
-              changelogIsUp (T.stripEnd pull) PR API message changelog
+              changelogIsUp fmt (T.stripEnd pull) PR API message changelog
 
-processChecks :: Bool -> Bool -> Bool -> Maybe Text -> Text -> Text -> IO ()
-processChecks True _ _ _ _ _ = coloredPrint Yellow "WARNING: skipping checks for changelog.\n"
-processChecks False start force swagger changelog apiChangelog = do
+processChecks :: WarningFormat -> Bool -> Bool -> Bool -> Maybe Text -> Text -> Text -> IO ()
+processChecks _ True _ _ _ _ _ = coloredPrint Yellow "WARNING: skipping checks for changelog.\n"
+processChecks fmt False start force swagger changelog apiChangelog = do
   when start $ echo "Checking changelogs from start of project"
-  upToDate <- checkChangelogF start changelog
+  upToDate <- checkChangelogF fmt start changelog
   if upToDate
     then coloredPrint Green (changelog <> " is up to date.\n")
     else coloredPrint Yellow ("WARNING: " <> changelog <> " is out of date.\n")
@@ -78,7 +78,7 @@ processChecks False start force swagger changelog apiChangelog = do
     Nothing -> do
       coloredPrint Yellow "Do not check API changelog, no swagger file added to ./paths.\n"
       return True
-    Just file -> checkApiChangelogF start file apiChangelog
+    Just file -> checkApiChangelogF fmt start file apiChangelog
   if apiUpToDate
     then coloredPrint Green (apiChangelog<>" is up to date.\n")
     else coloredPrint Yellow ("WARNING: " <> apiChangelog <> " is out of date.\n")

@@ -33,10 +33,36 @@ coloredPrint color line = do
   printf s line
   setSGR [Reset]
 
+data WarningFormat
+  = WarnSimple
+  | WarnSuggest
+  deriving (Enum, Bounded)
+
+instance Show WarningFormat where
+  show WarnSimple  = "simple"
+  show WarnSuggest = "suggest"
+
+availableWarningFormats :: [WarningFormat]
+availableWarningFormats = [minBound..maxBound]
+
+availableWarningFormatsStr :: String
+availableWarningFormatsStr
+  = "(" <> intercalate " " (map (map toLower . show) availableWarningFormats) <> ")"
+
+readWarningFormat :: ReadM WarningFormat
+readWarningFormat = eitherReader (r . map toLower)
+  where
+    r "simple"  = Right WarnSuggest
+    r "suggest" = Right WarnSuggest
+    r fmt = Left $
+         "Unknown warning format: " <> show fmt <> ".\n"
+      <> "Use one of " <> availableWarningFormatsStr <> ".\n"
+
 data Options = Options
   { optPackages      :: Maybe [Text]
   , optPackagesLevel :: Maybe Level
   , optApiLevel      :: Maybe Level
+  , optFormat        :: WarningFormat
   , optNoCheck       :: Bool
   , optFromBC        :: Bool
   , optForce         :: Bool
@@ -72,6 +98,7 @@ parser = Options
   <$> optional packages
   <*> optional packagesLevel
   <*> optional apiLevel
+  <*> warningFormat
   <*> switch  "no-check"  'c' "Do not check changelogs."
   <*> switch  "from-bc"  'e' "Check changelogs from start of project."
   <*> switch  "force"  'f' "Bump version even if changelogs are outdated. Cannot be mixed with -c."
@@ -86,6 +113,11 @@ parser = Options
          long "api-level"
       <> short 'a'
       <> help ("Level of changes (for API). One of " <> availableLevelsStr)
+    warningFormat = option readWarningFormat $
+         long "format"
+      <> help ("Warning format. One of " <> availableWarningFormatsStr)
+      <> value WarnSimple
+      <> showDefault
 
 welcome :: Description
 welcome = Description $ "---\n"

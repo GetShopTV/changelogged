@@ -18,9 +18,10 @@ main = do
 
   paths <- loadPaths
 
-  processChecks optNoCheck optFromBC optForce (fst <$> swaggerFileName paths)
-                (fromMaybe "CHANGELOG.md" (changeLog paths))
-                (fromMaybe "API_CHANGELOG.md" (apiChangeLog paths))
+  processChecks optFormat optNoCheck optFromBC optForce
+    (fst <$> swaggerFileName paths)
+    (fromMaybe "CHANGELOG.md" (changeLog paths))
+    (fromMaybe "API_CHANGELOG.md" (apiChangeLog paths))
 
   newVersion <- case optPackagesLevel of
     Nothing -> generateVersionByChangelog optNoCheck (fromMaybe "CHANGELOG.md" (changeLog paths))
