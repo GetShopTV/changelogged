@@ -19,8 +19,8 @@ changelogIsUp item mode part message changelog = do
       printf ("- "%s%" ") (showText mode)
       coloredPrint Cyan item
       case part of
-        Project -> printf (" id missing in changelog: "%s%".\n") message
-        API -> printf (" id missing in API changelog: "%s%".\n") message
+        Project -> printf (" is missing in changelog: "%s%".\n") message
+        API -> printf (" is missing in API changelog: "%s%".\n") message
       return False
     _ -> return True
 
