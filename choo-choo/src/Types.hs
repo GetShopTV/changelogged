@@ -54,7 +54,7 @@ parser = (,,,,,) <$> optional (optText "packages" 'p' "List of packages to bump.
 
 welcome :: Description
 welcome = Description $ "---\n"
-        <> "This script can check your changelogs and bump versions in project.\n"
+        <> "This tool can check your changelogs and bump versions in project.\n"
         <> "It assumes to be run in root directory of project and that changelog is here.\n"
         <> "You can specify these levels of changes: app, major, minor, fix, doc.\n"
         <> "It can infer version from changelog.\n"

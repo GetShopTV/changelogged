@@ -18,8 +18,6 @@ main = do
   (packages, packageLev, apiLev, ignoreChecks, fromStart, force) <- options welcome parser
 
   paths <- loadPaths
-
-  cd ".."
   
   processChecks ignoreChecks fromStart force (fst <$> swaggerFileName paths)
                 (fromMaybe "CHANGELOG.md" (changeLog paths))

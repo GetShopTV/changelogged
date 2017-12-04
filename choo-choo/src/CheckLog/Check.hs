@@ -17,7 +17,6 @@ import CheckLog.Common
 checkChangelogF :: Bool -> Text -> IO Bool
 checkChangelogF start changelog = do
   printf ("Checking "%s%"\n") changelog
-  
   history <- gitLatestHistory start
   
   pullCommits <- strict $

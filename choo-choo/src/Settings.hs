@@ -28,7 +28,7 @@ instance Yaml.FromJSON Paths
 
 loadPaths :: IO Paths
 loadPaths = do
-  ms <- Yaml.decodeFileEither "./paths"
+  ms <- Yaml.decodeFileEither "./choo-choo.yaml"
   case ms of
     Left err -> error (show err)
     Right paths -> return paths
