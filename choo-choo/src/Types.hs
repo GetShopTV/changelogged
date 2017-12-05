@@ -20,6 +20,11 @@ data Level = App | Major | Minor | Fix | Doc
 
 data Mode = PR | Commit
 
+data Git = Git
+  { gitHistory :: FilePath
+  , gitLink :: Text
+  }
+
 instance Show Mode where
   show PR = "Pull request"
   show Commit = "Single commit"

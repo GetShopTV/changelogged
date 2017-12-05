@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 module CheckLog.Check where
 
 import Turtle
@@ -15,8 +16,8 @@ import System.Console.ANSI (Color(..))
 import Types
 import CheckLog.Common
 
-checkChangelogF :: WarningFormat -> (FilePath, Text) -> Text -> IO Bool
-checkChangelogF fmt (history, link) changelog = do
+checkChangelogF :: WarningFormat -> Git -> Text -> IO Bool
+checkChangelogF fmt Git{..} changelog = do
   printf ("Checking "%s%"\n") changelog
   
   pullCommits <- strict $
@@ -28,16 +29,16 @@ checkChangelogF fmt (history, link) changelog = do
   
   pullHeaders <- mapM (commitMessage PR . Text.stripEnd) (Text.split (== '\n') pullCommits)
   singleHeaders <- mapM (commitMessage Commit . Text.stripEnd) (Text.split (== '\n') singles)
-  flagsPR <- mapM (\(i,m) -> changelogIsUp fmt link i PR Project m changelog) (zip (Text.split (== '\n') pulls) pullHeaders)
-  flagsCommit <- mapM (\(i, m) -> changelogIsUp fmt link i Commit Project m changelog) (zip (Text.split (== '\n') singles) singleHeaders)
+  flagsPR <- mapM (\(i,m) -> changelogIsUp fmt gitLink i PR Project m changelog) (zip (Text.split (== '\n') pulls) pullHeaders)
+  flagsCommit <- mapM (\(i, m) -> changelogIsUp fmt gitLink i Commit Project m changelog) (zip (Text.split (== '\n') singles) singleHeaders)
   return $ and (flagsPR ++ flagsCommit)
   where
-    historyF = Text.pack . encodeString $ history
+    historyF = Text.pack . encodeString $ gitHistory
     pullExpr = "pull request #[0-9]+"
     singleExpr = "^[0-9a-f]+\\s[^(Merge)]"
 
-checkApiChangelogF :: WarningFormat -> (FilePath, Text) -> Text -> Text -> IO Bool
-checkApiChangelogF fmt (history, link) swaggerFile changelog = do
+checkApiChangelogF :: WarningFormat -> Git -> Text -> Text -> IO Bool
+checkApiChangelogF fmt Git{..} swaggerFile changelog = do
   printf ("Checking "%s%"\n") changelog
   
   commits <- strict $ inproc "egrep" ["-o", "^[0-9a-f]+", historyF] empty
@@ -45,7 +46,7 @@ checkApiChangelogF fmt (history, link) swaggerFile changelog = do
   flags <- mapM (eval historyF) (Text.split (== '\n') (Text.stripEnd commits))
   return $ and flags
   where
-    historyF = Text.pack . encodeString $ history
+    historyF = Text.pack . encodeString $ gitHistory
     eval hist commit = do
       linePresent <- fold
         (inproc "grep" [swaggerFile]
@@ -61,10 +62,10 @@ checkApiChangelogF fmt (history, link) swaggerFile changelog = do
           case Text.length pull of
             0 -> do
               message <- commitMessage Commit commit
-              changelogIsUp fmt link commit Commit API message changelog
+              changelogIsUp fmt gitLink commit Commit API message changelog
             _ -> do
               message <- commitMessage PR commit
-              changelogIsUp fmt link (Text.stripEnd pull) PR API message changelog
+              changelogIsUp fmt gitLink (Text.stripEnd pull) PR API message changelog
 
 processChecks :: WarningFormat -> Bool -> Bool -> Bool -> Maybe Text -> Text -> Text -> IO ()
 processChecks _ True _ _ _ _ _ = coloredPrint Yellow "WARNING: skipping checks for changelog.\n"

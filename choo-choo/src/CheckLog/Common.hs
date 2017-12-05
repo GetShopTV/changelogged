@@ -85,7 +85,7 @@ commitMessage mode commit = do
       Commit -> "5p"
 
 -- Extract latest history and origin link from git.
-gitData :: Bool -> IO (FilePath, Text)
+gitData :: Bool -> IO Git
 gitData start = do
   curDir <- pwd
   tmpFile <- with (mktempfile curDir "tmp_") return
@@ -96,4 +96,4 @@ gitData start = do
       inproc "grep" ["-v", "Merge branch"] (inproc "git" ["log", "--oneline", "--first-parent"] empty)
     else liftIO $ append tmpFile $
       inproc "grep" ["-v", "Merge branch"] (inproc "git" ["log", "--oneline", "--first-parent", Text.stripEnd latestGitTag <> "..HEAD"] empty)
-  return (tmpFile, link)
+  return $ Git tmpFile link

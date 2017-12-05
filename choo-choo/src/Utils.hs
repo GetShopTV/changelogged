@@ -7,6 +7,7 @@ import qualified Data.Text as T
 
 import Types
 
+-- I leave tuple here cause it's all functions for internal usage only.
 tuplify :: [Int] -> (Int, Int, Int, Int, Int)
 tuplify [] = (0,0,0,0,0)
 tuplify [a1] = (a1,0,0,0,0)
