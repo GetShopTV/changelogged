@@ -1,8 +1,8 @@
-name:                choo-choo
+name:                changelogged
 version:             0.1.0.0
 -- synopsis:
 -- description:
-homepage:            https://github.com/GetShopTV/choo-choo#readme
+homepage:            https://github.com/GetShopTV/changelogged#readme
 license:             BSD3
 license-file:        LICENSE
 author:              Vit Guzeev
@@ -37,26 +37,26 @@ library
   default-language:    Haskell2010
   default-extensions:  OverloadedStrings
 
-executable choo-choo
+executable changelogged
   hs-source-dirs:      app
   main-is:             Main.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
-                     , choo-choo
+                     , changelogged
                      , turtle
                      , ansi-terminal
   default-language:    Haskell2010
   default-extensions:  OverloadedStrings
 
-test-suite choo-choo-test
+test-suite changelogged-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
   build-depends:       base
-                     , choo-choo
+                     , changelogged
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
 
 source-repository head
   type:     git
-  location: https://github.com/githubuser/choo-choo
+  location: https://github.com/GetShopTV/changelogged
