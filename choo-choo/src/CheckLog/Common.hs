@@ -1,5 +1,6 @@
 module CheckLog.Common where
 
+import Prelude hiding (FilePath)
 import Turtle
 
 import Data.Text (Text)
@@ -84,16 +85,15 @@ commitMessage mode commit = do
       Commit -> "5p"
 
 -- Extract latest history and origin link from git.
-gitData :: Bool -> IO (Text, Text)
+gitData :: Bool -> IO (FilePath, Text)
 gitData start = do
-  tmpFile <- strict $ inproc "mktemp" [] empty
+  curDir <- pwd
+  tmpFile <- with (mktempfile curDir "tmp_") return
   latestGitTag <- strict $ inproc "git" ["describe", "--tags", "origin/master"] empty
   link <- getLink
   if start
-    then liftIO $ append (process tmpFile) $
+    then liftIO $ append tmpFile $
       inproc "grep" ["-v", "Merge branch"] (inproc "git" ["log", "--oneline", "--first-parent"] empty)
-    else liftIO $ append (process tmpFile) $
+    else liftIO $ append tmpFile $
       inproc "grep" ["-v", "Merge branch"] (inproc "git" ["log", "--oneline", "--first-parent", Text.stripEnd latestGitTag <> "..HEAD"] empty)
-  return (Text.stripEnd tmpFile, link)
-  where
-    process = fromText . Text.stripEnd
+  return (tmpFile, link)

@@ -4,45 +4,48 @@ import Turtle
 import Prelude hiding (FilePath, log)
 
 import Data.Text (Text)
-import qualified Data.Text as T
+import qualified Data.Text as Text
 
 import Control.Monad (when, unless)
 import qualified Control.Foldl as Fold
 
+import Filesystem.Path.CurrentOS (encodeString)
 import System.Console.ANSI (Color(..))
 
 import Types
 import CheckLog.Common
 
-checkChangelogF :: WarningFormat -> (Text, Text) -> Text -> IO Bool
+checkChangelogF :: WarningFormat -> (FilePath, Text) -> Text -> IO Bool
 checkChangelogF fmt (history, link) changelog = do
   printf ("Checking "%s%"\n") changelog
   
   pullCommits <- strict $
-    inproc "egrep" ["-o", "^[0-9a-f]+"] (inproc "egrep" [pullExpr, history] empty)
+    inproc "egrep" ["-o", "^[0-9a-f]+"] (inproc "egrep" [pullExpr, historyF] empty)
   pulls <- strict $
-    inproc "egrep" ["-o", "#[0-9]+"] (inproc "egrep" ["-o", pullExpr, history] empty)
+    inproc "egrep" ["-o", "#[0-9]+"] (inproc "egrep" ["-o", pullExpr, historyF] empty)
   singles <- strict $
-    inproc "egrep" ["-o", "^[0-9a-f]+"] (inproc "egrep" ["-o", singleExpr, history] empty)
+    inproc "egrep" ["-o", "^[0-9a-f]+"] (inproc "egrep" ["-o", singleExpr, historyF] empty)
   
-  pullHeaders <- mapM (commitMessage PR . T.stripEnd) (T.split (== '\n') pullCommits)
-  singleHeaders <- mapM (commitMessage Commit . T.stripEnd) (T.split (== '\n') singles)
-  flagsPR <- mapM (\(i,m) -> changelogIsUp fmt link i PR Project m changelog) (zip (T.split (== '\n') pulls) pullHeaders)
-  flagsCommit <- mapM (\(i, m) -> changelogIsUp fmt link i Commit Project m changelog) (zip (T.split (== '\n') singles) singleHeaders)
+  pullHeaders <- mapM (commitMessage PR . Text.stripEnd) (Text.split (== '\n') pullCommits)
+  singleHeaders <- mapM (commitMessage Commit . Text.stripEnd) (Text.split (== '\n') singles)
+  flagsPR <- mapM (\(i,m) -> changelogIsUp fmt link i PR Project m changelog) (zip (Text.split (== '\n') pulls) pullHeaders)
+  flagsCommit <- mapM (\(i, m) -> changelogIsUp fmt link i Commit Project m changelog) (zip (Text.split (== '\n') singles) singleHeaders)
   return $ and (flagsPR ++ flagsCommit)
   where
+    historyF = Text.pack . encodeString $ history
     pullExpr = "pull request #[0-9]+"
     singleExpr = "^[0-9a-f]+\\s[^(Merge)]"
 
-checkApiChangelogF :: WarningFormat -> (Text, Text) -> Text -> Text -> IO Bool
+checkApiChangelogF :: WarningFormat -> (FilePath, Text) -> Text -> Text -> IO Bool
 checkApiChangelogF fmt (history, link) swaggerFile changelog = do
   printf ("Checking "%s%"\n") changelog
   
-  commits <- strict $ inproc "egrep" ["-o", "^[0-9a-f]+", history] empty
+  commits <- strict $ inproc "egrep" ["-o", "^[0-9a-f]+", historyF] empty
   
-  flags <- mapM (eval history) (T.split (== '\n') (T.stripEnd commits))
+  flags <- mapM (eval historyF) (Text.split (== '\n') (Text.stripEnd commits))
   return $ and flags
   where
+    historyF = Text.pack . encodeString $ history
     eval hist commit = do
       linePresent <- fold
         (inproc "grep" [swaggerFile]
@@ -55,13 +58,13 @@ checkApiChangelogF fmt (history, link) swaggerFile changelog = do
             inproc "egrep" ["-o", "#[0-9]+"] $
               inproc "egrep" ["-o", "pull request #[0-9]+"] $
                 inproc "grep" [commit, hist] empty
-          case T.length pull of
+          case Text.length pull of
             0 -> do
               message <- commitMessage Commit commit
               changelogIsUp fmt link commit Commit API message changelog
             _ -> do
               message <- commitMessage PR commit
-              changelogIsUp fmt link (T.stripEnd pull) PR API message changelog
+              changelogIsUp fmt link (Text.stripEnd pull) PR API message changelog
 
 processChecks :: WarningFormat -> Bool -> Bool -> Bool -> Maybe Text -> Text -> Text -> IO ()
 processChecks _ True _ _ _ _ _ = coloredPrint Yellow "WARNING: skipping checks for changelog.\n"

@@ -33,6 +33,7 @@ library
                      , yaml
                      , foldl
                      , mtl
+                     , system-filepath
   default-language:    Haskell2010
   default-extensions:  OverloadedStrings
 
