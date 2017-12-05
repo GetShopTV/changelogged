@@ -1,6 +1,5 @@
+{-# LANGUAGE RecordWildCards #-}
 module Main where
-
-import qualified Data.Text as T
 
 import Turtle
 import Data.Maybe (fromMaybe, fromJust)
@@ -15,34 +14,35 @@ import Settings
 
 main :: IO ()
 main = do
-  (packages, packageLev, apiLev, ignoreChecks, fromStart, force) <- options welcome parser
+  Options{..} <- options welcome parser
 
   paths <- loadPaths
-  
-  processChecks ignoreChecks fromStart force (fst <$> swaggerFileName paths)
-                (fromMaybe "CHANGELOG.md" (changeLog paths))
-                (fromMaybe "API_CHANGELOG.md" (apiChangeLog paths))
 
-  newVersion <- case packageLev of
-    Nothing -> generateVersionByChangelog ignoreChecks (fromMaybe "CHANGELOG.md" (changeLog paths))
-    Just lev -> Just <$> generateVersion (levelFromText lev)
-  
-  newApiVersion <- case apiLev of
+  processChecks optFormat optNoCheck optFromBC optForce
+    (fst <$> swaggerFileName paths)
+    (fromMaybe "CHANGELOG.md" (changeLog paths))
+    (fromMaybe "API_CHANGELOG.md" (apiChangeLog paths))
+
+  newVersion <- case optPackagesLevel of
+    Nothing -> generateVersionByChangelog optNoCheck (fromMaybe "CHANGELOG.md" (changeLog paths))
+    Just lev -> Just <$> generateVersion lev
+
+  newApiVersion <- case optApiLevel of
     Nothing -> case swaggerFileName paths of
-      Just swagger -> generateAPIVersionByChangelog ignoreChecks swagger (fromMaybe "API_CHANGELOG.md" (apiChangeLog paths))
+      Just swagger -> generateAPIVersionByChangelog optNoCheck swagger (fromMaybe "API_CHANGELOG.md" (apiChangeLog paths))
       Nothing -> do
         coloredPrint Yellow "Cannot generate API version - no file with previous version specified in .paths (swaggerFileName)."
         return Nothing
     Just lev -> case swaggerFileName paths of
-        Just swagger -> Just <$> generateAPIVersion (levelFromText lev) swagger
+        Just swagger -> Just <$> generateAPIVersion lev swagger
         Nothing -> do
           coloredPrint Yellow "Cannot generate API version - no file with previous version specified in .paths (swaggerFileName)."
           return Nothing
-  
+
   case newVersion of
     Nothing -> return ()
-    Just version -> case packages of
-      Just project -> bumpPackages version (T.split (==' ') project)
+    Just version -> case optPackages of
+      Just packages -> bumpPackages version packages
       Nothing -> case defaultPackages paths of
         Just defaults -> do
           coloredPrint Green "Bump packages found in ./paths.\n"
@@ -64,4 +64,4 @@ main = do
         coloredPrint Yellow (ver <> "\n")
         printf ("Updating API version to "%s%"\n") ver
         mapM_ (bumpAPIPart ver) apiPathList
-    
+

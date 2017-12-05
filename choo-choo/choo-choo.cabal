@@ -27,6 +27,7 @@ library
 
   build-depends:       base >= 4.7 && < 5
                      , turtle
+                     , optparse-applicative
                      , ansi-terminal
                      , text
                      , yaml
@@ -42,7 +43,6 @@ executable choo-choo-exe
   build-depends:       base
                      , choo-choo
                      , turtle
-                     , text
                      , ansi-terminal
   default-language:    Haskell2010
   default-extensions:  OverloadedStrings
