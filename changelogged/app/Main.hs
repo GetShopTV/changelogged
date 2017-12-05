@@ -14,22 +14,22 @@ import Settings
 
 main :: IO ()
 main = do
-  Options{..} <- options welcome parser
+  opts@Options{..} <- options welcome parser
 
   paths <- loadPaths
 
-  processChecks optFormat optNoCheck optFromBC optForce
+  processChecks opts optNoCheck
     (fst <$> swaggerFileName paths)
     (fromMaybe "CHANGELOG.md" (changeLog paths))
     (fromMaybe "API_CHANGELOG.md" (apiChangeLog paths))
 
   newVersion <- case optPackagesLevel of
-    Nothing -> generateVersionByChangelog optNoCheck (fromMaybe "CHANGELOG.md" (changeLog paths))
+    Nothing -> generateVersionByChangelog optNoCheck (fromMaybe (fromText "CHANGELOG.md") (changeLog paths))
     Just lev -> Just <$> generateVersion lev
 
   newApiVersion <- case optApiLevel of
     Nothing -> case swaggerFileName paths of
-      Just swagger -> generateAPIVersionByChangelog optNoCheck swagger (fromMaybe "API_CHANGELOG.md" (apiChangeLog paths))
+      Just swagger -> generateAPIVersionByChangelog optNoCheck swagger (fromMaybe (fromText "API_CHANGELOG.md") (apiChangeLog paths))
       Nothing -> do
         coloredPrint Yellow "Cannot generate API version - no file with previous version specified in .paths (swaggerFileName)."
         return Nothing

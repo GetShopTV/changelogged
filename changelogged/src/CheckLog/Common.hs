@@ -8,13 +8,11 @@ import qualified Data.Text as Text
 
 import System.Console.ANSI
 
-import qualified Control.Foldl as Fold
-
 import Types
 
-changelogIsUp :: WarningFormat -> Text -> Text -> Mode -> Part -> Text -> Text -> IO Bool
+changelogIsUp :: WarningFormat -> Text -> Text -> Mode -> Part -> Text -> FilePath -> IO Bool
 changelogIsUp fmt link item mode _part message changelog = do
-  grepLen <- fold (inproc "grep" [item, changelog] empty) Fold.length
+  grepLen <- fold (grep (has (text item)) (input changelog)) countLines
   case grepLen of
     0 -> do
       case fmt of

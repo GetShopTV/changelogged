@@ -1,32 +1,44 @@
 module Bump.Common where
 
+import Prelude hiding (FilePath)
 import Turtle
-
-import qualified Control.Foldl as Fold
 
 import Data.Text (Text)
 
-bumpHS :: Text -> Text -> Text -> IO ()
+import Types
+
+bumpHS :: FilePath -> Text -> Text -> IO ()
 bumpHS file version var = do
-  _ <- strict $ inproc "sed" ["-i", "-r", hsExpr, file] empty
+  _ <- strict $ inproc "sed" ["-i", "-r", hsExpr] (input file)
   return ()
   where
     hsExpr = "s/(^" <> var <> " = )\\\"[0-9][0-9.]*\\\"/\\1\"" <> version <> "\"/"
     
-bumpJSON :: Text -> Text -> Text -> IO ()
+bumpJSON :: FilePath -> Text -> Text -> IO ()
 bumpJSON file version var = do
-  _ <- strict $ inproc "sed" ["-i", "-r", jsonExpr, file] empty
+  _ <- strict $ inproc "sed" ["-i", "-r", jsonExpr] (input file)
   return ()
   where
     jsonExpr = "s/(^\\s*\"" <> var <> "\": )\"[0-9][0-9.]*\"/\\1\"" <> version <> "\"/"
 
-getChangelogEntries :: Text -> IO (Int, Int, Int, Int)
+getChangelogEntries :: FilePath -> IO (Maybe Level)
 getChangelogEntries changelogFile = do
-  major <- fold (inproc "grep" ["Major changes"] unreleased) Fold.length
-  minor <- fold (inproc "grep" ["Minor changes"] unreleased) Fold.length
-  fixes <- fold (inproc "grep" ["Fixes"] unreleased) Fold.length
-  docs  <- fold (inproc "grep" ["Docs"] unreleased) Fold.length
-  return (major, minor, fixes, docs)
+  major <- fold (grep (has "Major changes") unreleased) countLines
+  minor <- fold (grep (has "Minor changes") unreleased) countLines
+  fixes <- fold (grep (has "Fixes") unreleased) countLines
+  docs  <- fold (grep (has "Docs") unreleased) countLines
+
+  return $ case major of
+    0 -> case minor of
+      0 -> case fixes of
+        0 -> case docs of
+          0 -> Nothing
+          _ -> Just Doc
+        _ -> Just Fix
+      _ -> Just Minor
+    _ -> Just Major
   where
     expr =  "/^[0-9]\\.[0-9]/q"
-    unreleased = inproc "sed" [expr, changelogFile] empty
+    -- correct would be `inproc "sed" [expr] (input changelogFile)`
+    -- I'm getting broken pipe possibly related to https://github.com/Gabriel439/Haskell-Turtle-Library/issues/102
+    unreleased = inproc "sed" [expr, showPath changelogFile] empty

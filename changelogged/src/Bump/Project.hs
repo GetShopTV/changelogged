@@ -12,13 +12,13 @@ import Types
 import Utils
 import Bump.Common
 
-bumpPart :: Text -> (Text, Text) -> IO ()
+bumpPart :: Text -> (FilePath, Variable) -> IO ()
 bumpPart version (file, var) = do
-    printf ("- Updating version for "%s%"\n") file
-    case snd (T.breakOnEnd "." file) of
-      "hs" -> bumpHS file version var
-      "json" -> bumpJSON file version var
-      _ -> coloredPrint Red ("ERROR: Didn't bump version in " <> file <> " : only .hs and .json supported, sorry.")
+    printf ("- Updating version for "%fp%"\n") file
+    case extension file of
+      Just "hs" -> bumpHS file version var
+      Just "json" -> bumpJSON file version var
+      _ -> coloredPrint Red ("ERROR: Didn't bump version in " <> showPath file <> " : only .hs and .json supported, sorry.")
 
 bumpPackage :: Text -> Text -> IO ()
 bumpPackage version packageName = do
@@ -48,21 +48,14 @@ generateVersion lev = do
   current <- currentVersion
   return $ bump (delimited current) lev
 
-generateVersionByChangelog :: Bool -> Text -> IO (Maybe Text)
+generateVersionByChangelog :: Bool -> FilePath -> IO (Maybe Text)
 generateVersionByChangelog True _ = do
   coloredPrint Yellow "You are bumping version with no explicit version modifiers and changelog checks. It can result in anything. Please retry.\n"
   return Nothing
 generateVersionByChangelog False changelogFile = do
-  (major, minor, fixes, docs) <- getChangelogEntries changelogFile
-
-  case major of
-    0 -> case minor of
-      0 -> case fixes of
-        0 -> case docs of
-          0 -> do
-            coloredPrint Yellow ("WARNING: keep old version since " <> changelogFile <> " apparently does not contain any new entries.\n")
-            return Nothing
-          _ -> Just <$> generateVersion Doc
-        _ -> Just <$> generateVersion Fix
-      _ -> Just <$> generateVersion Minor
-    _ -> Just <$> generateVersion Major
+  versionedChanges <- getChangelogEntries changelogFile
+  case versionedChanges of
+    Just lev -> Just <$> generateVersion lev
+    Nothing -> do
+      coloredPrint Yellow ("WARNING: keep old version since " <> showPath changelogFile <> " apparently does not contain any new entries.\n")
+      return Nothing

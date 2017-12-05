@@ -1,4 +1,4 @@
 resolver: lts-9.17
 
 ghc-options:
-  'changelogged': -Wall -Werror
+  'changelogged': -Wall -Werror -Wno-type-defaults -Wno-orphans

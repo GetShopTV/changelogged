@@ -7,11 +7,15 @@ import Data.List (intercalate)
 import Data.Text (Text)
 import qualified Data.Text as Text
 
+import Filesystem.Path.CurrentOS (encodeString)
+
 import System.Console.ANSI
 import Options.Applicative hiding (switch)
 
 import Prelude hiding (FilePath)
 import Turtle hiding (option)
+
+type Variable = Text
 
 data Part = API | Project
   
@@ -28,6 +32,9 @@ data Git = Git
 instance Show Mode where
   show PR = "Pull request"
   show Commit = "Single commit"
+
+showPath :: FilePath -> Text
+showPath = Text.pack . encodeString
 
 showText :: Show a => a -> Text
 showText = Text.pack . show
