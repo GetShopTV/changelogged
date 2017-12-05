@@ -11,14 +11,14 @@ import qualified Control.Foldl as Fold
 
 import Types
 
-changelogIsUp :: WarningFormat -> Text -> Mode -> Part -> Text -> Text -> IO Bool
-changelogIsUp fmt item mode _part message changelog = do
+changelogIsUp :: WarningFormat -> Text -> Text -> Mode -> Part -> Text -> Text -> IO Bool
+changelogIsUp fmt link item mode _part message changelog = do
   grepLen <- fold (inproc "grep" [item, changelog] empty) Fold.length
   case grepLen of
     0 -> do
       case fmt of
         WarnSimple  -> warnMissing item mode message
-        WarnSuggest -> suggestMissing item mode message
+        WarnSuggest -> suggestMissing link item mode message
       return False
     _ -> return True
 
@@ -34,17 +34,24 @@ warnMissing item mode message = do
   coloredPrint Cyan item
   printf (" is missing in changelog: "%s%".\n") message
 
+getLink :: IO Text
+getLink = do
+  raw <- strict $ inproc "git" ["remote", "get-url", "origin"] empty
+  return $ case Text.stripSuffix ".git\n" raw of
+    Just link -> link
+    Nothing -> Text.stripEnd raw
+
 -- |
 -- >>> prLink "#13"
 -- "https://github.com/GetShopTV/getshoptv/pull/13"
-prLink :: Text -> Text
-prLink num = "https://github.com/GetShopTV/getshoptv/pull/" <> Text.drop 1 num
+prLink :: Text -> Text -> Text
+prLink link num = link <> "/pull/" <> Text.drop 1 num
 
 -- |
 -- >>> commitLink "9e14840"
 -- "https://github.com/GetShopTV/getshoptv/commit/9e14840"
-commitLink :: Text -> Text
-commitLink sha = "https://github.com/GetShopTV/getshoptv/commit/" <> sha
+commitLink :: Text -> Text -> Text
+commitLink link sha = link <> "/commit/" <> sha
 
 -- |
 -- >>> suggestMissing "#13" PR "Add new stuff"
@@ -52,16 +59,16 @@ commitLink sha = "https://github.com/GetShopTV/getshoptv/commit/" <> sha
 --
 -- >>> suggestMissing "9e14840" Commit "Add new stuff"
 -- - Add new stuff (see [`9e14840`](https://github.com/GetShopTV/getshoptv/commit/9e14840));
-suggestMissing :: Text -> Mode -> Text -> IO ()
-suggestMissing item mode message = do
+suggestMissing :: Text -> Text -> Mode -> Text -> IO ()
+suggestMissing link item mode message = do
   printf ("- "%s%" (see ") message
   case mode of
     PR -> do
       coloredPrint Cyan ("[" <> item <> "]")
-      printf ("("%s%")") (prLink item)
+      printf ("("%s%")") (prLink link item)
     Commit -> do
       coloredPrint Cyan ("[`" <> item <> "`]")
-      printf ("("%s%")") (commitLink item)
+      printf ("("%s%")") (commitLink link item)
   printf ");\n"
 
 commitMessage :: Mode -> Text -> IO Text
@@ -76,15 +83,17 @@ commitMessage mode commit = do
       PR -> "8p"
       Commit -> "5p"
 
-gitLatestHistory :: Bool -> IO Text
-gitLatestHistory start = do
+-- Extract latest history and origin link from git.
+gitData :: Bool -> IO (Text, Text)
+gitData start = do
   tmpFile <- strict $ inproc "mktemp" [] empty
   latestGitTag <- strict $ inproc "git" ["describe", "--tags", "origin/master"] empty
+  link <- getLink
   if start
     then liftIO $ append (process tmpFile) $
       inproc "grep" ["-v", "Merge branch"] (inproc "git" ["log", "--oneline", "--first-parent"] empty)
     else liftIO $ append (process tmpFile) $
       inproc "grep" ["-v", "Merge branch"] (inproc "git" ["log", "--oneline", "--first-parent", Text.stripEnd latestGitTag <> "..HEAD"] empty)
-  return $ Text.stripEnd tmpFile
+  return (Text.stripEnd tmpFile, link)
   where
     process = fromText . Text.stripEnd

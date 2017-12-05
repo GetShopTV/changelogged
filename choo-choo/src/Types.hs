@@ -52,7 +52,7 @@ availableWarningFormatsStr
 readWarningFormat :: ReadM WarningFormat
 readWarningFormat = eitherReader (r . map toLower)
   where
-    r "simple"  = Right WarnSuggest
+    r "simple"  = Right WarnSimple
     r "suggest" = Right WarnSuggest
     r fmt = Left $
          "Unknown warning format: " <> show fmt <> ".\n"

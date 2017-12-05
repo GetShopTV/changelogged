@@ -14,10 +14,9 @@ import System.Console.ANSI (Color(..))
 import Types
 import CheckLog.Common
 
-checkChangelogF :: WarningFormat -> Bool -> Text -> IO Bool
-checkChangelogF fmt start changelog = do
+checkChangelogF :: WarningFormat -> (Text, Text) -> Text -> IO Bool
+checkChangelogF fmt (history, link) changelog = do
   printf ("Checking "%s%"\n") changelog
-  history <- gitLatestHistory start
   
   pullCommits <- strict $
     inproc "egrep" ["-o", "^[0-9a-f]+"] (inproc "egrep" [pullExpr, history] empty)
@@ -28,19 +27,17 @@ checkChangelogF fmt start changelog = do
   
   pullHeaders <- mapM (commitMessage PR . T.stripEnd) (T.split (== '\n') pullCommits)
   singleHeaders <- mapM (commitMessage Commit . T.stripEnd) (T.split (== '\n') singles)
-  flagsPR <- mapM (\(i,m) -> changelogIsUp fmt i PR Project m changelog) (zip (T.split (== '\n') pulls) pullHeaders)
-  flagsCommit <- mapM (\(i, m) -> changelogIsUp fmt i Commit Project m changelog) (zip (T.split (== '\n') singles) singleHeaders)
+  flagsPR <- mapM (\(i,m) -> changelogIsUp fmt link i PR Project m changelog) (zip (T.split (== '\n') pulls) pullHeaders)
+  flagsCommit <- mapM (\(i, m) -> changelogIsUp fmt link i Commit Project m changelog) (zip (T.split (== '\n') singles) singleHeaders)
   return $ and (flagsPR ++ flagsCommit)
   where
     pullExpr = "pull request #[0-9]+"
     singleExpr = "^[0-9a-f]+\\s[^(Merge)]"
 
-checkApiChangelogF :: WarningFormat -> Bool -> Text -> Text -> IO Bool
-checkApiChangelogF fmt start swaggerFile changelog = do
+checkApiChangelogF :: WarningFormat -> (Text, Text) -> Text -> Text -> IO Bool
+checkApiChangelogF fmt (history, link) swaggerFile changelog = do
   printf ("Checking "%s%"\n") changelog
   
-  history <- gitLatestHistory start
-
   commits <- strict $ inproc "egrep" ["-o", "^[0-9a-f]+", history] empty
   
   flags <- mapM (eval history) (T.split (== '\n') (T.stripEnd commits))
@@ -61,16 +58,17 @@ checkApiChangelogF fmt start swaggerFile changelog = do
           case T.length pull of
             0 -> do
               message <- commitMessage Commit commit
-              changelogIsUp fmt commit Commit API message changelog
+              changelogIsUp fmt link commit Commit API message changelog
             _ -> do
               message <- commitMessage PR commit
-              changelogIsUp fmt (T.stripEnd pull) PR API message changelog
+              changelogIsUp fmt link (T.stripEnd pull) PR API message changelog
 
 processChecks :: WarningFormat -> Bool -> Bool -> Bool -> Maybe Text -> Text -> Text -> IO ()
 processChecks _ True _ _ _ _ _ = coloredPrint Yellow "WARNING: skipping checks for changelog.\n"
 processChecks fmt False start force swagger changelog apiChangelog = do
   when start $ echo "Checking changelogs from start of project"
-  upToDate <- checkChangelogF fmt start changelog
+  git <- gitData start
+  upToDate <- checkChangelogF fmt git changelog
   if upToDate
     then coloredPrint Green (changelog <> " is up to date.\n")
     else coloredPrint Yellow ("WARNING: " <> changelog <> " is out of date.\n")
@@ -78,7 +76,7 @@ processChecks fmt False start force swagger changelog apiChangelog = do
     Nothing -> do
       coloredPrint Yellow "Do not check API changelog, no swagger file added to ./paths.\n"
       return True
-    Just file -> checkApiChangelogF fmt start file apiChangelog
+    Just file -> checkApiChangelogF fmt git file apiChangelog
   if apiUpToDate
     then coloredPrint Green (apiChangelog<>" is up to date.\n")
     else coloredPrint Yellow ("WARNING: " <> apiChangelog <> " is out of date.\n")
