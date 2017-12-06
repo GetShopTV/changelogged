@@ -31,6 +31,7 @@ bumpPackage version packageName = do
 bumpPackages :: Text -> [Text] -> IO ()
 bumpPackages version packages = do
   curVersion <- currentVersion
+
   printf ("Version: "%s%" -> ") curVersion
   coloredPrint Yellow (version <> "\n")
 
