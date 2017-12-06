@@ -83,6 +83,7 @@ data Options = Options
   , optApiLevel      :: Maybe Level
   , optFormat        :: WarningFormat
   , optNoCheck       :: Bool
+  , optNoBump        :: Bool
   , optFromBC        :: Bool
   , optForce         :: Bool
   }
@@ -119,6 +120,7 @@ parser = Options
   <*> optional apiLevel
   <*> warningFormat
   <*> switch  "no-check"  'c' "Do not check changelogs."
+  <*> switch  "no-bump"  'C' "Do not bump versions. Only check changelogs."
   <*> switch  "from-bc"  'e' "Check changelogs from start of project."
   <*> switch  "force"  'f' "Bump version even if changelogs are outdated. Cannot be mixed with -c."
   where

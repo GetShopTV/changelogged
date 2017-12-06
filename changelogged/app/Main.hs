@@ -23,6 +23,8 @@ main = do
     (fromMaybe "CHANGELOG.md" (changeLog paths))
     (fromMaybe "API_CHANGELOG.md" (apiChangeLog paths))
 
+  when optNoBump $ exit ExitSuccess
+
   newVersion <- case optPackagesLevel of
     Nothing -> generateVersionByChangelog optNoCheck (fromMaybe "CHANGELOG.md" (changeLog paths))
     Just lev -> Just <$> generateVersion lev
