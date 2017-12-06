@@ -18,20 +18,20 @@ main = do
 
   paths <- loadPaths
 
-  processChecks opts optNoCheck
-    (fst <$> swaggerFileName paths)
-    (fromMaybe "CHANGELOG.md" (changeLog paths))
-    (fromMaybe "API_CHANGELOG.md" (apiChangeLog paths))
+  touch (chLog paths)
+  touch (apiChLog paths)
+
+  processChecks opts optNoCheck (fst <$> swaggerFileName paths) (chLog paths) (apiChLog paths)
 
   when optNoBump $ exit ExitSuccess
 
   newVersion <- case optPackagesLevel of
-    Nothing -> generateVersionByChangelog optNoCheck (fromMaybe "CHANGELOG.md" (changeLog paths))
+    Nothing -> generateVersionByChangelog optNoCheck (chLog paths)
     Just lev -> Just <$> generateVersion lev
 
   newApiVersion <- case optApiLevel of
     Nothing -> case swaggerFileName paths of
-      Just swagger -> generateAPIVersionByChangelog optNoCheck swagger (fromMaybe "API_CHANGELOG.md" (apiChangeLog paths))
+      Just swagger -> generateAPIVersionByChangelog optNoCheck swagger (apiChLog paths)
       Nothing -> do
         coloredPrint Yellow "Cannot generate API version - no file with previous version specified in .paths (swaggerFileName).\n"
         return Nothing
@@ -66,4 +66,6 @@ main = do
         coloredPrint Yellow (ver <> "\n")
         printf ("Updating API version to "%s%"\n") ver
         mapM_ (bumpAPIPart ver) apiPathList
-
+  where
+    chLog cfg = fromMaybe "CHANGELOG.md" (changeLog cfg)
+    apiChLog cfg = fromMaybe "API_CHANGELOG.md" (apiChangeLog cfg)

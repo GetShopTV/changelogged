@@ -12,6 +12,8 @@ import Filesystem.Path.CurrentOS (encodeString)
 import System.Console.ANSI
 import Options.Applicative hiding (switch)
 
+import Data.Either.Combinators (fromRight)
+
 import Prelude hiding (FilePath)
 import Turtle hiding (option)
 
@@ -35,7 +37,7 @@ instance Show Mode where
 
 latestGitTag :: Text -> IO Text
 latestGitTag repl = do
-  ver <- strict $ inproc "cut" ["-c", "2-"] (inproc "git" ["describe", "--tags", "origin/master"] empty)
+  ver <- strict $ inproc "cut" ["-c", "2-"] (fromRight "" <$> inprocWithErr "git" ["describe", "--tags", "origin/master"] empty)
   return $ case ver of
     "" -> repl
     _ -> Text.stripEnd ver
