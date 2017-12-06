@@ -4,7 +4,6 @@ import Turtle
 import Prelude hiding (FilePath, log)
 
 import Data.Text (Text)
-import qualified Data.Text as T
 
 import System.Console.ANSI (Color(..))
 
@@ -39,11 +38,7 @@ bumpPackages version packages = do
   mapM_ (bumpPackage version) packages
 
 currentVersion :: IO Text
-currentVersion = do
-  ver <- strict $ inproc "cut" ["-c", "2-"] (inproc "git" ["describe", "--tags", "origin/master"] empty)
-  return $ case ver of
-    "" -> "0.0.0.0.0"
-    _ -> T.stripEnd ver
+currentVersion = latestGitTag "0.0.0.0.0"
 
 generateVersion :: Level -> IO Text
 generateVersion lev = do

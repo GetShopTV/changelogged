@@ -73,9 +73,8 @@ suggestMissing link item mode message = do
 commitMessage :: Mode -> Text -> IO Text
 commitMessage _ "" = return ""
 commitMessage mode commit = do
-  raw <- strict $ inproc "grep" ["^\\s"] $
-                    inproc "sed" ["-n", sedString] $
-                      inproc "git" ["show", commit] empty
+  raw <- strict $ inproc "sed" ["-n", sedString] $
+                    inproc "git" ["show", commit] empty
   return $ Text.stripEnd $ Text.stripStart raw
   where
     sedString = case mode of
@@ -87,11 +86,11 @@ gitData :: Bool -> IO Git
 gitData start = do
   curDir <- pwd
   tmpFile <- with (mktempfile curDir "tmp_") return
-  latestGitTag <- strict $ inproc "git" ["describe", "--tags", "origin/master"] empty
+  latestTag <- latestGitTag ""
   link <- getLink
-  if start
+  if start || (latestTag == "")
     then liftIO $ append tmpFile $
       inproc "grep" ["-v", "Merge branch"] (inproc "git" ["log", "--oneline", "--first-parent"] empty)
     else liftIO $ append tmpFile $
-      inproc "grep" ["-v", "Merge branch"] (inproc "git" ["log", "--oneline", "--first-parent", Text.stripEnd latestGitTag <> "..HEAD"] empty)
+      inproc "grep" ["-v", "Merge branch"] (inproc "git" ["log", "--oneline", "--first-parent", Text.stripEnd latestTag <> "..HEAD"] empty)
   return $ Git tmpFile link

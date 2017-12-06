@@ -23,10 +23,10 @@ bumpJSON file version var = do
 
 getChangelogEntries :: FilePath -> IO (Maybe Level)
 getChangelogEntries changelogFile = do
-  major <- fold (grep (has "Major changes") unreleased) countLines
-  minor <- fold (grep (has "Minor changes") unreleased) countLines
-  fixes <- fold (grep (has "Fixes") unreleased) countLines
-  docs  <- fold (grep (has "Docs") unreleased) countLines
+  major <- fold (grep (prefix "* Major") unreleased) countLines
+  minor <- fold (grep (prefix "* Minor") unreleased) countLines
+  fixes <- fold (grep (prefix "* Fix") unreleased) countLines
+  docs  <- fold (grep (prefix "* Doc") unreleased) countLines
 
   return $ case major of
     0 -> case minor of

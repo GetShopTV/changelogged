@@ -17,7 +17,6 @@ checkChangelogF :: WarningFormat -> Git -> FilePath -> IO Bool
 checkChangelogF fmt Git{..} changelog = do
   printf ("Checking "%fp%"\n") changelog
 
-  stdout $ inproc "egrep" ["-o", "^[0-9a-f]+"] (inproc "egrep" [pullExpr, showPath gitHistory] empty)
   pullCommits <- strict $
     inproc "egrep" ["-o", "^[0-9a-f]+"] (inproc "egrep" [pullExpr] (input gitHistory))
   pulls <- strict $

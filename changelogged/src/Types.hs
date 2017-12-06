@@ -33,6 +33,13 @@ instance Show Mode where
   show PR = "Pull request"
   show Commit = "Single commit"
 
+latestGitTag :: Text -> IO Text
+latestGitTag repl = do
+  ver <- strict $ inproc "cut" ["-c", "2-"] (inproc "git" ["describe", "--tags", "origin/master"] empty)
+  return $ case ver of
+    "" -> repl
+    _ -> Text.stripEnd ver
+
 showPath :: FilePath -> Text
 showPath = Text.pack . encodeString
 
