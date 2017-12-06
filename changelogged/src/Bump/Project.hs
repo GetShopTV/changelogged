@@ -41,7 +41,9 @@ bumpPackages version packages = do
 currentVersion :: IO Text
 currentVersion = do
   ver <- strict $ inproc "cut" ["-c", "2-"] (inproc "git" ["describe", "--tags", "origin/master"] empty)
-  return $ T.stripEnd ver
+  return $ case ver of
+    "" -> "0.0.0.0.0"
+    _ -> T.stripEnd ver
 
 generateVersion :: Level -> IO Text
 generateVersion lev = do

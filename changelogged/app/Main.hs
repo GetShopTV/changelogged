@@ -24,19 +24,19 @@ main = do
     (fromMaybe "API_CHANGELOG.md" (apiChangeLog paths))
 
   newVersion <- case optPackagesLevel of
-    Nothing -> generateVersionByChangelog optNoCheck (fromMaybe (fromText "CHANGELOG.md") (changeLog paths))
+    Nothing -> generateVersionByChangelog optNoCheck (fromMaybe "CHANGELOG.md" (changeLog paths))
     Just lev -> Just <$> generateVersion lev
 
   newApiVersion <- case optApiLevel of
     Nothing -> case swaggerFileName paths of
-      Just swagger -> generateAPIVersionByChangelog optNoCheck swagger (fromMaybe (fromText "API_CHANGELOG.md") (apiChangeLog paths))
+      Just swagger -> generateAPIVersionByChangelog optNoCheck swagger (fromMaybe "API_CHANGELOG.md" (apiChangeLog paths))
       Nothing -> do
-        coloredPrint Yellow "Cannot generate API version - no file with previous version specified in .paths (swaggerFileName)."
+        coloredPrint Yellow "Cannot generate API version - no file with previous version specified in .paths (swaggerFileName).\n"
         return Nothing
     Just lev -> case swaggerFileName paths of
         Just swagger -> Just <$> generateAPIVersion lev swagger
         Nothing -> do
-          coloredPrint Yellow "Cannot generate API version - no file with previous version specified in .paths (swaggerFileName)."
+          coloredPrint Yellow "Cannot generate API version - no file with previous version specified in .paths (swaggerFileName).\n"
           return Nothing
 
   case newVersion of
