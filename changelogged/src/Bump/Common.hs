@@ -6,6 +6,7 @@ import Turtle
 import Data.Text (Text)
 
 import Types
+import Pure
 
 bumpHS :: FilePath -> Text -> Text -> IO ()
 bumpHS file version var = do

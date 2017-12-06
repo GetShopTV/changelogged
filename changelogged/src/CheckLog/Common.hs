@@ -9,6 +9,8 @@ import qualified Data.Text as Text
 import System.Console.ANSI
 
 import Types
+import Utils
+import Pure
 
 changelogIsUp :: WarningFormat -> Text -> Text -> Mode -> Part -> Text -> FilePath -> IO Bool
 changelogIsUp fmt link item mode _part message changelog = do

@@ -10,6 +10,7 @@ import System.Console.ANSI (Color(..))
 
 import Types
 import Utils
+import Pure
 import Bump.Common
 
 currentAPIVersion :: (FilePath, Variable) -> IO Text

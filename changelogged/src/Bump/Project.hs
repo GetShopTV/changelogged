@@ -8,6 +8,8 @@ import Data.Text (Text)
 import System.Console.ANSI (Color(..))
 
 import Types
+import Pure
+import Git
 import Utils
 import Bump.Common
 

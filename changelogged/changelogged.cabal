@@ -22,8 +22,11 @@ library
     Bump.API
     Bump.Project
     Utils
+    Pure
     Types
+    Git
     Settings
+    Options
 
   build-depends:       base >= 4.7 && < 5
                      , turtle
@@ -33,7 +36,6 @@ library
                      , yaml
                      , mtl
                      , system-filepath
-                     , either
                      , foldl
   default-language:    Haskell2010
   default-extensions:  OverloadedStrings

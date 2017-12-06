@@ -12,6 +12,8 @@ import Control.Monad (when)
 import System.Console.ANSI (Color(..))
 
 import Types
+import Utils
+import Pure
 import CheckLog.Common
 
 checkChangelogF :: WarningFormat -> Git -> FilePath -> IO Bool
