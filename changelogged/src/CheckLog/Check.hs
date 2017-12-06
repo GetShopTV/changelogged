@@ -6,7 +6,7 @@ import Prelude hiding (FilePath, log)
 
 import qualified Data.Text as Text
 
-import Control.Monad (when, unless)
+import Control.Monad (when)
 
 import System.Console.ANSI (Color(..))
 
@@ -62,15 +62,30 @@ checkApiChangelogF fmt Git{..} swaggerFile changelog = do
               message <- commitMessage PR commit
               changelogIsUp fmt gitLink (Text.stripEnd pull) PR API message changelog
 
-processChecks :: Options -> Bool -> Maybe FilePath -> FilePath -> FilePath -> IO ()
-processChecks _ True _ _ _ = coloredPrint Yellow "WARNING: skipping checks for changelog.\n"
-processChecks Options{..} False swagger changelog apiChangelog = do
-  when optFromBC $ echo "Checking changelogs from start of project"
-  git <- gitData optFromBC
+checkChangelogWrap :: Options -> Git -> Bool -> FilePath -> IO Bool
+checkChangelogWrap _ _ True _ = do
+  coloredPrint Yellow "WARNING: skipping checks for changelog.\n"
+  return True
+checkChangelogWrap Options{..} git False changelog = do
+  when optFromBC $ echo "Checking project changelog from start of project"
   upToDate <- checkChangelogF optFormat git changelog
   if upToDate
     then coloredPrint Green (showPath changelog <> " is up to date.\n")
     else coloredPrint Yellow ("WARNING: " <> showPath changelog <> " is out of date.\n")
+  if upToDate
+    then return True
+    else do
+      coloredPrint Red "ERROR: project changelog is not up-to-date. Use -c or --no-check options if you want to ignore changelog checks and -f to bump anyway.\n"
+      return $ if optForce
+        then True
+        else False
+
+checkAPIChangelogWrap :: Options -> Git -> Bool -> Maybe FilePath -> FilePath -> IO Bool
+checkAPIChangelogWrap _ _ True _ _ = do
+  coloredPrint Yellow "WARNING: skipping checks for API changelog.\n"
+  return True
+checkAPIChangelogWrap Options{..} git False swagger apiChangelog = do
+  when optFromBC $ echo "Checking API changelog from start of project"
   apiUpToDate <- case swagger of
     Nothing -> do
       coloredPrint Yellow "Do not check API changelog, no swagger file added to ./paths.\n"
@@ -79,7 +94,10 @@ processChecks Options{..} False swagger changelog apiChangelog = do
   if apiUpToDate
     then coloredPrint Green (showPath apiChangelog <> " is up to date.\n")
     else coloredPrint Yellow ("WARNING: " <> showPath apiChangelog <> " is out of date.\n")
-  sh $ rm $ gitHistory git
-  unless (apiUpToDate && upToDate) $ do
-      coloredPrint Red "ERROR: some changelogs are not up-to-date. Use -c or --no-check options if you want to ignore changelog checks and -f to bump anyway.\n"
-      unless optForce $ exit ExitSuccess
+  if apiUpToDate
+    then return True
+    else do
+      coloredPrint Red "ERROR: API changelog is not up-to-date. Use -c or --no-check options if you want to ignore changelog checks and -f to bump anyway.\n"
+      return $ if optForce
+        then True
+        else False

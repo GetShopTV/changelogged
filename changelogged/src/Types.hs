@@ -84,6 +84,7 @@ data Options = Options
   , optPackagesLevel :: Maybe Level
   , optApiLevel      :: Maybe Level
   , optFormat        :: WarningFormat
+  , optApiExists     :: Bool
   , optNoCheck       :: Bool
   , optNoBump        :: Bool
   , optFromBC        :: Bool
@@ -121,6 +122,7 @@ parser = Options
   <*> optional packagesLevel
   <*> optional apiLevel
   <*> warningFormat
+  <*> switch  "with-api"  'W' "Assume there is API and work with it also."
   <*> switch  "no-check"  'c' "Do not check changelogs."
   <*> switch  "no-bump"  'C' "Do not bump versions. Only check changelogs."
   <*> switch  "from-bc"  'e' "Check changelogs from start of project."
@@ -149,3 +151,24 @@ welcome = Description $ "---\n"
         <> "You can specify these levels of changes: app, major, minor, fix, doc.\n"
         <> "It can infer version from changelog.\n"
         <> "But it will refuse to do it if it's not sure changelogs are up to date."
+
+getLink :: IO Text
+getLink = do
+  raw <- strict $ inproc "git" ["remote", "get-url", "origin"] empty
+  return $ case Text.stripSuffix ".git\n" raw of
+    Just link -> link
+    Nothing -> Text.stripEnd raw
+
+-- Extract latest history and origin link from git.
+gitData :: Bool -> IO Git
+gitData start = do
+  curDir <- pwd
+  tmpFile <- with (mktempfile curDir "tmp_") return
+  latestTag <- latestGitTag ""
+  link <- getLink
+  if start || (latestTag == "")
+    then liftIO $ append tmpFile $
+      inproc "grep" ["-v", "Merge branch"] (inproc "git" ["log", "--oneline", "--first-parent"] empty)
+    else liftIO $ append tmpFile $
+      inproc "grep" ["-v", "Merge branch"] (inproc "git" ["log", "--oneline", "--first-parent", Text.stripEnd latestTag <> "..HEAD"] empty)
+  return $ Git tmpFile link
