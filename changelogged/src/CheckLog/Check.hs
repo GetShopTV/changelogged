@@ -6,6 +6,7 @@ import Prelude hiding (FilePath, log)
 
 import qualified Data.Text as Text
 
+import qualified Control.Foldl as Fold
 import Control.Monad (when)
 
 import System.Console.ANSI (Color(..))
@@ -17,17 +18,17 @@ checkChangelogF :: WarningFormat -> Git -> FilePath -> IO Bool
 checkChangelogF fmt Git{..} changelog = do
   printf ("Checking "%fp%"\n") changelog
 
-  pullCommits <- strict $
-    inproc "egrep" ["-o", "^[0-9a-f]+"] (inproc "egrep" [pullExpr] (input gitHistory))
-  pulls <- strict $
-    inproc "egrep" ["-o", "#[0-9]+"] (inproc "egrep" ["-o", pullExpr] (input gitHistory))
-  singles <- strict $
-    inproc "egrep" ["-o", "^[0-9a-f]+"] (inproc "egrep" ["-o", singleExpr] (input gitHistory))
+  pullCommits <- fmap lineToText <$> fold
+    (inproc "egrep" ["-o", "^[0-9a-f]+"] (inproc "egrep" [pullExpr] (input gitHistory))) Fold.list
+  pulls <- fmap lineToText <$> fold
+    (inproc "egrep" ["-o", "#[0-9]+"] (inproc "egrep" ["-o", pullExpr] (input gitHistory))) Fold.list
+  singles <- fmap lineToText <$> fold
+    (inproc "egrep" ["-o", "^[0-9a-f]+"] (inproc "egrep" ["-o", singleExpr] (input gitHistory))) Fold.list
   
-  pullHeaders <- mapM (commitMessage PR . Text.stripEnd) (Text.split (== '\n') pullCommits)
-  singleHeaders <- mapM (commitMessage Commit . Text.stripEnd) (Text.split (== '\n') singles)
-  flagsPR <- mapM (\(i,m) -> changelogIsUp fmt gitLink i PR Project m changelog) (zip (Text.split (== '\n') pulls) pullHeaders)
-  flagsCommit <- mapM (\(i, m) -> changelogIsUp fmt gitLink i Commit Project m changelog) (zip (Text.split (== '\n') singles) singleHeaders)
+  pullHeaders <- mapM (commitMessage PR) pullCommits
+  singleHeaders <- mapM (commitMessage Commit) singles
+  flagsPR <- mapM (\(i,m) -> changelogIsUp fmt gitLink i PR Project m changelog) (zip pulls pullHeaders)
+  flagsCommit <- mapM (\(i, m) -> changelogIsUp fmt gitLink i Commit Project m changelog) (zip singles singleHeaders)
   return $ and (flagsPR ++ flagsCommit)
   where
     pullExpr = "pull request #[0-9]+"
@@ -37,9 +38,9 @@ checkApiChangelogF :: WarningFormat -> Git -> FilePath -> FilePath -> IO Bool
 checkApiChangelogF fmt Git{..} swaggerFile changelog = do
   printf ("Checking "%fp%"\n") changelog
   
-  commits <- strict $ inproc "egrep" ["-o", "^[0-9a-f]+"] (input gitHistory)
+  commits <- fmap lineToText <$> fold (inproc "egrep" ["-o", "^[0-9a-f]+"] (input gitHistory)) Fold.list
   
-  flags <- mapM (eval gitHistory) (Text.split (== '\n') (Text.stripEnd commits))
+  flags <- mapM (eval gitHistory) commits
   return $ and flags
   where
     eval hist commit = do

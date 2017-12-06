@@ -9,14 +9,14 @@ import Types
 
 bumpHS :: FilePath -> Text -> Text -> IO ()
 bumpHS file version var = do
-  _ <- strict $ inproc "sed" ["-i", "-r", hsExpr] (input file)
+  sh $ inproc "sed" ["-i", "-r", hsExpr] (input file)
   return ()
   where
     hsExpr = "s/(^" <> var <> " = )\\\"[0-9][0-9.]*\\\"/\\1\"" <> version <> "\"/"
     
 bumpJSON :: FilePath -> Text -> Text -> IO ()
 bumpJSON file version var = do
-  _ <- strict $ inproc "sed" ["-i", "-r", jsonExpr] (input file)
+  sh $ inproc "sed" ["-i", "-r", jsonExpr] (input file)
   return ()
   where
     jsonExpr = "s/(^\\s*\"" <> var <> "\": )\"[0-9][0-9.]*\"/\\1\"" <> version <> "\"/"

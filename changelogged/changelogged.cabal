@@ -1,5 +1,5 @@
 name:                changelogged
-version:             0.1.0.0
+version:             0.1.0
 -- synopsis:
 -- description:
 homepage:            https://github.com/GetShopTV/changelogged#readme
@@ -34,6 +34,7 @@ library
                      , mtl
                      , system-filepath
                      , either
+                     , foldl
   default-language:    Haskell2010
   default-extensions:  OverloadedStrings
 

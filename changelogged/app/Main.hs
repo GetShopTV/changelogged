@@ -25,9 +25,7 @@ main = do
 
   bump <- checkChangelogWrap opts git optNoCheck (chLog paths)
 
-  when optNoBump $ exit ExitSuccess
-
-  when bump $ do
+  when (bump && not optNoBump) $ do
     newVersion <- case optPackagesLevel of
       Nothing -> generateVersionByChangelog optNoCheck (chLog paths)
       Just lev -> Just <$> generateVersion lev
@@ -51,9 +49,7 @@ main = do
 
     bumpA <- checkAPIChangelogWrap opts git optNoCheck (fst <$> swaggerFileName paths) (apiChLog paths)
 
-    when optNoBump $ exit ExitSuccess
-
-    when bumpA $ do
+    when (bumpA && not optNoBump) $ do
       newApiVersion <- case optApiLevel of
         Nothing -> case swaggerFileName paths of
           Just swagger -> generateAPIVersionByChangelog optNoCheck swagger (apiChLog paths)
