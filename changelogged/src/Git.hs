@@ -26,7 +26,7 @@ gitData :: Bool -> IO Git
 gitData start = do
   curDir <- pwd
   tmpFile <- with (mktempfile curDir "tmp_") return
-  latestTag <- latestGitTag ""
+  latestTag <- ("v" <> ) <$> latestGitTag ""
   link <- getLink
   if start || (latestTag == "")
     then liftIO $ append tmpFile $
