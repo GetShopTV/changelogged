@@ -25,7 +25,7 @@ checkChangelogF fmt Git{..} changelog = do
   pulls <- fmap lineToText <$> fold
     (inproc "egrep" ["-o", "#[0-9]+"] (inproc "egrep" ["-o", pullExpr] (input gitHistory))) Fold.list
   singles <- fmap lineToText <$> fold
-    (inproc "egrep" ["-o", "^[0-9a-f]+"] (inproc "egrep" ["-o", singleExpr] (input gitHistory))) Fold.list
+    (inproc "egrep" ["-o", "^[0-9a-f]+"] (inproc "grep" ["-o", "-P", singleExpr] (input gitHistory))) Fold.list
   
   pullHeaders <- mapM (commitMessage PR) pullCommits
   singleHeaders <- mapM (commitMessage Commit) singles
@@ -34,7 +34,7 @@ checkChangelogF fmt Git{..} changelog = do
   return $ and (flagsPR ++ flagsCommit)
   where
     pullExpr = "pull request #[0-9]+"
-    singleExpr = "^[0-9a-f]+\\s[^(Merge)]"
+    singleExpr = "^[0-9a-f]+\\s(?!.*Merge)"
 
 checkApiChangelogF :: WarningFormat -> Git -> FilePath -> FilePath -> IO Bool
 checkApiChangelogF fmt Git{..} swaggerFile changelog = do
