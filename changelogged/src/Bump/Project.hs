@@ -3,15 +3,12 @@ module Bump.Project where
 import Turtle
 import Prelude hiding (FilePath, log)
 
-import Data.Char (isDigit)
 import Data.Text (Text)
-import qualified Data.Text as Text
 
 import System.Console.ANSI (Color(..))
 
 import Types
 import Pure
-import Git
 import Utils
 import Bump.Common
 
@@ -32,34 +29,25 @@ bumpPackage version packageName = do
     file = format fp $ packageFile </> packageFile <.> "cabal"
     expr = "s/(^version:[^0-9]*)[0-9][0-9.]*/\\1" <> version <> "/"
 
-bumpPackages :: Text -> [Text] -> IO ()
-bumpPackages version packages = do
-  curVersion <- currentVersion
-
+bumpPackages :: Text -> [Text] -> Text -> IO ()
+bumpPackages version packages curVersion = do
   printf ("Version: "%s%" -> ") curVersion
   coloredPrint Yellow (version <> "\n")
 
   printf ("Updating packages version to "%s%"\n") version
   mapM_ (bumpPackage version) packages
 
-currentVersion :: IO Text
-currentVersion = do
-  raw <- latestGitTag "0.0.0.0.0"
-  return $ Text.dropWhile (not . isDigit) raw
+generateVersion :: Level -> Text -> IO Text
+generateVersion lev current = return $ bump (delimited current) lev
 
-generateVersion :: Level -> IO Text
-generateVersion lev = do
-  current <- currentVersion
-  return $ bump (delimited current) lev
-
-generateVersionByChangelog :: Bool -> FilePath -> IO (Maybe Text)
-generateVersionByChangelog True _ = do
+generateVersionByChangelog :: Bool -> FilePath -> Text -> IO (Maybe Text)
+generateVersionByChangelog True _ _ = do
   coloredPrint Yellow "You are bumping version with no explicit version modifiers and changelog checks. It can result in anything. Please retry.\n"
   return Nothing
-generateVersionByChangelog False changelogFile = do
+generateVersionByChangelog False changelogFile curVersion = do
   versionedChanges <- getChangelogEntries changelogFile
   case versionedChanges of
-    Just lev -> Just <$> generateVersion lev
+    Just lev -> Just <$> generateVersion lev curVersion
     Nothing -> do
       coloredPrint Yellow ("WARNING: keep old version since " <> showPath changelogFile <> " apparently does not contain any new entries.\n")
       return Nothing

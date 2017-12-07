@@ -19,6 +19,7 @@ data Mode = PR | Commit
 data Git = Git
   { gitHistory :: FilePath
   , gitLink :: Text
+  , gitRevision :: Text
   }
 
 instance Show Mode where

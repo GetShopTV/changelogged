@@ -24,17 +24,17 @@ projectMain paths opts@Options{..} git = do
 
   when (bump && not optNoBump) $ do
     newVersion <- case optPackagesLevel of
-      Nothing -> generateVersionByChangelog optNoCheck (chLog paths)
-      Just lev -> Just <$> generateVersion lev
+      Nothing -> generateVersionByChangelog optNoCheck (chLog paths) (gitRevision git)
+      Just lev -> Just <$> generateVersion lev (gitRevision git)
   
     case newVersion of
       Nothing -> return ()
       Just version -> case optPackages of
-        Just packages -> bumpPackages version packages
+        Just packages -> bumpPackages version packages (gitRevision git)
         Nothing -> case defaultPackages paths of
           Just defaults -> do
             coloredPrint Green "Bump packages found in ./paths.\n"
-            bumpPackages version defaults
+            bumpPackages version defaults (gitRevision git)
             case packagesPathsWithVars paths of
               Just files -> mapM_ (bumpPart version) files
               Nothing -> return ()

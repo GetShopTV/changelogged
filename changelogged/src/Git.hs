@@ -2,6 +2,7 @@ module Git where
 
 import qualified Control.Foldl as Fold
 
+import Data.Char (isDigit)
 import Data.Either.Combinators (fromRight)
 import Data.Text (Text)
 import qualified Data.Text as Text
@@ -36,4 +37,8 @@ gitData start = do
       inproc "grep" ["-v", "Merge branch"] (inproc "git" ["log", "--oneline", "--first-parent"] empty)
     else liftIO $ append tmpFile $
       inproc "grep" ["-v", "Merge branch"] (inproc "git" ["log", "--oneline", "--first-parent", Text.stripEnd latestTag <> "..HEAD"] empty)
-  return $ Git tmpFile link
+  return $ Git tmpFile link (version latestTag)
+  where
+    version tag = case tag of
+      "" -> "0.0.0.0.0"
+      v -> Text.dropWhile (not . isDigit) v
