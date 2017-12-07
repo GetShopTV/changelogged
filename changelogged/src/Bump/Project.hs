@@ -3,7 +3,9 @@ module Bump.Project where
 import Turtle
 import Prelude hiding (FilePath, log)
 
+import Data.Char (isDigit)
 import Data.Text (Text)
+import qualified Data.Text as Text
 
 import System.Console.ANSI (Color(..))
 
@@ -41,7 +43,9 @@ bumpPackages version packages = do
   mapM_ (bumpPackage version) packages
 
 currentVersion :: IO Text
-currentVersion = latestGitTag "0.0.0.0.0"
+currentVersion = do
+  raw <- latestGitTag "0.0.0.0.0"
+  return $ Text.dropWhile (not . isDigit) raw
 
 generateVersion :: Level -> IO Text
 generateVersion lev = do

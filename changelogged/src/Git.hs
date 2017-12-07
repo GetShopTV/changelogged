@@ -1,5 +1,8 @@
 module Git where
 
+import qualified Control.Foldl as Fold
+
+import Data.Either.Combinators (fromRight)
 import Data.Text (Text)
 import qualified Data.Text as Text
 
@@ -9,10 +12,10 @@ import Types
 
 latestGitTag :: Text -> IO Text
 latestGitTag repl = do
-  ver <- strict $ inproc "cut" ["-c", "2-"] (inproc "git" ["describe", "--tags", "origin/master"] empty)
+  ver <- fold (fromRight "" <$> inprocWithErr "git" ["describe", "--tags", "origin/master"] empty) Fold.head
   return $ case ver of
-    "" -> repl
-    _ -> Text.stripEnd ver
+    Nothing -> repl
+    Just v -> lineToText v
 
 getLink :: IO Text
 getLink = do
@@ -26,7 +29,7 @@ gitData :: Bool -> IO Git
 gitData start = do
   curDir <- pwd
   tmpFile <- with (mktempfile curDir "tmp_") return
-  latestTag <- ("v" <> ) <$> latestGitTag ""
+  latestTag <- latestGitTag ""
   link <- getLink
   if start || (latestTag == "")
     then liftIO $ append tmpFile $
