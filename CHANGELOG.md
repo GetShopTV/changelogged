@@ -1,4 +1,8 @@
 * Major changes
+  - Migrate to GHC 8.2.2 (see [`881b85b`](https://github.com/GetShopTV/changelogged/commit/881b85b));
+  - Store current version in Git and thus call git describe once (see [`6aec329`](https://github.com/GetShopTV/changelogged/commit/6aec329));
+  - Supress unnesessary output to stderr (see [`fa09134`](https://github.com/GetShopTV/changelogged/commit/fa09134));
+  - Fix unified git describe usage (see [`6948632`](https://github.com/GetShopTV/changelogged/commit/6948632));
   - Fix regexp for merge commits exclusion (see [`db64511`](https://github.com/GetShopTV/changelogged/commit/db64511));
   - Make latest git tag extraction safe (see [`4dec3a6`](https://github.com/GetShopTV/changelogged/commit/4dec3a6));
   - Move changelog file name to config (see [`e746f87`](https://github.com/GetShopTV/changelogged/commit/e746f87));
