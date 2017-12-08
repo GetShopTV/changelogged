@@ -7,7 +7,7 @@ import Prelude hiding (FilePath, log)
 import qualified Data.Text as Text
 
 import qualified Control.Foldl as Fold
-import Control.Monad (when)
+import Control.Monad (when, filterM)
 
 import System.Console.ANSI (Color(..))
 
@@ -15,6 +15,17 @@ import Types
 import Utils
 import Pure
 import CheckLog.Common
+
+notOnlyUpdate :: FilePath -> Text -> IO Bool
+notOnlyUpdate changelog commit = do
+  statCommit <- fold (inproc "git" ["show", "--stat", commit] empty) Fold.list
+  chLogUpdated <- fold
+    (grep (has $ text $showPath changelog)
+      (select statCommit)) countLines
+  onlyChLogUpdated <- fold
+    (grep (has $ text "|")
+      (select statCommit)) countLines
+  return $ chLogUpdated /= onlyChLogUpdated
 
 checkChangelogF :: WarningFormat -> Git -> FilePath -> IO Bool
 checkChangelogF fmt Git{..} changelog = do
@@ -27,10 +38,12 @@ checkChangelogF fmt Git{..} changelog = do
   singles <- fmap lineToText <$> fold
     (inproc "egrep" ["-o", "^[0-9a-f]+"] (inproc "grep" ["-o", "-P", singleExpr] (input gitHistory))) Fold.list
   
+  filteredSingles <- filterM (notOnlyUpdate changelog) singles
+  
   pullHeaders <- mapM (commitMessage PR) pullCommits
-  singleHeaders <- mapM (commitMessage Commit) singles
+  singleHeaders <- mapM (commitMessage Commit) filteredSingles
   flagsPR <- mapM (\(i,m) -> changelogIsUp fmt gitLink i PR Project m changelog) (zip pulls pullHeaders)
-  flagsCommit <- mapM (\(i, m) -> changelogIsUp fmt gitLink i Commit Project m changelog) (zip singles singleHeaders)
+  flagsCommit <- mapM (\(i, m) -> changelogIsUp fmt gitLink i Commit Project m changelog) (zip filteredSingles singleHeaders)
   return $ and (flagsPR ++ flagsCommit)
   where
     pullExpr = "pull request #[0-9]+"
@@ -47,7 +60,7 @@ checkApiChangelogF fmt Git{..} swaggerFile changelog = do
   where
     eval hist commit = do
       linePresent <- fold
-        (inproc "grep" [showPath swaggerFile]
+        (grep (has $ text $ showPath swaggerFile)
           (inproc "git" ["show", "--stat", commit] empty))
         countLines
       case linePresent of
