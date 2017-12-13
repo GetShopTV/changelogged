@@ -43,7 +43,7 @@ instance Yaml.FromJSON FilePath where
 
 loadPaths :: IO Paths
 loadPaths = do
-  ms <- Yaml.decodeFileEither "./future.yaml"
+  ms <- Yaml.decodeFileEither "./changelogged.yaml"
   case ms of
     Left wrong -> error (show wrong)
     Right paths -> return paths
