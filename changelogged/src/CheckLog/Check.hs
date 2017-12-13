@@ -15,18 +15,6 @@ import Utils
 import Pure
 import CheckLog.Common
 
--- |Ignore commits which only affect '.md' files
-noMarkdown :: Text -> IO Bool
-noMarkdown commit = do
-  statCommit <- fold (inproc "git" ["show", "--stat", commit] empty) Fold.list
-  chLogUpdated <- fold
-    (grep (has $ text ".md ")
-      (select statCommit)) countLines
-  onlyChLogUpdated <- fold
-    (grep (has $ text "|")
-      (select statCommit)) countLines
-  return $ chLogUpdated /= onlyChLogUpdated
-
 checkCommonChangelogF :: WarningFormat -> Git -> FilePath -> IO Bool
 checkCommonChangelogF fmt Git{..} changelog = do
   printf ("Checking "%fp%"\n") changelog

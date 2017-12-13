@@ -1,4 +1,4 @@
-module Bump.Project where
+module Bump.General where
 
 import Turtle
 import Prelude hiding (FilePath, log)
@@ -11,16 +11,6 @@ import Types
 import Pure
 import Utils
 import Bump.Common
-
--- |Bump version in non-'.cabal' file.
-bumpPart :: Text -> TaggedFile -> IO ()
-bumpPart version file@TaggedFile{..} = do
-    printf ("- Updating version for "%fp%"\n") taggedFilePath
-    case extension taggedFilePath of
-      Just "hs" -> bumpHS file version
-      Just "json" -> bumpJSON file version
-      Just "cabal" -> bumpCabal file version
-      _ -> coloredPrint Red ("ERROR: Didn't bump version in " <> showPath taggedFilePath <> " : only .hs and .json supported, sorry.")
 
 -- |Generate new version based on given level and current version.
 generateVersion :: Level -> Text -> IO Text

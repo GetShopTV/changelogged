@@ -1,4 +1,4 @@
-module Bump.API where
+module Bump.Local where
 
 import Turtle
 import Prelude hiding (FilePath, log)
@@ -13,7 +13,7 @@ import Utils
 import Pure
 import Bump.Common
 
--- |Get current API version.
+-- |Get current local version.
 currentLocalVersion :: TaggedFile -> IO Text
 currentLocalVersion TaggedFile{..} = do
   ver <- case extension taggedFilePath of
@@ -24,13 +24,13 @@ currentLocalVersion TaggedFile{..} = do
       return ""
   return $ T.stripEnd ver
 
--- |Generate new API version.
+-- |Generate new local version.
 generateLocalVersion :: Level -> TaggedFile -> IO Text
 generateLocalVersion lev indicator = do
   current <- currentLocalVersion indicator
   return $ bump (delimited current) lev
 
--- |Infer new API version.
+-- |Infer new local version.
 generateLocalVersionByChangelog :: Bool -> TaggedLog -> IO (Maybe Text)
 generateLocalVersionByChangelog True _ = do
   coloredPrint Yellow "You are bumping API version with no explicit version modifiers and changelog checks. It can result in anything. Please retry.\n"
@@ -38,7 +38,7 @@ generateLocalVersionByChangelog True _ = do
 generateLocalVersionByChangelog False TaggedLog{..} = do
   versionedChanges <- getChangelogEntries taggedLogPath
   case versionedChanges of
-    Just lev -> Just <$> generateLocalVersion lev (fromJustCustom taggedLogIndicator)
+    Just lev -> Just <$> generateLocalVersion lev (fromJustCustom taggedLogIndicator "No file with current local version specified.")
     Nothing -> do
       coloredPrint Yellow ("WARNING: keep old API version since " <> showPath taggedLogPath <> " apparently does not contain any new entries.\n")
       return Nothing

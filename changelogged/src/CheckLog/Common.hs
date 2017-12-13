@@ -3,6 +3,8 @@ module CheckLog.Common where
 import Prelude hiding (FilePath)
 import Turtle
 
+import qualified Control.Foldl as Fold
+
 import Data.Text (Text)
 import qualified Data.Text as Text
 
@@ -23,6 +25,18 @@ changelogIsUp fmt link item mode message changelog = do
         WarnSuggest -> suggestMissing link item mode message changelog
       return False
     _ -> return True
+
+-- |Ignore commits which only affect '.md' files
+noMarkdown :: Text -> IO Bool
+noMarkdown commit = do
+  statCommit <- fold (inproc "git" ["show", "--stat", commit] empty) Fold.list
+  chLogUpdated <- fold
+    (grep (has $ text ".md ")
+      (select statCommit)) countLines
+  onlyChLogUpdated <- fold
+    (grep (has $ text "|")
+      (select statCommit)) countLines
+  return $ chLogUpdated /= onlyChLogUpdated
 
 -- |
 -- >>> warnMissing "#13" PR "Add new stuff"

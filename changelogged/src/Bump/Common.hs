@@ -5,7 +5,10 @@ import Turtle
 
 import Data.Text (Text)
 
+import System.Console.ANSI (Color(..))
+
 import Types
+import Utils
 import Pure
 
 -- |Bump version in '.hs' file
@@ -31,6 +34,16 @@ bumpCabal TaggedFile{..} version = do
   return ()
   where
     cabalExpr = "s/(^" <> taggedFileVariable <> ":[^0-9]*)[0-9][0-9.]*/\\1" <> version <> "/"
+
+-- |Bump version in non-'.cabal' file.
+bumpPart :: Text -> TaggedFile -> IO ()
+bumpPart version file@TaggedFile{..} = do
+  printf ("- Updating version for "%fp%"\n") taggedFilePath
+  case extension taggedFilePath of
+    Just "hs" -> bumpHS file version
+    Just "json" -> bumpJSON file version
+    Just "cabal" -> bumpCabal file version
+    _ -> coloredPrint Red ("ERROR: Didn't bump version in " <> showPath taggedFilePath <> " : only .hs and .json supported, sorry.")
 
 -- |Get level of changes from changelog.
 getChangelogEntries :: FilePath -> IO (Maybe Level)

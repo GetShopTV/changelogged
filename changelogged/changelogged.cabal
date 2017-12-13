@@ -19,8 +19,8 @@ library
     CheckLog.Check
     CheckLog.Common
     Bump.Common
-    Bump.API
-    Bump.Project
+    Bump.Local
+    Bump.General
     Utils
     Pure
     Types

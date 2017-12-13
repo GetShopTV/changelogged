@@ -1,5 +1,3 @@
--- Configuration file mapping.
-
 {-# LANGUAGE DeriveGeneric #-}
 
 module Settings where

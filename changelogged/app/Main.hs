@@ -8,13 +8,14 @@ import Data.Maybe (fromMaybe)
 import System.Console.ANSI (Color(..))
 
 import CheckLog.Check
-import Bump.API
-import Bump.Project
+import Bump.Local
+import Bump.Common
+import Bump.General
 import Types
 import Git
 import Options
 import Utils
-import Pure (showPath, fromJustCustom)
+import Pure (showPath, fromJustCustom, defaultedEmpty)
 import Settings
 
 --printf ("Version: "%s%" -> ") curVersion
@@ -51,7 +52,7 @@ apiMain paths opts@Options{..} git = do
   when (bump && not optNoBump) $ do
     newVersion <- case optApiLevel of
       Nothing -> generateLocalVersionByChangelog optNoCheck (chLog paths)
-      Just lev -> Just <$> generateLocalVersion lev (fromJustCustom $ taggedLogIndicator $ chLog paths)
+      Just lev -> Just <$> generateLocalVersion lev (fromJustCustom (taggedLogIndicator (chLog paths)) "No file with current API version specified.")
   
     case newVersion of
       Nothing -> return ()

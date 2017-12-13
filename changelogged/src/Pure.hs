@@ -1,9 +1,7 @@
--- Pure functions for changelogged.
-
--- |Internal functions.
 module Pure where
 
 import Prelude hiding (FilePath)
+import qualified Data.HashMap.Strict as HM
 import Data.Text (Text)
 import qualified Data.Text as Text
 
@@ -11,9 +9,13 @@ import Filesystem.Path.CurrentOS (encodeString, FilePath)
 
 import Types
 
-fromJustCustom :: Maybe a -> a
-fromJustCustom Nothing = error "No file with current local version specified."
-fromJustCustom (Just a) = a
+defaultedEmpty :: Maybe (HM.HashMap k v) -> HM.HashMap k v
+defaultedEmpty Nothing = HM.empty
+defaultedEmpty (Just hm) = hm
+
+fromJustCustom :: Maybe a -> String -> a
+fromJustCustom Nothing msg = error msg
+fromJustCustom (Just a) _ = a
 
 -- I leave tuple here cause it's all functions for internal usage only.
 tuplify :: [Int] -> (Int, Int, Int, Int, Int)
