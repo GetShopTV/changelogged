@@ -1,3 +1,4 @@
-defaultPackages :
-  - "changelogged"
+versioned:
+  main:
+  - ["changelogged/changelogged.cabal", "version"]
 

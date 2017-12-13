@@ -18,9 +18,6 @@ import Utils
 import Pure (showPath, fromJustCustom, defaultedEmpty)
 import Settings
 
---printf ("Version: "%s%" -> ") curVersion
---coloredPrint Yellow (version <> "\n")
-
 commonMain :: Paths -> Options -> Git -> IO ()
 commonMain paths opts@Options{..} git = do
   coloredPrint Green ("Checking " <> showPath (taggedLogPath $ chLog paths) <> " and creating it if missing.\n")
@@ -36,7 +33,10 @@ commonMain paths opts@Options{..} git = do
     case newVersion of
       Nothing -> return ()
       Just version -> case HM.lookup "main" (defaultedEmpty (versioned paths)) of
-        Just files -> mapM_ (bumpPart version) files
+        Just files -> do
+          printf ("Version: "%s%" -> ") (gitRevision git)
+          coloredPrint Yellow (version <> "\n")
+          mapM_ (bumpPart version) files
         Nothing -> coloredPrint Yellow "WARNING: no files to bump project version in specified.\n"
   where
     chLog cfg = HM.lookupDefault (TaggedLog "CHANGELOG.md" Nothing) "main"

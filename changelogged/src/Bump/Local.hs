@@ -28,7 +28,12 @@ currentLocalVersion TaggedFile{..} = do
 generateLocalVersion :: Level -> TaggedFile -> IO Text
 generateLocalVersion lev indicator = do
   current <- currentLocalVersion indicator
-  return $ bump (delimited current) lev
+  -- This print must not be here but I think it's better than throw current vrsion to main.
+  printf ("Version: "%s%" -> ") current
+  coloredPrint Yellow (new current <> "\n")
+  return (new current)
+  where
+    new current = bump (delimited current) lev
 
 -- |Infer new local version.
 generateLocalVersionByChangelog :: Bool -> TaggedLog -> IO (Maybe Text)
