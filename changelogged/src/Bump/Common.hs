@@ -5,24 +5,45 @@ import Turtle
 
 import Data.Text (Text)
 
+import System.Console.ANSI (Color(..))
+
 import Types
+import Utils
 import Pure
 
 -- |Bump version in '.hs' file
-bumpHS :: FilePath -> Text -> Variable -> IO ()
-bumpHS file version var = do
-  sh $ inproc "sed" ["-i", "-r", hsExpr, showPath file] empty
+bumpHS :: TaggedFile -> Text -> IO ()
+bumpHS TaggedFile{..} version = do
+  sh $ inproc "sed" ["-i", "-r", hsExpr, showPath taggedFilePath] empty
   return ()
   where
-    hsExpr = "s/(^" <> var <> " = )\\\"[0-9][0-9.]*\\\"/\\1\"" <> version <> "\"/"    
+    hsExpr = "s/(^" <> taggedFileVariable <> " = )\\\"[0-9][0-9.]*\\\"/\\1\"" <> version <> "\"/"    
 
 -- |Bump version in '.json' file
-bumpJSON :: FilePath -> Text -> Variable -> IO ()
-bumpJSON file version var = do
-  sh $ inproc "sed" ["-i", "-r", jsonExpr, showPath file] empty
+bumpJSON :: TaggedFile -> Text -> IO ()
+bumpJSON TaggedFile{..} version = do
+  sh $ inproc "sed" ["-i", "-r", jsonExpr, showPath taggedFilePath] empty
   return ()
   where
-    jsonExpr = "s/(^\\s*\"" <> var <> "\": )\"[0-9][0-9.]*\"/\\1\"" <> version <> "\"/"
+    jsonExpr = "s/(^\\s*\"" <> taggedFileVariable <> "\": )\"[0-9][0-9.]*\"/\\1\"" <> version <> "\"/"
+
+-- |Bump version in '.cabal' file
+bumpCabal :: TaggedFile -> Text -> IO ()
+bumpCabal TaggedFile{..} version = do
+  sh $ inproc "sed" ["-i", "-r", cabalExpr, showPath taggedFilePath] empty
+  return ()
+  where
+    cabalExpr = "s/(^" <> taggedFileVariable <> ":[^0-9]*)[0-9][0-9.]*/\\1" <> version <> "/"
+
+-- |Bump version in non-'.cabal' file.
+bumpPart :: Text -> TaggedFile -> IO ()
+bumpPart version file@TaggedFile{..} = do
+  printf ("- Updating version for "%fp%"\n") taggedFilePath
+  case extension taggedFilePath of
+    Just "hs" -> bumpHS file version
+    Just "json" -> bumpJSON file version
+    Just "cabal" -> bumpCabal file version
+    _ -> coloredPrint Red ("ERROR: Didn't bump version in " <> showPath taggedFilePath <> " : only .hs and .json supported, sorry.")
 
 -- |Get level of changes from changelog.
 getChangelogEntries :: FilePath -> IO (Maybe Level)

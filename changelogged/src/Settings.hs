@@ -1,5 +1,3 @@
--- Configuration file mapping.
-
 {-# LANGUAGE DeriveGeneric #-}
 
 module Settings where
@@ -7,29 +5,43 @@ module Settings where
 import Prelude hiding (FilePath)
 import Turtle
 
+import Data.Aeson.Types (typeMismatch)
+import qualified Data.HashMap.Strict as HM
 import Data.Text (Text)
 import qualified Data.Yaml as Yaml
+import Data.Vector ((!))
+import Data.Yaml ((.:), (.:?))
 
 import GHC.Generics
 
 import Types
 
 data Paths = Paths {
-  -- Changelog file name
-    changeLog :: Maybe FilePath
-  -- API changelog file name
-  , apiChangeLog :: Maybe FilePath
-  -- Path to swagger file of API
-  , swaggerFileName  :: Maybe (FilePath, Variable)
-  -- Default package names
-  , defaultPackages  :: Maybe [Text]
-  -- paths to files except for .cabal files where to bump version with corresponding variables.
-  , packagesPathsWithVars :: Maybe [(FilePath, Variable)]
-  -- Paths to files where API version must be bumped with names of corresponding variables.
-  , apiPathsWithVars :: Maybe [(FilePath, Variable)]
+  -- Changelogs data
+    changelogs :: Maybe (HM.HashMap Text TaggedLog)
+  -- Files to bump data
+  , versioned :: Maybe (HM.HashMap Text [TaggedFile])
   } deriving (Show, Generic)
 
 instance Yaml.FromJSON Paths
+
+instance Yaml.FromJSON TaggedFile where
+  parseJSON (Yaml.Object v) = TaggedFile
+        <$> v .: "path"
+        <*> v .: "variable"
+  parseJSON (Yaml.Array v) = TaggedFile
+        <$> Yaml.parseJSON (v ! 0)
+        <*> Yaml.parseJSON (v ! 1)
+  parseJSON invalid = typeMismatch "TaggedFile" invalid
+
+instance Yaml.FromJSON TaggedLog where
+  parseJSON (Yaml.Object v) = TaggedLog
+        <$> v .: "path"
+        <*> v .:? "indicator"
+  parseJSON (Yaml.Array v) = TaggedLog
+        <$> Yaml.parseJSON (v ! 0)
+        <*> Yaml.parseJSON (v ! 1)
+  parseJSON invalid = typeMismatch "TaggedLog" invalid
 
 instance Yaml.FromJSON FilePath where
   parseJSON = fmap fromText . Yaml.parseJSON
@@ -38,5 +50,5 @@ loadPaths :: IO Paths
 loadPaths = do
   ms <- Yaml.decodeFileEither "./changelogged.yaml"
   case ms of
-    Left errr -> error (show errr)
+    Left wrong -> error (show wrong)
     Right paths -> return paths
