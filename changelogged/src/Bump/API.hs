@@ -18,7 +18,7 @@ currentAPIVersion :: (FilePath, Variable) -> IO Text
 currentAPIVersion (swagger, var) = do
   ver <- case extension swagger of
     Just "json" -> strict $ inproc "egrep" ["-o", "[0-9][0-9.]*"] (inproc "egrep" ["\"" <> var <> "\": \"[0-9][0-9.]*\""] (input swagger))
-    Just "hs" -> strict $ inproc "egrep" ["-o", "[0-9][0-9.]*"] (inproc "egrep" [var <> " = \"[0-9][0-9.]*\""] (input swagger))
+    Just "hs" -> strict $ inproc "egrep" ["-o", "[0-9][0-9.]*"] (inproc "egrep" [var <> "\\s+=\\s+\"[0-9][0-9.]*\""] (input swagger))
     _ -> do
       coloredPrint Red ("ERROR: invalid indicator file " <> showPath swagger <> " : only .hs and .json supported, sorry.")
       return ""

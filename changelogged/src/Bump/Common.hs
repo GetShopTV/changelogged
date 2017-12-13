@@ -11,7 +11,7 @@ import Pure
 -- |Bump version in '.hs' file
 bumpHS :: FilePath -> Text -> Variable -> IO ()
 bumpHS file version var = do
-  sh $ inproc "sed" ["-i", "-r", hsExpr] (input file)
+  sh $ inproc "sed" ["-i", "-r", hsExpr, showPath file] empty
   return ()
   where
     hsExpr = "s/(^" <> var <> " = )\\\"[0-9][0-9.]*\\\"/\\1\"" <> version <> "\"/"    
@@ -19,7 +19,7 @@ bumpHS file version var = do
 -- |Bump version in '.json' file
 bumpJSON :: FilePath -> Text -> Variable -> IO ()
 bumpJSON file version var = do
-  sh $ inproc "sed" ["-i", "-r", jsonExpr] (input file)
+  sh $ inproc "sed" ["-i", "-r", jsonExpr, showPath file] empty
   return ()
   where
     jsonExpr = "s/(^\\s*\"" <> var <> "\": )\"[0-9][0-9.]*\"/\\1\"" <> version <> "\"/"
