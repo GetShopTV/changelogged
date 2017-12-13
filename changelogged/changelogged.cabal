@@ -34,12 +34,15 @@ library
                      , ansi-terminal
                      , text
                      , yaml
+                     , aeson
                      , mtl
                      , system-filepath
                      , foldl
                      , either
+                     , unordered-containers
   default-language:    Haskell2010
   default-extensions:  OverloadedStrings
+                       RecordWildCards
 
 executable changelogged
   hs-source-dirs:      app
@@ -48,9 +51,11 @@ executable changelogged
   build-depends:       base
                      , changelogged
                      , turtle
+                     , unordered-containers
                      , ansi-terminal
   default-language:    Haskell2010
   default-extensions:  OverloadedStrings
+                       RecordWildCards
 
 test-suite changelogged-test
   type:                exitcode-stdio-1.0

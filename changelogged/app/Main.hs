@@ -1,8 +1,9 @@
-{-# LANGUAGE RecordWildCards #-}
 module Main where
 
+import Prelude hiding (FilePath)
 import Turtle
-import Data.Maybe (fromMaybe, fromJust)
+import qualified Data.HashMap.Strict as HM
+import Data.Maybe (fromMaybe)
 
 import System.Console.ANSI (Color(..))
 
@@ -13,69 +14,76 @@ import Types
 import Git
 import Options
 import Utils
+import Pure (showPath, fromJustCustom)
 import Settings
 
-projectMain :: Paths -> Options -> Git -> IO ()
-projectMain paths opts@Options{..} git = do
-  coloredPrint Green "Checking changelog file and creating it if missing.\n"
-  touch (chLog paths)
+--printf ("Version: "%s%" -> ") curVersion
+--coloredPrint Yellow (version <> "\n")
+
+commonMain :: Paths -> Options -> Git -> IO ()
+commonMain paths opts@Options{..} git = do
+  coloredPrint Green ("Checking " <> showPath (taggedLogPath $ chLog paths) <> " and creating it if missing.\n")
+  touch $ taggedLogPath (chLog paths)
 
   bump <- checkChangelogWrap opts git optNoCheck (chLog paths)
 
   when (bump && not optNoBump) $ do
     newVersion <- case optPackagesLevel of
-      Nothing -> generateVersionByChangelog optNoCheck (chLog paths) (gitRevision git)
+      Nothing -> generateVersionByChangelog optNoCheck (taggedLogPath $ chLog paths) (gitRevision git)
       Just lev -> Just <$> generateVersion lev (gitRevision git)
   
     case newVersion of
       Nothing -> return ()
-      Just version -> case optPackages of
-        Just packages -> bumpPackages version packages (gitRevision git)
-        Nothing -> case defaultPackages paths of
-          Just defaults -> do
-            coloredPrint Green "Bump packages found in ./paths.\n"
-            bumpPackages version defaults (gitRevision git)
-            case packagesPathsWithVars paths of
-              Just files -> mapM_ (bumpPart version) files
-              Nothing -> return ()
-          Nothing -> coloredPrint Yellow "WARNING: no packages specified.\n"
+      Just version -> case HM.lookup "main" (defaultedEmpty (versioned paths)) of
+        Just files -> mapM_ (bumpPart version) files
+        Nothing -> coloredPrint Yellow "WARNING: no files to bump project version in specified.\n"
   where
-    chLog cfg = fromMaybe "CHANGELOG.md" (changeLog cfg)
+    chLog cfg = HM.lookupDefault (TaggedLog "CHANGELOG.md" Nothing) "main"
+      (fromMaybe (HM.singleton "main" (TaggedLog "CHANGELOG.md" Nothing)) (changelogs cfg))
 
 apiMain :: Paths -> Options -> Git -> IO ()
 apiMain paths opts@Options{..} git = do
-  coloredPrint Green "Checking API changelog file and creating it if missing.\n"
-  touch (apiChLog paths)
+  coloredPrint Green ("Checking " <> showPath (taggedLogPath $ chLog paths) <> " and creating it if missing.\n")
+  touch $ taggedLogPath (chLog paths)
 
-  bumpA <- checkAPIChangelogWrap opts git optNoCheck (fst <$> swaggerFileName paths) (apiChLog paths)
+  bump <- checkChangelogWrap opts git optNoCheck (chLog paths)
 
-  when (bumpA && not optNoBump) $ do
-    newApiVersion <- case optApiLevel of
-      Nothing -> case swaggerFileName paths of
-        Just swagger -> generateAPIVersionByChangelog optNoCheck swagger (apiChLog paths)
-        Nothing -> do
-          coloredPrint Yellow "Cannot generate API version - no file with previous version specified in .paths (swaggerFileName).\n"
-          return Nothing
-      Just lev -> case swaggerFileName paths of
-          Just swagger -> Just <$> generateAPIVersion lev swagger
-          Nothing -> do
-            coloredPrint Yellow "Cannot generate API version - no file with previous version specified in .paths (swaggerFileName).\n"
-            return Nothing
-
-    case apiPathsWithVars paths of
-      Nothing -> do
-        coloredPrint Green "If you want to bump API version, specify paths in ./paths\n"
-        return ()
-      Just apiPathList -> case newApiVersion of
-        Nothing -> return ()
-        Just ver -> do
-          curVersion <- currentAPIVersion (fromJust $ swaggerFileName paths) -- guaranted, must be gone with refactoring.
-          printf ("Version: "%s%" -> ") curVersion
-          coloredPrint Yellow (ver <> "\n")
-          printf ("Updating API version to "%s%"\n") ver
-          mapM_ (bumpAPIPart ver) apiPathList
+  when (bump && not optNoBump) $ do
+    newVersion <- case optApiLevel of
+      Nothing -> generateLocalVersionByChangelog optNoCheck (chLog paths)
+      Just lev -> Just <$> generateLocalVersion lev (fromJustCustom $ taggedLogIndicator $ chLog paths)
+  
+    case newVersion of
+      Nothing -> return ()
+      Just version -> case HM.lookup "api" (defaultedEmpty (versioned paths)) of
+        Just files -> mapM_ (bumpPart version) files
+        Nothing -> coloredPrint Yellow "WARNING: no files to bump API version in specified.\n"
   where
-    apiChLog cfg = fromMaybe "API_CHANGELOG.md" (apiChangeLog cfg)
+    chLog cfg = HM.lookupDefault (TaggedLog "API_CHANGELOG.md" Nothing) "api"
+      (fromMaybe (HM.singleton "api" (TaggedLog "API_CHANGELOG.md" Nothing)) (changelogs cfg))
+
+otherMain :: Paths -> Options -> Git -> IO ()
+otherMain paths opts@Options{..} git = do
+  mapM_ act (entries (changelogs paths))
+  where
+    entries :: Maybe (HM.HashMap Text TaggedLog) -> [(Text, TaggedLog)]
+    entries (Just a) = HM.toList $ HM.delete "main" $ HM.delete "api" a
+    entries Nothing = []
+    
+    act (key, changelog) = do
+      coloredPrint Green ("Checking " <> showPath (taggedLogPath changelog) <> " and creating it if missing.\n")
+      touch (taggedLogPath changelog)
+    
+      bump <- checkChangelogWrap opts git optNoCheck changelog
+    
+      when (bump && not optNoBump) $ do
+        newVersion <- generateLocalVersionByChangelog optNoCheck changelog
+      
+        case newVersion of
+          Nothing -> return ()
+          Just version -> case HM.lookup key (defaultedEmpty (versioned paths)) of
+            Just files -> mapM_ (bumpPart version) files
+            Nothing -> coloredPrint Yellow "WARNING: no files to bump version in specified.\n"
 
 main :: IO ()
 main = do
@@ -85,8 +93,10 @@ main = do
 
   git <- gitData optFromBC
 
-  projectMain paths opts git
+  commonMain paths opts git
 
-  when optApiExists $ apiMain paths opts git
+  when optWithAPI $ apiMain paths opts git
+
+  when optDifferentChlogs $ otherMain paths opts git
   
   sh $ rm $ gitHistory git

@@ -11,6 +11,10 @@ import Filesystem.Path.CurrentOS (encodeString, FilePath)
 
 import Types
 
+fromJustCustom :: Maybe a -> a
+fromJustCustom Nothing = error "No file with current local version specified."
+fromJustCustom (Just a) = a
+
 -- I leave tuple here cause it's all functions for internal usage only.
 tuplify :: [Int] -> (Int, Int, Int, Int, Int)
 tuplify [] = (0,0,0,0,0)

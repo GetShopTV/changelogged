@@ -13,14 +13,14 @@ import Utils
 import Pure
 
 -- |Check if commit/pr is present in changelog. Returns '@True@' if present.
-changelogIsUp :: WarningFormat -> Text -> Text -> Mode -> Part -> Text -> FilePath -> IO Bool
-changelogIsUp fmt link item mode _part message changelog = do
+changelogIsUp :: WarningFormat -> Text -> Text -> Mode -> Text -> FilePath -> IO Bool
+changelogIsUp fmt link item mode message changelog = do
   grepLen <- fold (grep (has (text item)) (input changelog)) countLines
   case grepLen of
     0 -> do
       case fmt of
-        WarnSimple  -> warnMissing item mode message
-        WarnSuggest -> suggestMissing link item mode message
+        WarnSimple  -> warnMissing item mode message changelog
+        WarnSuggest -> suggestMissing link item mode message changelog
       return False
     _ -> return True
 
@@ -30,11 +30,11 @@ changelogIsUp fmt link item mode _part message changelog = do
 --
 -- >>> warnMissing "9e14840" Commit "Add new stuff"
 -- - Single commit 9e14840 is missing in changelog: Add new stuff.
-warnMissing :: Text -> Mode -> Text -> IO ()
-warnMissing item mode message = do
+warnMissing :: Text -> Mode -> Text -> FilePath -> IO ()
+warnMissing item mode message changelog = do
   printf ("- "%s%" ") (showText mode)
   coloredPrint Cyan item
-  printf (" is missing in changelog: "%s%".\n") message
+  printf (" is missing in "%fp%": "%s%".\n") changelog message
 
 -- |
 -- >>> prLink "#13"
@@ -54,8 +54,8 @@ commitLink link sha = link <> "/commit/" <> sha
 --
 -- >>> suggestMissing "9e14840" Commit "Add new stuff"
 -- - Add new stuff (see [`9e14840`](https://github.com/GetShopTV/getshoptv/commit/9e14840));
-suggestMissing :: Text -> Text -> Mode -> Text -> IO ()
-suggestMissing link item mode message = do
+suggestMissing :: Text -> Text -> Mode -> Text -> FilePath -> IO ()
+suggestMissing link item mode message changelog = do
   printf ("- "%s%" (see ") message
   case mode of
     PR -> do
@@ -64,7 +64,7 @@ suggestMissing link item mode message = do
     Commit -> do
       coloredPrint Cyan ("[`" <> item <> "`]")
       printf ("("%s%")") (commitLink link item)
-  printf ");\n"
+  printf ("); in "%fp%"\n") changelog
 
 -- |Get commit message for any entry in history.
 commitMessage :: Mode -> Text -> IO Text

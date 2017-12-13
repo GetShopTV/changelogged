@@ -1,5 +1,6 @@
 -- Types and helpers for choo-choo util.
 
+{-# LANGUAGE DeriveGeneric #-}
 module Types where
 
 import Data.Text (Text)
@@ -7,10 +8,10 @@ import Data.Text (Text)
 import Prelude hiding (FilePath)
 import Turtle hiding (option)
 
-type Variable = Text
+import GHC.Generics
 
--- |This is not actaully used except for pretty print.
-data Part = API | Project
+type Variable = Text
+type Key = Text
 
 -- |Level of changes to bump to.
 data Level = App | Major | Minor | Fix | Doc
@@ -26,6 +27,16 @@ data Git = Git
   , gitRevision :: Text
   }
 
+data TaggedFile = TaggedFile
+  { taggedFilePath :: FilePath
+  , taggedFileVariable :: Variable
+  } deriving (Show, Generic)
+
+data TaggedLog = TaggedLog
+  { taggedLogPath :: FilePath
+  , taggedLogIndicator :: Maybe TaggedFile
+  } deriving (Show, Generic)
+
 instance Show Mode where
   show PR = "Pull request"
   show Commit = "Single commit"
@@ -40,13 +51,13 @@ instance Show WarningFormat where
   show WarnSuggest = "suggest"
 
 data Options = Options
-  { optPackages      :: Maybe [Text]
-  , optPackagesLevel :: Maybe Level
-  , optApiLevel      :: Maybe Level
-  , optFormat        :: WarningFormat
-  , optApiExists     :: Bool
-  , optNoCheck       :: Bool
-  , optNoBump        :: Bool
-  , optFromBC        :: Bool
-  , optForce         :: Bool
+  { optPackagesLevel   :: Maybe Level
+  , optApiLevel        :: Maybe Level
+  , optFormat          :: WarningFormat
+  , optWithAPI         :: Bool
+  , optDifferentChlogs :: Bool
+  , optNoCheck         :: Bool
+  , optNoBump          :: Bool
+  , optFromBC          :: Bool
+  , optForce           :: Bool
   }

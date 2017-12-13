@@ -1,4 +1,3 @@
-{-# LANGUAGE RecordWildCards #-}
 module CheckLog.Check where
 
 import Turtle
@@ -16,20 +15,20 @@ import Utils
 import Pure
 import CheckLog.Common
 
--- |Ignore commits which only affect given file.
-notOnlyUpdate :: FilePath -> Text -> IO Bool
-notOnlyUpdate changelog commit = do
+-- |Ignore commits which only affect '.md' files
+noMarkdown :: Text -> IO Bool
+noMarkdown commit = do
   statCommit <- fold (inproc "git" ["show", "--stat", commit] empty) Fold.list
   chLogUpdated <- fold
-    (grep (has $ text $showPath changelog)
+    (grep (has $ text ".md ")
       (select statCommit)) countLines
   onlyChLogUpdated <- fold
     (grep (has $ text "|")
       (select statCommit)) countLines
   return $ chLogUpdated /= onlyChLogUpdated
 
-checkChangelogF :: WarningFormat -> Git -> FilePath -> IO Bool
-checkChangelogF fmt Git{..} changelog = do
+checkCommonChangelogF :: WarningFormat -> Git -> FilePath -> IO Bool
+checkCommonChangelogF fmt Git{..} changelog = do
   printf ("Checking "%fp%"\n") changelog
 
   pullCommits <- fmap lineToText <$> fold
@@ -39,20 +38,20 @@ checkChangelogF fmt Git{..} changelog = do
   singles <- fmap lineToText <$> fold
     (inproc "egrep" ["-o", "^[0-9a-f]+"] (inproc "grep" ["-o", "-P", singleExpr] (input gitHistory))) Fold.list
   
-  filteredSingles <- filterM (notOnlyUpdate changelog) singles
+  filteredSingles <- filterM noMarkdown singles
   
   pullHeaders <- mapM (commitMessage PR) pullCommits
   singleHeaders <- mapM (commitMessage Commit) filteredSingles
-  flagsPR <- mapM (\(i,m) -> changelogIsUp fmt gitLink i PR Project m changelog) (zip pulls pullHeaders)
-  flagsCommit <- mapM (\(i, m) -> changelogIsUp fmt gitLink i Commit Project m changelog) (zip filteredSingles singleHeaders)
+  flagsPR <- mapM (\(i,m) -> changelogIsUp fmt gitLink i PR m changelog) (zip pulls pullHeaders)
+  flagsCommit <- mapM (\(i, m) -> changelogIsUp fmt gitLink i Commit m changelog) (zip filteredSingles singleHeaders)
   return $ and (flagsPR ++ flagsCommit)
   where
     pullExpr = "pull request #[0-9]+"
     singleExpr = "^[0-9a-f]+\\s(?!.*Merge)"
 
-checkApiChangelogF :: WarningFormat -> Git -> FilePath -> FilePath -> IO Bool
-checkApiChangelogF fmt Git{..} swaggerFile changelog = do
-  printf ("Checking "%fp%"\n") changelog
+checkLocalChangelogF :: WarningFormat -> Git -> FilePath -> FilePath -> IO Bool
+checkLocalChangelogF fmt Git{..} path indicator = do
+  printf ("Checking "%fp%"\n") path
   
   commits <- fmap lineToText <$> fold (inproc "egrep" ["-o", "^[0-9a-f]+"] (input gitHistory)) Fold.list
   
@@ -61,7 +60,7 @@ checkApiChangelogF fmt Git{..} swaggerFile changelog = do
   where
     eval hist commit = do
       linePresent <- fold
-        (grep (has $ text $ showPath swaggerFile)
+        (grep (has $ text $ showPath indicator)
           (inproc "git" ["show", "--stat", commit] empty))
         countLines
       case linePresent of
@@ -74,47 +73,27 @@ checkApiChangelogF fmt Git{..} swaggerFile changelog = do
           case Text.length pull of
             0 -> do
               message <- commitMessage Commit commit
-              changelogIsUp fmt gitLink commit Commit API message changelog
+              changelogIsUp fmt gitLink commit Commit message path
             _ -> do
               message <- commitMessage PR commit
-              changelogIsUp fmt gitLink (Text.stripEnd pull) PR API message changelog
+              changelogIsUp fmt gitLink (Text.stripEnd pull) PR message path
 
-checkChangelogWrap :: Options -> Git -> Bool -> FilePath -> IO Bool
+checkChangelogWrap :: Options -> Git -> Bool -> TaggedLog -> IO Bool
 checkChangelogWrap _ _ True _ = do
-  coloredPrint Yellow "WARNING: skipping checks for changelog.\n"
-  return True
-checkChangelogWrap Options{..} git False changelog = do
-  when optFromBC $ echo "Checking project changelog from start of project"
-  upToDate <- checkChangelogF optFormat git changelog
-  if upToDate
-    then coloredPrint Green (showPath changelog <> " is up to date.\n")
-    else coloredPrint Yellow ("WARNING: " <> showPath changelog <> " is out of date.\n")
-  if upToDate
-    then return True
-    else do
-      coloredPrint Red "ERROR: project changelog is not up-to-date. Use -c or --no-check options if you want to ignore changelog checks and -f to bump anyway.\n"
-      return $ if optForce
-        then True
-        else False
-
-checkAPIChangelogWrap :: Options -> Git -> Bool -> Maybe FilePath -> FilePath -> IO Bool
-checkAPIChangelogWrap _ _ True _ _ = do
   coloredPrint Yellow "WARNING: skipping checks for API changelog.\n"
   return True
-checkAPIChangelogWrap Options{..} git False swagger apiChangelog = do
-  when optFromBC $ echo "Checking API changelog from start of project"
-  apiUpToDate <- case swagger of
-    Nothing -> do
-      coloredPrint Yellow "Do not check API changelog, no swagger file added to ./paths.\n"
-      return True
-    Just file -> checkApiChangelogF optFormat git file apiChangelog
-  if apiUpToDate
-    then coloredPrint Green (showPath apiChangelog <> " is up to date.\n")
-    else coloredPrint Yellow ("WARNING: " <> showPath apiChangelog <> " is out of date.\n")
-  if apiUpToDate
+checkChangelogWrap Options{..} git False TaggedLog{..} = do
+  when optFromBC $ printf ("Checking "%fp%" from start of project") taggedLogPath
+  upToDate <- case taggedLogIndicator of
+    Nothing -> checkCommonChangelogF optFormat git taggedLogPath
+    Just ind -> checkLocalChangelogF optFormat git taggedLogPath (taggedFilePath ind)
+  if upToDate
+    then coloredPrint Green (showPath taggedLogPath <> " is up to date.\n")
+    else coloredPrint Yellow ("WARNING: " <> showPath taggedLogPath <> " is out of date.\n")
+  if upToDate
     then return True
     else do
-      coloredPrint Red "ERROR: API changelog is not up-to-date. Use -c or --no-check options if you want to ignore changelog checks and -f to bump anyway.\n"
+      coloredPrint Red ("ERROR: " <> showPath taggedLogPath <> " is not up-to-date. Use -c or --no-check options if you want to ignore changelog checks and -f to bump anyway.\n")
       return $ if optForce
         then True
         else False
