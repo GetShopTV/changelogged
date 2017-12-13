@@ -1,0 +1,24 @@
+changelogs:
+  main:
+    path: "CHANGELOG.md"
+  api: 
+    path: "API_CHANGELOG.md"
+    indicator: 
+      path: "file.json"
+      variable: "version"
+versioned:
+  main:
+  - path: "file.cabal"
+    variable: "version"
+  - path: "file2.cabal"
+    variable: "version"
+  - path: "file3.hs"
+    variable: "version"
+  - path: "file4.json"
+    variable: "version"
+  api:
+  - path: "file.hs"
+    variable: "apiVersion"
+  - path: "file.json"
+    variable: "version"
+

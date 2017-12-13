@@ -14,40 +14,31 @@ import Pure
 import Bump.Common
 
 -- |Get current API version.
-currentAPIVersion :: (FilePath, Variable) -> IO Text
-currentAPIVersion (swagger, var) = do
-  ver <- case extension swagger of
-    Just "json" -> strict $ inproc "egrep" ["-o", "[0-9][0-9.]*"] (inproc "egrep" ["\"" <> var <> "\": \"[0-9][0-9.]*\""] (input swagger))
-    Just "hs" -> strict $ inproc "egrep" ["-o", "[0-9][0-9.]*"] (inproc "egrep" [var <> "\\s+=\\s+\"[0-9][0-9.]*\""] (input swagger))
+currentLocalVersion :: TaggedFile -> IO Text
+currentLocalVersion TaggedFile{..} = do
+  ver <- case extension taggedFilePath of
+    Just "json" -> strict $ inproc "egrep" ["-o", "[0-9][0-9.]*"] (inproc "egrep" ["\"" <> taggedFileVariable <> "\": \"[0-9][0-9.]*\""] (input taggedFilePath))
+    Just "hs" -> strict $ inproc "egrep" ["-o", "[0-9][0-9.]*"] (inproc "egrep" [taggedFileVariable <> "\\s+=\\s+\"[0-9][0-9.]*\""] (input taggedFilePath))
     _ -> do
-      coloredPrint Red ("ERROR: invalid indicator file " <> showPath swagger <> " : only .hs and .json supported, sorry.")
+      coloredPrint Red ("ERROR: invalid indicator file " <> showPath taggedFilePath <> " : only .hs and .json supported, sorry.")
       return ""
   return $ T.stripEnd ver
 
 -- |Generate new API version.
-generateAPIVersion :: Level -> (FilePath, Variable) -> IO Text
-generateAPIVersion lev swagger = do
-  current <- currentAPIVersion swagger
+generateLocalVersion :: Level -> TaggedFile -> IO Text
+generateLocalVersion lev indicator = do
+  current <- currentLocalVersion indicator
   return $ bump (delimited current) lev
 
 -- |Infer new API version.
-generateAPIVersionByChangelog :: Bool -> (FilePath, Variable) -> FilePath -> IO (Maybe Text)
-generateAPIVersionByChangelog True _ _ = do
+generateLocalVersionByChangelog :: Bool -> TaggedLog -> IO (Maybe Text)
+generateLocalVersionByChangelog True _ = do
   coloredPrint Yellow "You are bumping API version with no explicit version modifiers and changelog checks. It can result in anything. Please retry.\n"
   return Nothing
-generateAPIVersionByChangelog False swagger changelogFile = do
-  versionedChanges <- getChangelogEntries changelogFile
+generateLocalVersionByChangelog False TaggedLog{..} = do
+  versionedChanges <- getChangelogEntries taggedLogPath
   case versionedChanges of
-    Just lev -> Just <$> generateAPIVersion lev swagger
+    Just lev -> Just <$> generateLocalVersion lev (fromJustCustom taggedLogIndicator)
     Nothing -> do
-      coloredPrint Yellow ("WARNING: keep old API version since " <> showPath changelogFile <> " apparently does not contain any new entries.\n")
+      coloredPrint Yellow ("WARNING: keep old API version since " <> showPath taggedLogPath <> " apparently does not contain any new entries.\n")
       return Nothing
-
--- |Bump API version in given file.
-bumpAPIPart :: Text -> (FilePath, Variable) -> IO ()
-bumpAPIPart version (file, var) = do
-    printf ("- Updating API version for "%fp%"\n") file
-    case extension file of
-      Just "hs" -> bumpHS file version var
-      Just "json" -> bumpJSON file version var
-      _ -> coloredPrint Red ("ERROR: Didn't bump API version in " <> showPath file <> " : only .hs and .json supported, sorry.")

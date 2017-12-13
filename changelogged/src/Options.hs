@@ -2,7 +2,6 @@ module Options where
 
 import Data.Char (toLower)
 import Data.List (intercalate)
-import qualified Data.Text as Text
 
 import Options.Applicative hiding (switch)
 import Turtle hiding (option)
@@ -52,18 +51,16 @@ readLevel = eitherReader (r . map toLower)
 
 parser :: Parser Options
 parser = Options
-  <$> optional packages
-  <*> optional packagesLevel
+  <$> optional packagesLevel
   <*> optional apiLevel
   <*> warningFormat
-  <*> switch  "with-api"  'W' "Assume there is API and work with it also."
+  <*> switch  "with-api"  'W' "Assume there is changelog for API."
+  <*> switch  "multiple"  'm' "Assume there is more than one changelog."
   <*> switch  "no-check"  'c' "Do not check changelogs."
   <*> switch  "no-bump"  'C' "Do not bump versions. Only check changelogs."
   <*> switch  "from-bc"  'e' "Check changelogs from start of project."
   <*> switch  "force"  'f' "Bump version even if changelogs are outdated. Cannot be mixed with -c."
   where
-    packages = Text.words <$> optText
-      "packages" 'p' "List of packages to bump (separated by space)."
     packagesLevel = option readLevel $
          long "level"
       <> short 'l'
