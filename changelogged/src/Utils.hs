@@ -6,6 +6,7 @@ import System.Console.ANSI
 
 import Turtle.Format
 
+-- |Print '@text@' with ansi-terminal color.
 coloredPrint :: Color -> Text -> IO ()
 coloredPrint color line = do
   setSGR [SetColor Foreground Vivid color]

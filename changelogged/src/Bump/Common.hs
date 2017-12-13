@@ -8,20 +8,23 @@ import Data.Text (Text)
 import Types
 import Pure
 
-bumpHS :: FilePath -> Text -> Text -> IO ()
+-- |Bump version in '.hs' file
+bumpHS :: FilePath -> Text -> Variable -> IO ()
 bumpHS file version var = do
   sh $ inproc "sed" ["-i", "-r", hsExpr] (input file)
   return ()
   where
-    hsExpr = "s/(^" <> var <> " = )\\\"[0-9][0-9.]*\\\"/\\1\"" <> version <> "\"/"
-    
-bumpJSON :: FilePath -> Text -> Text -> IO ()
+    hsExpr = "s/(^" <> var <> " = )\\\"[0-9][0-9.]*\\\"/\\1\"" <> version <> "\"/"    
+
+-- |Bump version in '.json' file
+bumpJSON :: FilePath -> Text -> Variable -> IO ()
 bumpJSON file version var = do
   sh $ inproc "sed" ["-i", "-r", jsonExpr] (input file)
   return ()
   where
     jsonExpr = "s/(^\\s*\"" <> var <> "\": )\"[0-9][0-9.]*\"/\\1\"" <> version <> "\"/"
 
+-- |Get level of changes from changelog.
 getChangelogEntries :: FilePath -> IO (Maybe Level)
 getChangelogEntries changelogFile = do
   major <- fold (grep (prefix "* Major") unreleased) countLines

@@ -13,6 +13,7 @@ import Utils
 import Pure
 import Bump.Common
 
+-- |Get current API version.
 currentAPIVersion :: (FilePath, Variable) -> IO Text
 currentAPIVersion (swagger, var) = do
   ver <- case extension swagger of
@@ -23,11 +24,13 @@ currentAPIVersion (swagger, var) = do
       return ""
   return $ T.stripEnd ver
 
+-- |Generate new API version.
 generateAPIVersion :: Level -> (FilePath, Variable) -> IO Text
 generateAPIVersion lev swagger = do
   current <- currentAPIVersion swagger
   return $ bump (delimited current) lev
 
+-- |Infer new API version.
 generateAPIVersionByChangelog :: Bool -> (FilePath, Variable) -> FilePath -> IO (Maybe Text)
 generateAPIVersionByChangelog True _ _ = do
   coloredPrint Yellow "You are bumping API version with no explicit version modifiers and changelog checks. It can result in anything. Please retry.\n"
@@ -40,6 +43,7 @@ generateAPIVersionByChangelog False swagger changelogFile = do
       coloredPrint Yellow ("WARNING: keep old API version since " <> showPath changelogFile <> " apparently does not contain any new entries.\n")
       return Nothing
 
+-- |Bump API version in given file.
 bumpAPIPart :: Text -> (FilePath, Variable) -> IO ()
 bumpAPIPart version (file, var) = do
     printf ("- Updating API version for "%fp%"\n") file

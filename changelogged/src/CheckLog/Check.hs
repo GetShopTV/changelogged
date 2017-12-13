@@ -16,6 +16,7 @@ import Utils
 import Pure
 import CheckLog.Common
 
+-- |Ignore commits which only affect given file.
 notOnlyUpdate :: FilePath -> Text -> IO Bool
 notOnlyUpdate changelog commit = do
   statCommit <- fold (inproc "git" ["show", "--stat", commit] empty) Fold.list

@@ -12,6 +12,7 @@ import Types
 import Utils
 import Pure
 
+-- |Check if commit/pr is present in changelog. Returns '@True@' if present.
 changelogIsUp :: WarningFormat -> Text -> Text -> Mode -> Part -> Text -> FilePath -> IO Bool
 changelogIsUp fmt link item mode _part message changelog = do
   grepLen <- fold (grep (has (text item)) (input changelog)) countLines
@@ -65,6 +66,7 @@ suggestMissing link item mode message = do
       printf ("("%s%")") (commitLink link item)
   printf ");\n"
 
+-- |Get commit message for any entry in history.
 commitMessage :: Mode -> Text -> IO Text
 commitMessage _ "" = return ""
 commitMessage mode commit = do

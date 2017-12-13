@@ -11,6 +11,7 @@ import Turtle
 
 import Types
 
+-- |Get latest git tag in origin/master if present.
 latestGitTag :: Text -> IO Text
 latestGitTag repl = do
   ver <- fold (fromRight "" <$> inprocWithErr "git" ["describe", "--tags", "origin/master"] empty) Fold.head
@@ -18,6 +19,7 @@ latestGitTag repl = do
     Nothing -> repl
     Just v -> lineToText v
 
+-- |Get link to origin.
 getLink :: IO Text
 getLink = do
   raw <- strict $ inproc "git" ["remote", "get-url", "origin"] empty
@@ -25,7 +27,7 @@ getLink = do
     Just link -> link
     Nothing -> Text.stripEnd raw
 
--- Extract latest history and origin link from git.
+-- |Extract latest history and origin link from git through temporary file and store it in '@Git@'.
 gitData :: Bool -> IO Git
 gitData start = do
   curDir <- pwd

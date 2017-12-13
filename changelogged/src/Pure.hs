@@ -1,5 +1,6 @@
 -- Pure functions for changelogged.
 
+-- |Internal functions.
 module Pure where
 
 import Prelude hiding (FilePath)

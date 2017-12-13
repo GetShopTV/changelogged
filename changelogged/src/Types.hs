@@ -9,13 +9,17 @@ import Turtle hiding (option)
 
 type Variable = Text
 
+-- |This is not actaully used except for pretty print.
 data Part = API | Project
-  
+
+-- |Level of changes to bump to.
 data Level = App | Major | Minor | Fix | Doc
   deriving (Show, Enum, Bounded)
 
+-- |Type of entry in git history.
 data Mode = PR | Commit
 
+-- |Structure to save once token git data.
 data Git = Git
   { gitHistory :: FilePath
   , gitLink :: Text
