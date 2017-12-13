@@ -1,7 +1,8 @@
 changelogs:
   main:
+    # You can simply use arrays here.
     path: "CHANGELOG.md"
-  api: 
+  api:
     path: "API_CHANGELOG.md"
     indicator: 
       path: "file.json"

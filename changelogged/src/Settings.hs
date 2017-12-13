@@ -9,6 +9,7 @@ import Data.Aeson.Types (typeMismatch)
 import qualified Data.HashMap.Strict as HM
 import Data.Text (Text)
 import qualified Data.Yaml as Yaml
+import Data.Vector ((!))
 import Data.Yaml ((.:), (.:?))
 
 import GHC.Generics
@@ -28,12 +29,18 @@ instance Yaml.FromJSON TaggedFile where
   parseJSON (Yaml.Object v) = TaggedFile
         <$> v .: "path"
         <*> v .: "variable"
+  parseJSON (Yaml.Array v) = TaggedFile
+        <$> Yaml.parseJSON (v ! 0)
+        <*> Yaml.parseJSON (v ! 1)
   parseJSON invalid = typeMismatch "TaggedFile" invalid
 
 instance Yaml.FromJSON TaggedLog where
   parseJSON (Yaml.Object v) = TaggedLog
         <$> v .: "path"
         <*> v .:? "indicator"
+  parseJSON (Yaml.Array v) = TaggedLog
+        <$> Yaml.parseJSON (v ! 0)
+        <*> Yaml.parseJSON (v ! 1)
   parseJSON invalid = typeMismatch "TaggedLog" invalid
 
 instance Yaml.FromJSON FilePath where
