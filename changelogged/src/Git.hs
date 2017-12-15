@@ -37,10 +37,8 @@ gitData start = do
   latestTag <- latestGitTag ""
   link <- getLink
   hist <- if start || (latestTag == "")
-    then fold ((inproc "grep" ["-v", "Merge branch"]
-      (inproc "git" ["log", "--oneline", "--first-parent"] empty))  `catch` \ (_ :: ExitCode) -> empty) Fold.list
-    else fold ((inproc "grep" ["-v", "Merge branch"]
-      (inproc "git" ["log", "--oneline", "--first-parent", latestTag <> "..HEAD"] empty))  `catch` \ (_ :: ExitCode) -> empty) Fold.list
+    then fold (grep (invert (has (text "Merge branch"))) (inproc "git" ["log", "--oneline", "--first-parent"] empty)) Fold.list
+    else fold (grep (invert (has (text "Merge branch"))) (inproc "git" ["log", "--oneline", "--first-parent", latestTag <> "..HEAD"] empty)) Fold.list
   liftIO $ append tmpFile (select hist)
   return $ Git tmpFile link (version latestTag)
   where

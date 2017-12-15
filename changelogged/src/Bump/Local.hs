@@ -13,20 +13,22 @@ import System.Console.ANSI (Color(..))
 import Types
 import Utils
 import Pure
+import Pattern
 import Bump.Common
 
 -- |Get current local version.
 currentLocalVersion :: TaggedFile -> IO Text
 currentLocalVersion TaggedFile{..} = do
   ver <- case extension taggedFilePath of
-    Just "json" ->
-      fold (inproc "egrep" ["-o", "[0-9][0-9.]*"] (inproc "egrep" ["\"" <> taggedFileVariable <> "\": \"[0-9][0-9.]*\""] (input taggedFilePath))) Fold.head
-    Just "hs" ->
-      fold (inproc "egrep" ["-o", "[0-9][0-9.]*"] (inproc "egrep" [taggedFileVariable <> "\\s+=\\s+\"[0-9][0-9.]*\""] (input taggedFilePath))) Fold.head
+    Just "json" -> fold (grep (jsonGrep taggedFileVariable) (input taggedFilePath)) Fold.head
+    Just "hs" -> fold (grep (hsGrep taggedFileVariable) (input taggedFilePath)) Fold.head
     _ -> do
-      coloredPrint Red ("ERROR: invalid indicator file " <> showPath taggedFilePath <> " : only .hs and .json supported, sorry.")
-      return (Just "")
-  return $ lineToText $ fromMaybe "0.0.0.0.0" ver
+      coloredPrint Red ("ERROR: invalid indicator file " <> showPath taggedFilePath <> " : only .hs and .json supported, sorry. Will treat as zero version.")
+      return Nothing
+  print (versionMatch . lineToText <$> ver)
+  return $ case ver of
+    Just realVer -> fromMaybe "0.0.0.0.0" $ versionMatch . lineToText $ realVer
+    Nothing -> "0.0.0.0.0"
 
 -- |Generate new local version.
 generateLocalVersion :: Level -> TaggedFile -> IO Text
