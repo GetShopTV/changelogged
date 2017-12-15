@@ -64,6 +64,4 @@ getChangelogEntries changelogFile = do
     _ -> Just Major
   where
     expr =  "/^[0-9]\\.[0-9]/q"
-    -- correct would be `inproc "sed" [expr] (input changelogFile)`
-    -- I'm getting broken pipe possibly related to https://github.com/Gabriel439/Haskell-Turtle-Library/issues/102
     unreleased = inproc "sed" [expr, showPath changelogFile] empty

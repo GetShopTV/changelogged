@@ -9,6 +9,9 @@ import Filesystem.Path.CurrentOS (encodeString, FilePath)
 
 import Types
 
+maxByLen :: [Text] -> Text
+maxByLen = foldl1 (\left right -> if Text.length left > Text.length right then left else right)
+
 defaultedEmpty :: Maybe (HM.HashMap k v) -> HM.HashMap k v
 defaultedEmpty Nothing = HM.empty
 defaultedEmpty (Just hm) = hm
