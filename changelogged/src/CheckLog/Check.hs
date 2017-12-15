@@ -4,8 +4,6 @@ module CheckLog.Check where
 import Turtle
 import Prelude hiding (FilePath, log)
 
-import qualified Data.Text as Text
-
 import qualified Control.Foldl as Fold
 import Control.Monad (when, filterM)
 import Control.Monad.Catch
@@ -56,17 +54,16 @@ checkLocalChangelogF fmt Git{..} path indicator = do
       case linePresent of
         0 -> return True
         _ -> do
-          pull <- strict $
-            inproc "egrep" ["-o", "#[0-9]+"] $
-              inproc "egrep" ["-o", "pull request #[0-9]+"] $
-                grep (has (text commit)) (input hist)
-          case Text.length pull of
-            0 -> do
+          pull <- fold ((inproc "egrep" ["-o", "#[0-9]+"]
+              (inproc "egrep" ["-o", "pull request #[0-9]+"]
+                (grep (has (text commit)) (input hist))) `catch` \ (_ :: ExitCode) -> empty)) Fold.head
+          case pull of
+            Nothing -> do
               message <- commitMessage Commit commit
               changelogIsUp fmt gitLink commit Commit message path
-            _ -> do
+            Just pnum -> do
               message <- commitMessage PR commit
-              changelogIsUp fmt gitLink (Text.stripEnd pull) PR message path
+              changelogIsUp fmt gitLink (lineToText pnum) PR message path
 
 checkChangelogWrap :: Options -> Git -> Bool -> TaggedLog -> IO Bool
 checkChangelogWrap _ _ True _ = do

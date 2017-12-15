@@ -39,7 +39,7 @@ gitData start = do
     then fold ((inproc "grep" ["-v", "Merge branch"]
       (inproc "git" ["log", "--oneline", "--first-parent"] empty))  `catch` \ (_ :: ExitCode) -> empty) Fold.list
     else fold ((inproc "grep" ["-v", "Merge branch"]
-      (inproc "git" ["log", "--oneline", "--first-parent", Text.stripEnd latestTag <> "..HEAD"] empty))  `catch` \ (_ :: ExitCode) -> empty) Fold.list
+      (inproc "git" ["log", "--oneline", "--first-parent", latestTag <> "..HEAD"] empty))  `catch` \ (_ :: ExitCode) -> empty) Fold.list
   liftIO $ append tmpFile (select hist)
   return $ Git tmpFile link (version latestTag)
   where

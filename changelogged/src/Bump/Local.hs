@@ -3,8 +3,10 @@ module Bump.Local where
 import Turtle
 import Prelude hiding (FilePath, log)
 
+import qualified Control.Foldl as Fold
+
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
-import qualified Data.Text as T
 
 import System.Console.ANSI (Color(..))
 
@@ -17,12 +19,14 @@ import Bump.Common
 currentLocalVersion :: TaggedFile -> IO Text
 currentLocalVersion TaggedFile{..} = do
   ver <- case extension taggedFilePath of
-    Just "json" -> strict $ inproc "egrep" ["-o", "[0-9][0-9.]*"] (inproc "egrep" ["\"" <> taggedFileVariable <> "\": \"[0-9][0-9.]*\""] (input taggedFilePath))
-    Just "hs" -> strict $ inproc "egrep" ["-o", "[0-9][0-9.]*"] (inproc "egrep" [taggedFileVariable <> "\\s+=\\s+\"[0-9][0-9.]*\""] (input taggedFilePath))
+    Just "json" ->
+      fold (inproc "egrep" ["-o", "[0-9][0-9.]*"] (inproc "egrep" ["\"" <> taggedFileVariable <> "\": \"[0-9][0-9.]*\""] (input taggedFilePath))) Fold.head
+    Just "hs" ->
+      fold (inproc "egrep" ["-o", "[0-9][0-9.]*"] (inproc "egrep" [taggedFileVariable <> "\\s+=\\s+\"[0-9][0-9.]*\""] (input taggedFilePath))) Fold.head
     _ -> do
       coloredPrint Red ("ERROR: invalid indicator file " <> showPath taggedFilePath <> " : only .hs and .json supported, sorry.")
-      return ""
-  return $ T.stripEnd ver
+      return (Just "")
+  return $ lineToText $ fromMaybe "0.0.0.0.0" ver
 
 -- |Generate new local version.
 generateLocalVersion :: Level -> TaggedFile -> IO Text
