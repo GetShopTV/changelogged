@@ -43,29 +43,23 @@ checkLocalChangelogF :: WarningFormat -> Git -> FilePath -> FilePath -> IO Bool
 checkLocalChangelogF fmt Git{..} path indicator = do
   printf ("Checking "%fp%"\n") path
   
-  print "A!"
   commits <- fmap lineToText <$> fold ((inproc "egrep" ["-o", "^[0-9a-f]+"] (input gitHistory)) `catch` \ (_ :: ExitCode) -> empty) Fold.list
-  print "A!"
 
   flags <- mapM (eval gitHistory) commits
   return $ and flags
   where
     eval hist commit = do
-      print "A!"
       linePresent <- fold
         (grep (has $ text $ showPath indicator)
           (inproc "git" ["show", "--stat", commit] empty))
         countLines
-      print "A!"
       case linePresent of
         0 -> return True
         _ -> do
-          print "A!"
           pull <- strict $
             inproc "egrep" ["-o", "#[0-9]+"] $
               inproc "egrep" ["-o", "pull request #[0-9]+"] $
                 grep (has (text commit)) (input hist)
-          print "A!"
           case Text.length pull of
             0 -> do
               message <- commitMessage Commit commit
@@ -79,7 +73,7 @@ checkChangelogWrap _ _ True _ = do
   coloredPrint Yellow "WARNING: skipping checks for API changelog.\n"
   return True
 checkChangelogWrap Options{..} git False TaggedLog{..} = do
-  when optFromBC $ printf ("Checking "%fp%" from start of project") taggedLogPath
+  when optFromBC $ printf ("Checking "%fp%" from start of project\n") taggedLogPath
   upToDate <- case taggedLogIndicator of
     Nothing -> checkCommonChangelogF optFormat git taggedLogPath
     Just ind -> checkLocalChangelogF optFormat git taggedLogPath (taggedFilePath ind)

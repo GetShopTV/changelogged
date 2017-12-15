@@ -21,8 +21,8 @@ changelogIsUp fmt link item mode message changelog = do
   case grepLen of
     0 -> do
       case fmt of
-        WarnSimple  -> warnMissing item mode message changelog
-        WarnSuggest -> suggestMissing link item mode message changelog
+        WarnSimple  -> warnMissing item mode message
+        WarnSuggest -> suggestMissing link item mode message
       return False
     _ -> return True
 
@@ -44,11 +44,11 @@ noMarkdown commit = do
 --
 -- >>> warnMissing "9e14840" Commit "Add new stuff"
 -- - Single commit 9e14840 is missing in changelog: Add new stuff.
-warnMissing :: Text -> Mode -> Text -> FilePath -> IO ()
-warnMissing item mode message changelog = do
+warnMissing :: Text -> Mode -> Text -> IO ()
+warnMissing item mode message = do
   printf ("- "%s%" ") (showText mode)
   coloredPrint Cyan item
-  printf (" is missing in "%fp%": "%s%".\n") changelog message
+  printf (" is missing: "%s%".\n") message
 
 -- |
 -- >>> prLink "#13"
@@ -68,8 +68,8 @@ commitLink link sha = link <> "/commit/" <> sha
 --
 -- >>> suggestMissing "9e14840" Commit "Add new stuff"
 -- - Add new stuff (see [`9e14840`](https://github.com/GetShopTV/getshoptv/commit/9e14840));
-suggestMissing :: Text -> Text -> Mode -> Text -> FilePath -> IO ()
-suggestMissing link item mode message changelog = do
+suggestMissing :: Text -> Text -> Mode -> Text -> IO ()
+suggestMissing link item mode message = do
   printf ("- "%s%" (see ") message
   case mode of
     PR -> do
@@ -78,7 +78,7 @@ suggestMissing link item mode message changelog = do
     Commit -> do
       coloredPrint Cyan ("[`" <> item <> "`]")
       printf ("("%s%")") (commitLink link item)
-  printf ("); in "%fp%"\n") changelog
+  printf (");\n")
 
 -- |Get commit message for any entry in history.
 commitMessage :: Mode -> Text -> IO Text
