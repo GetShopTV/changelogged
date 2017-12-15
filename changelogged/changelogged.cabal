@@ -36,9 +36,9 @@ library
                      , yaml
                      , aeson
                      , mtl
+                     , exceptions
                      , system-filepath
                      , foldl
-                     , either
                      , unordered-containers
                      , vector
   default-language:    Haskell2010
