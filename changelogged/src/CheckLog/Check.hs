@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 module CheckLog.Check where
 
 import Turtle
@@ -7,6 +8,7 @@ import qualified Data.Text as Text
 
 import qualified Control.Foldl as Fold
 import Control.Monad (when, filterM)
+import Control.Monad.Catch
 
 import System.Console.ANSI (Color(..))
 
@@ -20,11 +22,11 @@ checkCommonChangelogF fmt Git{..} changelog = do
   printf ("Checking "%fp%"\n") changelog
 
   pullCommits <- fmap lineToText <$> fold
-    (inproc "egrep" ["-o", "^[0-9a-f]+"] (inproc "egrep" [pullExpr] (input gitHistory))) Fold.list
+    ((inproc "egrep" ["-o", "^[0-9a-f]+"] (inproc "egrep" [pullExpr] (input gitHistory))) `catch` \ (_ :: ExitCode) -> empty) Fold.list
   pulls <- fmap lineToText <$> fold
-    (inproc "egrep" ["-o", "#[0-9]+"] (inproc "egrep" ["-o", pullExpr] (input gitHistory))) Fold.list
+    ((inproc "egrep" ["-o", "#[0-9]+"] (inproc "egrep" ["-o", pullExpr] (input gitHistory))) `catch` \ (_ :: ExitCode) -> empty) Fold.list
   singles <- fmap lineToText <$> fold
-    (inproc "egrep" ["-o", "^[0-9a-f]+"] (inproc "grep" ["-o", "-P", singleExpr] (input gitHistory))) Fold.list
+    ((inproc "egrep" ["-o", "^[0-9a-f]+"] (inproc "grep" ["-o", "-P", singleExpr] (input gitHistory))) `catch` \ (_ :: ExitCode) -> empty) Fold.list
   
   filteredSingles <- filterM noMarkdown singles
   
@@ -41,23 +43,29 @@ checkLocalChangelogF :: WarningFormat -> Git -> FilePath -> FilePath -> IO Bool
 checkLocalChangelogF fmt Git{..} path indicator = do
   printf ("Checking "%fp%"\n") path
   
-  commits <- fmap lineToText <$> fold (inproc "egrep" ["-o", "^[0-9a-f]+"] (input gitHistory)) Fold.list
-  
+  print "A!"
+  commits <- fmap lineToText <$> fold ((inproc "egrep" ["-o", "^[0-9a-f]+"] (input gitHistory)) `catch` \ (_ :: ExitCode) -> empty) Fold.list
+  print "A!"
+
   flags <- mapM (eval gitHistory) commits
   return $ and flags
   where
     eval hist commit = do
+      print "A!"
       linePresent <- fold
         (grep (has $ text $ showPath indicator)
           (inproc "git" ["show", "--stat", commit] empty))
         countLines
+      print "A!"
       case linePresent of
         0 -> return True
         _ -> do
+          print "A!"
           pull <- strict $
             inproc "egrep" ["-o", "#[0-9]+"] $
               inproc "egrep" ["-o", "pull request #[0-9]+"] $
                 grep (has (text commit)) (input hist)
+          print "A!"
           case Text.length pull of
             0 -> do
               message <- commitMessage Commit commit

@@ -1,9 +1,10 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 module Git where
 
 import qualified Control.Foldl as Fold
+import Control.Monad.Catch
 
 import Data.Char (isDigit)
-import Data.Either.Combinators (fromRight)
 import Data.Text (Text)
 import qualified Data.Text as Text
 
@@ -14,7 +15,7 @@ import Types
 -- |Get latest git tag in origin/master if present.
 latestGitTag :: Text -> IO Text
 latestGitTag repl = do
-  ver <- fold (fromRight "" <$> inprocWithErr "git" ["describe", "--tags", "origin/master"] empty) Fold.head
+  ver <- fold ((inproc "git" ["describe", "--tags", "origin/master"] empty) `catch` \ (_ :: ExitCode) -> empty) Fold.head
   return $ case ver of
     Nothing -> repl
     Just v -> lineToText v
@@ -34,11 +35,12 @@ gitData start = do
   tmpFile <- with (mktempfile curDir "tmp_") return
   latestTag <- latestGitTag ""
   link <- getLink
-  if start || (latestTag == "")
-    then liftIO $ append tmpFile $
-      inproc "grep" ["-v", "Merge branch"] (inproc "git" ["log", "--oneline", "--first-parent"] empty)
-    else liftIO $ append tmpFile $
-      inproc "grep" ["-v", "Merge branch"] (inproc "git" ["log", "--oneline", "--first-parent", Text.stripEnd latestTag <> "..HEAD"] empty)
+  hist <- if start || (latestTag == "")
+    then fold ((inproc "grep" ["-v", "Merge branch"]
+      (inproc "git" ["log", "--oneline", "--first-parent"] empty))  `catch` \ (_ :: ExitCode) -> empty) Fold.list
+    else fold ((inproc "grep" ["-v", "Merge branch"]
+      (inproc "git" ["log", "--oneline", "--first-parent", Text.stripEnd latestTag <> "..HEAD"] empty))  `catch` \ (_ :: ExitCode) -> empty) Fold.list
+  liftIO $ append tmpFile (select hist)
   return $ Git tmpFile link (version latestTag)
   where
     version tag = case tag of
