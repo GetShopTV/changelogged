@@ -84,10 +84,7 @@ suggestMissing link item mode message = do
 commitMessage :: Mode -> Text -> IO Text
 commitMessage _ "" = return ""
 commitMessage mode commit = do
-  raw <- strict $ inproc "sed" ["-n", sedString] $
-                    inproc "git" ["show", commit] empty
-  return $ Text.stripEnd $ Text.stripStart raw
-  where
-    sedString = case mode of
-      PR -> "8p"
-      Commit -> "5p"
+  summary <- fold (inproc "git" ["show", commit] empty) Fold.list
+  return $ Text.stripStart $ lineToText $ case mode of
+    PR -> summary !! 7
+    Commit -> summary !! 4

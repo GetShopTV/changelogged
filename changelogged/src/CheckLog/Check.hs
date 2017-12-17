@@ -6,25 +6,25 @@ import Prelude hiding (FilePath, log)
 
 import qualified Control.Foldl as Fold
 import Control.Monad (when, filterM)
-import Control.Monad.Catch
 
 import System.Console.ANSI (Color(..))
 
 import Types
 import Utils
 import Pure
+import Pattern
 import CheckLog.Common
 
 checkCommonChangelogF :: WarningFormat -> Git -> FilePath -> IO Bool
 checkCommonChangelogF fmt Git{..} changelog = do
   printf ("Checking "%fp%"\n") changelog
 
-  pullCommits <- fmap lineToText <$> fold
-    ((inproc "egrep" ["-o", "^[0-9a-f]+"] (inproc "egrep" [pullExpr] (input gitHistory))) `catch` \ (_ :: ExitCode) -> empty) Fold.list
-  pulls <- fmap lineToText <$> fold
-    ((inproc "egrep" ["-o", "#[0-9]+"] (inproc "egrep" ["-o", pullExpr] (input gitHistory))) `catch` \ (_ :: ExitCode) -> empty) Fold.list
-  singles <- fmap lineToText <$> fold
-    ((inproc "egrep" ["-o", "^[0-9a-f]+"] (inproc "grep" ["-o", "-P", singleExpr] (input gitHistory))) `catch` \ (_ :: ExitCode) -> empty) Fold.list
+  pullCommits <- map ((flip fromJustCustom "Cannot find commit hash in git log entry") . hashMatch . lineToText)
+    <$> fold (grep githubRefGrep (input gitHistory)) Fold.list
+  pulls <- map ((flip fromJustCustom "Cannot find pull request number in git log entry") . githubRefMatch . lineToText)
+    <$> fold (grep githubRefGrep (input gitHistory)) Fold.list
+  singles <- map ((flip fromJustCustom "Cannot find commit hash in git log entry") . hashMatch . lineToText)
+    <$> fold (grep hashGrepExclude (input gitHistory)) Fold.list
   
   filteredSingles <- filterM noMarkdown singles
   
@@ -33,15 +33,13 @@ checkCommonChangelogF fmt Git{..} changelog = do
   flagsPR <- mapM (\(i,m) -> changelogIsUp fmt gitLink i PR m changelog) (zip pulls pullHeaders)
   flagsCommit <- mapM (\(i, m) -> changelogIsUp fmt gitLink i Commit m changelog) (zip filteredSingles singleHeaders)
   return $ and (flagsPR ++ flagsCommit)
-  where
-    pullExpr = "pull request #[0-9]+"
-    singleExpr = "^[0-9a-f]+\\s(?!.*Merge)"
 
 checkLocalChangelogF :: WarningFormat -> Git -> FilePath -> FilePath -> IO Bool
 checkLocalChangelogF fmt Git{..} path indicator = do
   printf ("Checking "%fp%"\n") path
   
-  commits <- fmap lineToText <$> fold ((inproc "egrep" ["-o", "^[0-9a-f]+"] (input gitHistory)) `catch` \ (_ :: ExitCode) -> empty) Fold.list
+  commits <- map ((flip fromJustCustom "Cannot find commit hash in git log entry") . hashMatch . lineToText)
+    <$> fold (input gitHistory) Fold.list
 
   flags <- mapM (eval gitHistory) commits
   return $ and flags
@@ -54,16 +52,15 @@ checkLocalChangelogF fmt Git{..} path indicator = do
       case linePresent of
         0 -> return True
         _ -> do
-          pull <- fold ((inproc "egrep" ["-o", "#[0-9]+"]
-              (inproc "egrep" ["-o", "pull request #[0-9]+"]
-                (grep (has (text commit)) (input hist))) `catch` \ (_ :: ExitCode) -> empty)) Fold.head
+          pull <- fmap ((flip fromJustCustom "Cannot find commit hash in git log entry") . githubRefMatch . lineToText) <$>
+              fold (grep githubRefGrep (grep (has (text commit)) (input hist))) Fold.head
           case pull of
             Nothing -> do
               message <- commitMessage Commit commit
               changelogIsUp fmt gitLink commit Commit message path
             Just pnum -> do
               message <- commitMessage PR commit
-              changelogIsUp fmt gitLink (lineToText pnum) PR message path
+              changelogIsUp fmt gitLink pnum PR message path
 
 checkChangelogWrap :: Options -> Git -> Bool -> TaggedLog -> IO Bool
 checkChangelogWrap _ _ True _ = do

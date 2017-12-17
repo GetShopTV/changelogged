@@ -24,6 +24,7 @@ library
     Utils
     Pure
     Types
+    Pattern
     Git
     Settings
     Options
@@ -41,6 +42,7 @@ library
                      , foldl
                      , unordered-containers
                      , vector
+                     , either
   default-language:    Haskell2010
   default-extensions:  OverloadedStrings
                        RecordWildCards

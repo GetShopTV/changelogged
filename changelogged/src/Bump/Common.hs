@@ -3,6 +3,8 @@ module Bump.Common where
 import Prelude hiding (FilePath)
 import Turtle
 
+import qualified Control.Foldl as Fold
+
 import Data.Text (Text)
 
 import System.Console.ANSI (Color(..))
@@ -10,39 +12,54 @@ import System.Console.ANSI (Color(..))
 import Types
 import Utils
 import Pure
+import Pattern
+
+bumpAny :: (Text -> Pattern Text) -> TaggedFile -> Text -> Shell ()
+bumpAny extGrep TaggedFile{..} version = do
+  file <- fold (input taggedFilePath) Fold.list
+  matched <- fold (grep (extGrep taggedFileVariable) (select file)) Fold.list
+  changed <- fold (sed (versionExactRegex *> return version) (select matched)) Fold.list
+  output taggedFilePath (select $ generateVersionedFile file changed matched)
 
 -- |Bump version in '.hs' file
-bumpHS :: TaggedFile -> Text -> IO ()
-bumpHS TaggedFile{..} version = do
-  sh $ inproc "sed" ["-i", "-r", hsExpr, showPath taggedFilePath] empty
-  return ()
-  where
-    hsExpr = "s/(^" <> taggedFileVariable <> " = )\\\"[0-9][0-9.]*\\\"/\\1\"" <> version <> "\"/"    
+bumpHS :: TaggedFile -> Text -> Shell ()
+bumpHS = bumpAny hsGrep
 
 -- |Bump version in '.json' file
-bumpJSON :: TaggedFile -> Text -> IO ()
-bumpJSON TaggedFile{..} version = do
-  sh $ inproc "sed" ["-i", "-r", jsonExpr, showPath taggedFilePath] empty
-  return ()
-  where
-    jsonExpr = "s/(^\\s*\"" <> taggedFileVariable <> "\": )\"[0-9][0-9.]*\"/\\1\"" <> version <> "\"/"
+bumpJSON :: TaggedFile -> Text -> Shell ()
+bumpJSON = bumpAny jsonGrep
 
 -- |Bump version in '.cabal' file
-bumpCabal :: TaggedFile -> Text -> IO ()
-bumpCabal TaggedFile{..} version = do
-  sh $ inproc "sed" ["-i", "-r", cabalExpr, showPath taggedFilePath] empty
-  return ()
+bumpCabal :: TaggedFile -> Text -> Shell ()
+bumpCabal = bumpAny cabalGrep
+
+generateVersionedFile
+  -- template file
+  :: [Line]
+  -- new lines
+  -> [Line]
+  -- lines to be replaced
+  -> [Line]
+  --result
+  -> [Line]
+generateVersionedFile file [] [] = file
+generateVersionedFile _ [] _ = error "internal sed error"
+generateVersionedFile _ _ [] = error "internal sed error"
+generateVersionedFile file (new:news) (old:olds) = generateVersionedFile (replaceLine file new old) news olds
   where
-    cabalExpr = "s/(^" <> taggedFileVariable <> ":[^0-9]*)[0-9][0-9.]*/\\1" <> version <> "/"
+    replaceLine [] _ _ = []
+    replaceLine (xvar:xvars) newLine oldLine 
+      | xvar == oldLine = (newLine:xvars)
+      | otherwise = xvar : replaceLine xvars newLine oldLine
 
 -- |Bump version in non-'.cabal' file.
 bumpPart :: Text -> TaggedFile -> IO ()
 bumpPart version file@TaggedFile{..} = do
   printf ("- Updating version for "%fp%"\n") taggedFilePath
   case extension taggedFilePath of
-    Just "hs" -> bumpHS file version
-    Just "json" -> bumpJSON file version
-    Just "cabal" -> bumpCabal file version
+    Just "hs" -> sh $ bumpHS file version
+    Just "json" -> sh $ bumpJSON file version
+    Just "cabal" -> sh $ bumpCabal file version
     _ -> coloredPrint Red ("ERROR: Didn't bump version in " <> showPath taggedFilePath <> " : only .hs and .json supported, sorry.")
 
 -- |Get level of changes from changelog.
@@ -63,7 +80,4 @@ getChangelogEntries changelogFile = do
       _ -> Just Minor
     _ -> Just Major
   where
-    expr =  "/^[0-9]\\.[0-9]/q"
-    -- correct would be `inproc "sed" [expr] (input changelogFile)`
-    -- I'm getting broken pipe possibly related to https://github.com/Gabriel439/Haskell-Turtle-Library/issues/102
-    unreleased = inproc "sed" [expr, showPath changelogFile] empty
+    unreleased = limitWhile (\line -> match (prefix versionExactRegex) (lineToText line) == []) (input changelogFile)
