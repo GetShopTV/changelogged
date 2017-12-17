@@ -35,10 +35,19 @@ githubRefMatch :: Text -> Maybe Text
 githubRefMatch str = maxByLen $ match githubRefRegex str
 
 jsonGrep :: Text -> Pattern Text
-jsonGrep var = has $ "\"" <> text var <> "\"" <> spaces <> ":" <> spaces <> "\"" <> versionExactRegex <> "\""
+jsonGrep var = has $ jsonVarGrep var <> spaces <> "\"" <> versionExactRegex <> "\""
 
 cabalGrep :: Text -> Pattern Text
-cabalGrep var = has $ text var <> spaces <> ":" <> spaces <> versionExactRegex
+cabalGrep var = has $ cabalVarGrep var <> spaces <> versionExactRegex
 
 hsGrep :: Text -> Pattern Text
-hsGrep var = has $ text var <> spaces <> "=" <> spaces <> "\"" <> versionExactRegex <> "\""
+hsGrep var = has $ hsVarGrep var <> spaces <> "\"" <> versionExactRegex <> "\""
+
+jsonVarGrep :: Text -> Pattern Text
+jsonVarGrep var = "\"" <> text var <> "\"" <> spaces <> ":"
+
+cabalVarGrep :: Text -> Pattern Text
+cabalVarGrep var = text var <> spaces <> ":"
+
+hsVarGrep :: Text -> Pattern Text
+hsVarGrep var = text var <> spaces <> "="

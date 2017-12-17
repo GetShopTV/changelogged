@@ -3,10 +3,12 @@ module Bump.Common where
 import Prelude hiding (FilePath)
 import Turtle
 
+import Control.Exception
 import qualified Control.Foldl as Fold
 
 import Data.Text (Text)
 
+import Filesystem.Path.CurrentOS (encodeString)
 import System.Console.ANSI (Color(..))
 
 import Types
@@ -18,6 +20,8 @@ bumpAny :: (Text -> Pattern Text) -> TaggedFile -> Text -> Shell ()
 bumpAny extGrep TaggedFile{..} version = do
   file <- fold (input taggedFilePath) Fold.list
   matched <- fold (grep (extGrep taggedFileVariable) (select file)) Fold.list
+  when (matched == []) $
+    throw (PatternMatchFail ("Cannot detect version in file " ++ encodeString taggedFilePath ++ ". Check config.\n"))
   changed <- fold (sed (versionExactRegex *> return version) (select matched)) Fold.list
   output taggedFilePath (select $ generateVersionedFile file changed matched)
 
