@@ -3,9 +3,9 @@ module Bump.Local where
 import Turtle
 import Prelude hiding (FilePath, log)
 
+import Control.Exception
 import qualified Control.Foldl as Fold
 
-import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 
 import System.Console.ANSI (Color(..))
@@ -20,15 +20,15 @@ import Bump.Common
 currentLocalVersion :: TaggedFile -> IO Text
 currentLocalVersion TaggedFile{..} = do
   ver <- case extension taggedFilePath of
-    Just "json" -> fold (grep (jsonGrep taggedFileVariable) (input taggedFilePath)) Fold.head
-    Just "hs" -> fold (grep (hsGrep taggedFileVariable) (input taggedFilePath)) Fold.head
-    _ -> do
-      coloredPrint Red ("ERROR: invalid indicator file " <> showPath taggedFilePath <> " : only .hs and .json supported, sorry. Will treat as zero version.")
-      return Nothing
-  print (versionMatch . lineToText <$> ver)
+    Just "json" -> fold (grep (has $ jsonVarGrep taggedFileVariable) (input taggedFilePath)) Fold.head
+    Just "hs" -> fold (grep (has $ hsVarGrep taggedFileVariable) (input taggedFilePath)) Fold.head
+    Just "cabal" -> fold (grep (has $ cabalVarGrep taggedFileVariable) (input taggedFilePath)) Fold.head
+    _ -> throw (PatternMatchFail "Unsupported extension in indicator file. Check config.\n")
   return $ case ver of
-    Just realVer -> fromMaybe "0.0.0.0.0" $ versionMatch . lineToText $ realVer
-    Nothing -> "0.0.0.0.0"
+    Just realVer -> case versionMatch . lineToText $ realVer of
+      Just v -> v
+      Nothing -> throw (PatternMatchFail "Given variable doesn't store version. Check config.\n")
+    Nothing -> throw (PatternMatchFail "Cannot find given variable in file. Check config.\n")
 
 -- |Generate new local version.
 generateLocalVersion :: Level -> TaggedFile -> IO Text
