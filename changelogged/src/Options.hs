@@ -60,6 +60,7 @@ parser = Options
   <*> switch  "no-bump"  'C' "Do not bump versions. Only check changelogs."
   <*> switch  "from-bc"  'e' "Check changelogs from start of project."
   <*> switch  "force"  'f' "Bump version even if changelogs are outdated. Cannot be mixed with -c."
+  <*> switch  "write"  'y' "Write changelog suggestions to changelog directly. Available with --format suggest."
   where
     packagesLevel = option readLevel $
          long "level"
@@ -102,4 +103,6 @@ data Options = Options
   , optFromBC          :: Bool
   -- |Bump versions even if changelogs are outdated.
   , optForce           :: Bool
+  -- |Write suggestions to changelog directly.
+  , optWrite           :: Bool
   }
