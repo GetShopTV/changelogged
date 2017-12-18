@@ -21,7 +21,7 @@ latestGitTag repl = do
     Nothing -> repl
     Just v -> lineToText v
 
--- |Get link to origin.
+-- |Get link to origin and strip '.git' to get valid url to project page.
 getLink :: IO Text
 getLink = do
   raw <- strict $ inproc "git" ["remote", "get-url", "origin"] empty

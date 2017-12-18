@@ -2,6 +2,7 @@ module Pure where
 
 import Prelude hiding (FilePath)
 import qualified Data.HashMap.Strict as HM
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as Text
 
@@ -9,19 +10,21 @@ import Filesystem.Path.CurrentOS (encodeString, FilePath)
 
 import Types
 
+-- | Maximum in list ordered by length.
 maxByLen :: [Text] -> Maybe Text
 maxByLen [] = Nothing
 maxByLen hs = Just $ foldl1 (\left right -> if Text.length left > Text.length right then left else right) hs
 
+-- 
 defaultedEmpty :: Maybe (HM.HashMap k v) -> HM.HashMap k v
-defaultedEmpty Nothing = HM.empty
-defaultedEmpty (Just hm) = hm
+defaultedEmpty = fromMaybe HM.empty
 
+-- |'@fromJust@' function with custom error message.
 fromJustCustom :: Maybe a -> String -> a
 fromJustCustom Nothing msg = error msg
 fromJustCustom (Just a) _ = a
 
--- I leave tuple here cause it's all functions for internal usage only.
+-- I leave tuple here cause it's all functions for internal usage only (tuplify, delimited, bump).
 tuplify :: [Int] -> (Int, Int, Int, Int, Int)
 tuplify [] = (0,0,0,0,0)
 tuplify [a1] = (a1,0,0,0,0)

@@ -16,6 +16,8 @@ import Utils
 import Pure
 import Pattern
 
+-- |Bump version in any supported file.
+-- Unlike sed it reads all the file and is less memory efficient.
 bumpAny :: (Text -> Pattern Text) -> TaggedFile -> Text -> Shell ()
 bumpAny extGrep TaggedFile{..} version = do
   file <- fold (input taggedFilePath) Fold.list
@@ -25,18 +27,8 @@ bumpAny extGrep TaggedFile{..} version = do
   changed <- fold (sed (versionExactRegex *> return version) (select matched)) Fold.list
   output taggedFilePath (select $ generateVersionedFile file changed matched)
 
--- |Bump version in '.hs' file
-bumpHS :: TaggedFile -> Text -> Shell ()
-bumpHS = bumpAny hsGrep
-
--- |Bump version in '.json' file
-bumpJSON :: TaggedFile -> Text -> Shell ()
-bumpJSON = bumpAny jsonGrep
-
--- |Bump version in '.cabal' file
-bumpCabal :: TaggedFile -> Text -> Shell ()
-bumpCabal = bumpAny cabalGrep
-
+-- |Replace given lines in the file.
+-- Here is used and called to write new lines wih versions.
 generateVersionedFile
   -- template file
   :: [Line]
@@ -56,14 +48,14 @@ generateVersionedFile file (new:news) (old:olds) = generateVersionedFile (replac
       | xvar == oldLine = (newLine:xvars)
       | otherwise = xvar : replaceLine xvars newLine oldLine
 
--- |Bump version in non-'.cabal' file.
+-- |Bump version in file regarding extension.
 bumpPart :: Text -> TaggedFile -> IO ()
 bumpPart version file@TaggedFile{..} = do
   printf ("- Updating version for "%fp%"\n") taggedFilePath
   case extension taggedFilePath of
-    Just "hs" -> sh $ bumpHS file version
-    Just "json" -> sh $ bumpJSON file version
-    Just "cabal" -> sh $ bumpCabal file version
+    Just "hs" -> sh $ bumpAny hsGrep file version
+    Just "json" -> sh $ bumpAny jsonGrep file version
+    Just "cabal" -> sh $ bumpAny cabalGrep file version
     _ -> coloredPrint Red ("ERROR: Didn't bump version in " <> showPath taggedFilePath <> " : only .hs and .json supported, sorry.")
 
 -- |Get level of changes from changelog.
