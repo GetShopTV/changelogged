@@ -8,6 +8,7 @@ import qualified Control.Foldl as Fold
 
 import Data.Text (Text)
 
+import Filesystem.Path.CurrentOS (encodeString)
 import System.Console.ANSI (Color(..))
 
 import Types
@@ -23,12 +24,12 @@ currentLocalVersion TaggedFile{..} = do
     Just "json" -> fold (grep (has $ jsonVarGrep taggedFileVariable) (input taggedFilePath)) Fold.head
     Just "hs" -> fold (grep (has $ hsVarGrep taggedFileVariable) (input taggedFilePath)) Fold.head
     Just "cabal" -> fold (grep (has $ cabalVarGrep taggedFileVariable) (input taggedFilePath)) Fold.head
-    _ -> throw (PatternMatchFail "Unsupported extension in indicator file. Check config.\n")
+    _ -> throw (PatternMatchFail $ "ERROR: Cannot get local version. Unsupported extension in indicator file " <> encodeString taggedFilePath <> ". Check config.\n")
   return $ case ver of
     Just realVer -> case versionMatch . lineToText $ realVer of
       Just v -> v
-      Nothing -> throw (PatternMatchFail "Given variable doesn't store version. Check config.\n")
-    Nothing -> throw (PatternMatchFail "Cannot find given variable in file. Check config.\n")
+      Nothing -> throw (PatternMatchFail $ "ERROR: Cannot get local version. Given variable " <> show taggedFileVariable <> " doesn't store version. Check config.\n")
+    Nothing -> throw (PatternMatchFail $ "ERROR: Cannot get local version. Cannot find given variable " <> show taggedFileVariable <> " in file " <> encodeString taggedFilePath <> ". Check config.\n")
 
 -- |Generate new local version.
 generateLocalVersion :: Level -> TaggedFile -> IO Text
