@@ -60,6 +60,7 @@ parser = Options
   <*> switch  "no-bump"  'C' "Do not bump versions. Only check changelogs."
   <*> switch  "from-bc"  'e' "Check changelogs from start of project."
   <*> switch  "force"  'f' "Bump version even if changelogs are outdated. Cannot be mixed with -c."
+  <*> switch  "write"  'y' "Write changelog suggestions to changelog directly. Available with --format suggest."
   where
     packagesLevel = option readLevel $
          long "level"
@@ -82,3 +83,26 @@ welcome = Description $ "---\n"
         <> "You can specify these levels of changes: app, major, minor, fix, doc.\n"
         <> "It can infer version from changelog.\n"
         <> "But it will refuse to do it if it's not sure changelogs are up to date."
+
+data Options = Options
+  { -- |Explicit level of changes for files with common versioning.
+    optPackagesLevel   :: Maybe Level
+  -- |Explicit level of changes in API.
+  , optApiLevel        :: Maybe Level
+  -- |Output formatting.
+  , optFormat          :: WarningFormat
+  -- |Assume there is API to check and bump.
+  , optWithAPI         :: Bool
+  -- |Assume there is some changelogs with unpredicted meanings.
+  , optDifferentChlogs :: Bool
+  -- |Do not check changelogs.
+  , optNoCheck         :: Bool
+  -- |Do not bump versions.
+  , optNoBump          :: Bool
+  -- |Check changelogs from start of project.
+  , optFromBC          :: Bool
+  -- |Bump versions even if changelogs are outdated.
+  , optForce           :: Bool
+  -- |Write suggestions to changelog directly.
+  , optWrite           :: Bool
+  }

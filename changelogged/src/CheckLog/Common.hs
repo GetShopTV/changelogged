@@ -15,14 +15,16 @@ import Utils
 import Pure
 
 -- |Check if commit/pr is present in changelog. Returns '@True@' if present.
-changelogIsUp :: WarningFormat -> Text -> Text -> Mode -> Text -> FilePath -> IO Bool
-changelogIsUp fmt link item mode message changelog = do
+changelogIsUp :: WarningFormat -> Bool -> Text -> Text -> Mode -> Text -> FilePath -> IO Bool
+changelogIsUp fmt writeSug link item mode message changelog = do
   grepLen <- fold (grep (has (text item)) (input changelog)) countLines
   case grepLen of
     0 -> do
       case fmt of
         WarnSimple  -> warnMissing item mode message
-        WarnSuggest -> suggestMissing link item mode message
+        WarnSuggest -> do
+          suggestMissing link item mode message
+          when writeSug $ addMissing link item mode message changelog
       return False
     _ -> return True
 
@@ -79,6 +81,19 @@ suggestMissing link item mode message = do
       coloredPrint Cyan ("[`" <> item <> "`]")
       printf ("("%s%")") (commitLink link item)
   printf (");\n")
+
+addMissing :: Text -> Text -> Mode -> Text -> FilePath -> IO ()
+addMissing link item mode message changelog = do
+  currentLogs <- fold (input changelog) Fold.list
+  output changelog (return $ unsafeTextToLine entry)
+  append changelog (select currentLogs)
+  where
+    entry = prolog <> sense <> epilog
+    prolog = "- " <> message <> " (see "
+    sense = case mode of
+        PR -> "[" <> item <> "]" <> "(" <> prLink link item <> ")"
+        Commit -> "[`" <> item <> "`]" <> "(" <> commitLink link item <> ")"
+    epilog = ");"
 
 -- |Get commit message for any entry in history.
 commitMessage :: Mode -> Text -> IO Text

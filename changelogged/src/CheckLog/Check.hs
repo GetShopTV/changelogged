@@ -10,13 +10,14 @@ import Control.Monad (when, filterM)
 import System.Console.ANSI (Color(..))
 
 import Types
+import Options
 import Utils
 import Pure
 import Pattern
 import CheckLog.Common
 
-checkCommonChangelogF :: WarningFormat -> Git -> FilePath -> IO Bool
-checkCommonChangelogF fmt Git{..} changelog = do
+checkCommonChangelogF :: WarningFormat -> Bool -> Git -> FilePath -> IO Bool
+checkCommonChangelogF fmt writeLog Git{..} changelog = do
   printf ("Checking "%fp%"\n") changelog
 
   pullCommits <- map ((flip fromJustCustom "Cannot find commit hash in git log entry") . hashMatch . lineToText)
@@ -30,12 +31,12 @@ checkCommonChangelogF fmt Git{..} changelog = do
   
   pullHeaders <- mapM (commitMessage PR) pullCommits
   singleHeaders <- mapM (commitMessage Commit) filteredSingles
-  flagsPR <- mapM (\(i,m) -> changelogIsUp fmt gitLink i PR m changelog) (zip pulls pullHeaders)
-  flagsCommit <- mapM (\(i, m) -> changelogIsUp fmt gitLink i Commit m changelog) (zip filteredSingles singleHeaders)
+  flagsPR <- mapM (\(i,m) -> changelogIsUp fmt writeLog gitLink i PR m changelog) (zip pulls pullHeaders)
+  flagsCommit <- mapM (\(i, m) -> changelogIsUp fmt writeLog gitLink i Commit m changelog) (zip filteredSingles singleHeaders)
   return $ and (flagsPR ++ flagsCommit)
 
-checkLocalChangelogF :: WarningFormat -> Git -> FilePath -> FilePath -> IO Bool
-checkLocalChangelogF fmt Git{..} path indicator = do
+checkLocalChangelogF :: WarningFormat -> Bool -> Git -> FilePath -> FilePath -> IO Bool
+checkLocalChangelogF fmt writeLog Git{..} path indicator = do
   printf ("Checking "%fp%"\n") path
   
   commits <- map ((flip fromJustCustom "Cannot find commit hash in git log entry") . hashMatch . lineToText)
@@ -57,10 +58,10 @@ checkLocalChangelogF fmt Git{..} path indicator = do
           case pull of
             Nothing -> do
               message <- commitMessage Commit commit
-              changelogIsUp fmt gitLink commit Commit message path
+              changelogIsUp fmt writeLog gitLink commit Commit message path
             Just pnum -> do
               message <- commitMessage PR commit
-              changelogIsUp fmt gitLink pnum PR message path
+              changelogIsUp fmt writeLog gitLink pnum PR message path
 
 checkChangelogWrap :: Options -> Git -> Bool -> TaggedLog -> IO Bool
 checkChangelogWrap _ _ True _ = do
@@ -69,8 +70,8 @@ checkChangelogWrap _ _ True _ = do
 checkChangelogWrap Options{..} git False TaggedLog{..} = do
   when optFromBC $ printf ("Checking "%fp%" from start of project\n") taggedLogPath
   upToDate <- case taggedLogIndicator of
-    Nothing -> checkCommonChangelogF optFormat git taggedLogPath
-    Just ind -> checkLocalChangelogF optFormat git taggedLogPath (taggedFilePath ind)
+    Nothing -> checkCommonChangelogF optFormat optWrite git taggedLogPath
+    Just ind -> checkLocalChangelogF optFormat optWrite git taggedLogPath (taggedFilePath ind)
   if upToDate
     then coloredPrint Green (showPath taggedLogPath <> " is up to date.\n")
     else coloredPrint Yellow ("WARNING: " <> showPath taggedLogPath <> " is out of date.\n")
