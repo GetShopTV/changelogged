@@ -7,6 +7,8 @@ It can also write suggestions directly to changelog if you ask.
 
 It supports multiple special changelogs and can bump version in different files.
 You can specify all paths in config named `changelogged.yaml` and see example in `changelogged.yaml.skel`.
+(Suggestion - if you have to bump version in the file you use as indicator, write it last.
+Thus if you were wrong in some previous field you will get correct version after fix and rerun with no need to roll back bumping in indicator.)
 
 It was written in Haskell and for Haskell first.
 So now it supports only `.cabal`, `.hs` and `.json` files to bump version in and to get version relevant to local changelog from.

@@ -9,11 +9,8 @@ import qualified Control.Foldl as Fold
 import Data.Text (Text)
 
 import Filesystem.Path.CurrentOS (encodeString)
-import System.Console.ANSI (Color(..))
 
 import Types
-import Utils
-import Pure
 import Pattern
 
 -- |Bump version in any supported file.
@@ -23,7 +20,7 @@ bumpAny extGrep TaggedFile{..} version = do
   file <- fold (input taggedFilePath) Fold.list
   matched <- fold (grep (extGrep taggedFileVariable) (select file)) Fold.list
   when (matched == []) $
-    throw (PatternMatchFail ("Cannot detect version in file " ++ encodeString taggedFilePath ++ ". Check config.\n"))
+    throw (PatternMatchFail ("ERROR: Cannot bump. Cannot detect version in file " <> encodeString taggedFilePath <> ". Check config.\n"))
   changed <- fold (sed (versionExactRegex *> return version) (select matched)) Fold.list
   output taggedFilePath (select $ generateVersionedFile file changed matched)
 
@@ -56,7 +53,7 @@ bumpPart version file@TaggedFile{..} = do
     Just "hs" -> sh $ bumpAny hsGrep file version
     Just "json" -> sh $ bumpAny jsonGrep file version
     Just "cabal" -> sh $ bumpAny cabalGrep file version
-    _ -> coloredPrint Red ("ERROR: Didn't bump version in " <> showPath taggedFilePath <> " : only .hs and .json supported, sorry.")
+    _ -> throw (PatternMatchFail ("ERROR: Cannot bump version. Unsupported extension in file " <> encodeString taggedFilePath <> ". Check config."))
 
 -- |Get level of changes from changelog.
 getChangelogEntries :: FilePath -> IO (Maybe Level)
