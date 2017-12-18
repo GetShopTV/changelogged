@@ -16,6 +16,8 @@ import Pure
 import Pattern
 import CheckLog.Common
 
+-- |This is actually part if '@Main@'
+-- Check common changelog.
 checkCommonChangelogF :: WarningFormat -> Bool -> Git -> FilePath -> IO Bool
 checkCommonChangelogF fmt writeLog Git{..} changelog = do
   printf ("Checking "%fp%"\n") changelog
@@ -35,6 +37,8 @@ checkCommonChangelogF fmt writeLog Git{..} changelog = do
   flagsCommit <- mapM (\(i, m) -> changelogIsUp fmt writeLog gitLink i Commit m changelog) (zip filteredSingles singleHeaders)
   return $ and (flagsPR ++ flagsCommit)
 
+-- |This is actually part if '@Main@'
+-- Check local changelog - local means what changelog is specific and has some indicator file. If file is changed changelog must change.
 checkLocalChangelogF :: WarningFormat -> Bool -> Git -> FilePath -> FilePath -> IO Bool
 checkLocalChangelogF fmt writeLog Git{..} path indicator = do
   printf ("Checking "%fp%"\n") path
@@ -63,6 +67,8 @@ checkLocalChangelogF fmt writeLog Git{..} path indicator = do
               message <- commitMessage PR commit
               changelogIsUp fmt writeLog gitLink pnum PR message path
 
+-- |This is actually part if '@Main@'
+-- Check given changelog regarding options.
 checkChangelogWrap :: Options -> Git -> Bool -> TaggedLog -> IO Bool
 checkChangelogWrap _ _ True _ = do
   coloredPrint Yellow "WARNING: skipping checks for API changelog.\n"

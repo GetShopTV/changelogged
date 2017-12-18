@@ -14,7 +14,7 @@ import Types
 import Utils
 import Pure
 
--- |Check if commit/pr is present in changelog. Returns '@True@' if present.
+-- |Check if commit/pr is present in changelog. Return '@True@' if present.
 changelogIsUp :: WarningFormat -> Bool -> Text -> Text -> Mode -> Text -> FilePath -> IO Bool
 changelogIsUp fmt writeSug link item mode message changelog = do
   grepLen <- fold (grep (has (text item)) (input changelog)) countLines
@@ -82,6 +82,7 @@ suggestMissing link item mode message = do
       printf ("("%s%")") (commitLink link item)
   printf (");\n")
 
+-- |Add generated suggestion directly to changelog.
 addMissing :: Text -> Text -> Mode -> Text -> FilePath -> IO ()
 addMissing link item mode message changelog = do
   currentLogs <- fold (input changelog) Fold.list
