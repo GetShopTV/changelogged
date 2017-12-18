@@ -3,8 +3,16 @@ This it the tool for tracking project history.
 It can check if your changelogs are up to date, suggest changes you've missed and bump versions in given files automatically.
 It takes all data from 'git'.
 
-It was designed for cabal projects first, so it bumps version in `.cabal` files specially.
-You can specify all paths and package names in config named `changelogged.yaml`.
+It can also write suggestions directly to changelog if you ask.
+
+It supports multiple special changelogs and can bump version in different files.
+You can specify all paths in config named `changelogged.yaml` and see example in `changelogged.yaml.skel`.
+
+It was written in Haskell and for Haskell first. So now it supports only `.cabal`, `.hs` and `.json` files to bump version in and to get version from.
+There is an [issue](https://github.com/GetShopTV/changelogged/issues/35) where you can call for new extensions.
+And it's easy to add them yourself in local copy or fork (and hopefully make PR). It will be documented on first demand.
+
+Version relevant to common changelog is known from git.
 
 Text of help message:
 ```
