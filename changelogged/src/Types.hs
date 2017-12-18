@@ -49,24 +49,3 @@ data WarningFormat
 instance Show WarningFormat where
   show WarnSimple  = "simple"
   show WarnSuggest = "suggest"
-
-data Options = Options
-  { -- |Explicit level of changes for files with common versioning.
-    optPackagesLevel   :: Maybe Level
-  -- |Explicit level of changes in API.
-  , optApiLevel        :: Maybe Level
-  -- |Output formatting.
-  , optFormat          :: WarningFormat
-  -- |Assume there is API to check and bump.
-  , optWithAPI         :: Bool
-  -- |Assume there is some changelogs with unpredicted meanings.
-  , optDifferentChlogs :: Bool
-  -- |Do not check changelogs.
-  , optNoCheck         :: Bool
-  -- |Do not bump versions.
-  , optNoBump          :: Bool
-  -- |Check changelogs from start of project.
-  , optFromBC          :: Bool
-  -- |Bump versions even if changelogs are outdated.
-  , optForce           :: Bool
-  }

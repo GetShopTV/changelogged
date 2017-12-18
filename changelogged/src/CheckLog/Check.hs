@@ -10,6 +10,7 @@ import Control.Monad (when, filterM)
 import System.Console.ANSI (Color(..))
 
 import Types
+import Options
 import Utils
 import Pure
 import Pattern
