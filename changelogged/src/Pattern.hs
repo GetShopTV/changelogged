@@ -3,7 +3,7 @@ module Pattern where
 
 import Turtle.Pattern
 import Turtle ((<>), (<|>))
-import Data.Text
+import Data.Text (Text, intercalate)
 
 import Pure
 

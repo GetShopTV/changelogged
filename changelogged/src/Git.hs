@@ -2,7 +2,7 @@
 module Git where
 
 import qualified Control.Foldl as Fold
-import Control.Monad.Catch
+import Control.Monad.Catch (catch)
 
 import Data.Char (isDigit)
 import Data.Either.Combinators (fromRight)

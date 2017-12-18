@@ -8,7 +8,7 @@ import qualified Control.Foldl as Fold
 import Data.Text (Text)
 import qualified Data.Text as Text
 
-import System.Console.ANSI
+import System.Console.ANSI (Color(..))
 
 import Types
 import Utils
