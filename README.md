@@ -17,6 +17,8 @@ And it's easy to add them yourself in local copy or fork (and hopefully make PR)
 
 Version relevant to common changelog is known from git.
 
+Attention. I've run into that so I describe. While bumping first run `changelogged`. Then release with generated version and pull. This way tool will now actual previous tag.
+
 Text of help message:
 ```
 This tool can check your changelogs and bump versions in project.
