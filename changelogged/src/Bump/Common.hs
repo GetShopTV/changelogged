@@ -13,6 +13,15 @@ import Filesystem.Path.CurrentOS (encodeString)
 import Types
 import Pattern
 
+-- |Add version label to changelog.
+headChangelog :: Text -> FilePath -> IO ()
+headChangelog version changelog = do
+  currentLogs <- fold (input changelog) Fold.list
+  output changelog (return $ unsafeTextToLine version)
+  append changelog "---"
+  append changelog ""
+  append changelog (select currentLogs)
+
 -- |Bump version in any supported file.
 -- Unlike sed it reads all the file and is less memory efficient.
 bumpAny :: (Text -> Pattern Text) -> TaggedFile -> Text -> Shell ()
@@ -58,19 +67,22 @@ bumpPart version file@TaggedFile{..} = do
 -- |Get level of changes from changelog.
 getChangelogEntries :: FilePath -> IO (Maybe Level)
 getChangelogEntries changelogFile = do
+  app <- fold (grep (prefix "* App") unreleased) countLines
   major <- fold (grep (prefix "* Major") unreleased) countLines
   minor <- fold (grep (prefix "* Minor") unreleased) countLines
   fixes <- fold (grep (prefix "* Fix") unreleased) countLines
   docs  <- fold (grep (prefix "* Doc") unreleased) countLines
 
-  return $ case major of
-    0 -> case minor of
-      0 -> case fixes of
-        0 -> case docs of
-          0 -> Nothing
-          _ -> Just Doc
-        _ -> Just Fix
-      _ -> Just Minor
-    _ -> Just Major
+  return $ case app of
+    0 -> case major of
+      0 -> case minor of
+        0 -> case fixes of
+          0 -> case docs of
+            0 -> Nothing
+            _ -> Just Doc
+          _ -> Just Fix
+        _ -> Just Minor
+      _ -> Just Major
+    _ -> Just App
   where
     unreleased = limitWhile (\line -> match (prefix versionExactRegex) (lineToText line) == []) (input changelogFile)

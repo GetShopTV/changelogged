@@ -40,6 +40,7 @@ commonMain paths opts@Options{..} git = do
           printf ("Version: "%s%" -> ") (gitRevision git)
           coloredPrint Yellow (version <> "\n")
           mapM_ (bumpPart version) files
+          headChangelog version (taggedLogPath $ chLog paths)
         Nothing -> coloredPrint Yellow "WARNING: no files to bump project version in specified.\n"
     ) `catch` (\(ex :: PatternMatchFail) -> coloredPrint Red (showText ex))
   where
@@ -61,7 +62,9 @@ apiMain paths opts@Options{..} git = do
     case newVersion of
       Nothing -> return ()
       Just version -> case HM.lookup "api" (defaultedEmpty (versioned paths)) of
-        Just files -> mapM_ (bumpPart version) files
+        Just files -> do
+          mapM_ (bumpPart version) files
+          headChangelog version (taggedLogPath $ chLog paths)
         Nothing -> coloredPrint Yellow "WARNING: no files to bump API version in specified.\n"
     ) `catch` (\(ex :: PatternMatchFail) -> coloredPrint Red (showText ex))
   where
@@ -88,7 +91,9 @@ otherMain paths opts@Options{..} git = do
         case newVersion of
           Nothing -> return ()
           Just version -> case HM.lookup key (defaultedEmpty (versioned paths)) of
-            Just files -> mapM_ (bumpPart version) files
+            Just files -> do
+              mapM_ (bumpPart version) files
+              headChangelog version (taggedLogPath changelog)
             Nothing -> coloredPrint Yellow "WARNING: no files to bump version in specified.\n"
         ) `catch` (\(ex :: PatternMatchFail) -> coloredPrint Red (showText ex))
 
