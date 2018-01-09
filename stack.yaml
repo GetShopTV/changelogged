@@ -1,11 +1,7 @@
-resolver: nightly-2017-12-15
+resolver: nightly-2018-01-07
 
 packages:
 - changelogged
-- location:
-    git: https://github.com/Gabriel439/Haskell-Turtle-Library
-    commit: 717ad398eb5baf02dccb9136f756610d2f653874
-  extra-dep: true
 
 ghc-options:
   'changelogged': -Wall -Werror -Wno-type-defaults -Wno-orphans
