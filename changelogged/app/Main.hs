@@ -44,8 +44,8 @@ commonMain paths opts@Options{..} git = do
         Nothing -> coloredPrint Yellow "WARNING: no files to bump project version in specified.\n"
     ) `catch` (\(ex :: PatternMatchFail) -> coloredPrint Red (showText ex))
   where
-    chLog cfg = HM.lookupDefault (TaggedLog "CHANGELOG.md" Nothing) "main"
-      (fromMaybe (HM.singleton "main" (TaggedLog "CHANGELOG.md" Nothing)) (changelogs cfg))
+    chLog cfg = HM.lookupDefault (TaggedLog "ChangeLog.md" Nothing) "main"
+      (fromMaybe (HM.singleton "main" (TaggedLog "ChangeLog.md" Nothing)) (changelogs cfg))
 
 apiMain :: Paths -> Options -> Git -> IO ()
 apiMain paths opts@Options{..} git = do
@@ -68,8 +68,8 @@ apiMain paths opts@Options{..} git = do
         Nothing -> coloredPrint Yellow "WARNING: no files to bump API version in specified.\n"
     ) `catch` (\(ex :: PatternMatchFail) -> coloredPrint Red (showText ex))
   where
-    chLog cfg = HM.lookupDefault (TaggedLog "API_CHANGELOG.md" Nothing) "api"
-      (fromMaybe (HM.singleton "api" (TaggedLog "API_CHANGELOG.md" Nothing)) (changelogs cfg))
+    chLog cfg = HM.lookupDefault (TaggedLog "ApiChangeLog.md" Nothing) "api"
+      (fromMaybe (HM.singleton "api" (TaggedLog "ApiChangeLog.md" Nothing)) (changelogs cfg))
 
 otherMain :: Paths -> Options -> Git -> IO ()
 otherMain paths opts@Options{..} git = do
@@ -101,7 +101,9 @@ main :: IO ()
 main = do
   opts@Options{..} <- options welcome parser
 
-  paths <- loadPaths
+  defaultPaths <- makeDefaultPaths
+
+  paths <- fromMaybe defaultPaths <$> loadPaths
 
   git <- gitData optFromBC
 

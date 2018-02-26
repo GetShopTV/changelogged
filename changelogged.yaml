@@ -1,4 +1,0 @@
-versioned:
-  main:
-  - ["changelogged/changelogged.cabal", "version"]
-

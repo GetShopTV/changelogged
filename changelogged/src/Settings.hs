@@ -5,8 +5,12 @@ module Settings where
 import Prelude hiding (FilePath)
 import Turtle
 
+import qualified Control.Foldl as Fold
+import Filesystem.Path.CurrentOS ((<.>), encodeString, decodeString)
+
 import Data.Aeson.Types (typeMismatch)
 import qualified Data.HashMap.Strict as HM
+import Data.List (isInfixOf)
 import Data.Text (Text)
 import qualified Data.Yaml as Yaml
 import Data.Vector ((!))
@@ -22,6 +26,15 @@ data Paths = Paths {
   -- Files to bump data
   , versioned :: Maybe (HM.HashMap Text [TaggedFile])
   } deriving (Show, Generic)
+
+makeDefaultPaths :: IO Paths
+makeDefaultPaths = do
+  cabals <- fold (find (suffix (text ".cabal")) ".") Fold.list
+  let textualCabals = map encodeString cabals
+      filedCabals a = map decodeString a
+      taggedFiles = map (\path -> TaggedFile path "version") (filedCabals $ filter (not . isInfixOf "/.") textualCabals)
+      defaultChLog = TaggedLog ("ChangeLog" <.> "md") Nothing
+  return $ Paths (Just $ HM.singleton "main" defaultChLog) (Just $ HM.singleton "main" taggedFiles)
 
 instance Yaml.FromJSON Paths
 
@@ -46,9 +59,9 @@ instance Yaml.FromJSON TaggedLog where
 instance Yaml.FromJSON FilePath where
   parseJSON = fmap fromText . Yaml.parseJSON
 
-loadPaths :: IO Paths
+loadPaths :: IO (Maybe Paths)
 loadPaths = do
   ms <- Yaml.decodeFileEither "./changelogged.yaml"
-  case ms of
-    Left wrong -> error (show wrong)
-    Right paths -> return paths
+  return $ case ms of
+    Left _wrong -> Nothing
+    Right paths -> Just paths
