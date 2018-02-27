@@ -1,0 +1,61 @@
+name: changelogged
+version: 0.1.0
+synopsis: Tool to manage project publishing history.
+description: Please see README.md
+maintainer: Vitalii Guzeev <vitaliy@getshoptv.com>
+copyright: (c) 2017-2018, GetShop.TV
+license: BSD3
+license-file: LICENSE
+author: Vitalii Guzeev <vitaliy@getshoptv.com>
+github: GetShopTV/changelogged
+category: Development
+extra-source-files:
+  - README.md
+
+dependencies:
+  - base >= 4.7 && < 5
+  - turtle
+  - unordered-containers
+  - ansi-terminal
+
+default-extensions:
+  - OverloadedStrings
+  - RecordWildCards
+
+library:
+  source-dirs: src
+  exposed-modules:
+    - CheckLog.Check
+    - CheckLog.Common
+    - Bump.Common
+    - Bump.Local
+    - Bump.General
+    - Utils
+    - Pure
+    - Types
+    - Pattern
+    - Git
+    - Settings
+    - Options
+  dependencies:
+    - optparse-applicative
+    - text
+    - yaml
+    - aeson
+    - mtl
+    - exceptions
+    - system-filepath
+    - foldl
+    - vector
+    - either
+
+executables:
+  changelogged:
+    source-dirs:      app
+    main:             Main.hs
+    ghc-options:
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+    dependencies:
+      - changelogged

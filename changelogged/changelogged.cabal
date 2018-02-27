@@ -1,74 +1,79 @@
-name:                changelogged
-version:             0.1.0
--- synopsis:
--- description:
-homepage:            https://github.com/GetShopTV/changelogged#readme
-license:             BSD3
-license-file:        LICENSE
-author:              Vit Guzeev
-maintainer:          vitaliy@getshoptv.com
-copyright:           (c) 2017, GetShopTV
-category:            Web
-build-type:          Simple
-extra-source-files:  README.md
-cabal-version:       >=1.10
+-- This file has been generated from package.yaml by hpack version 0.20.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 39cfec0c715b4bff7023dda2d9b8cac066bafa18d0884c8c922f370980bd41e6
 
-library
-  hs-source-dirs:      src
-  exposed-modules:
-    CheckLog.Check
-    CheckLog.Common
-    Bump.Common
-    Bump.Local
-    Bump.General
-    Utils
-    Pure
-    Types
-    Pattern
-    Git
-    Settings
-    Options
+name:           changelogged
+version:        0.1.0
+synopsis:       Tool to manage project publishing history.
+description:    Please see README.md
+category:       Development
+homepage:       https://github.com/GetShopTV/changelogged#readme
+bug-reports:    https://github.com/GetShopTV/changelogged/issues
+author:         Vitalii Guzeev <vitaliy@getshoptv.com>
+maintainer:     Vitalii Guzeev <vitaliy@getshoptv.com>
+copyright:      (c) 2017-2018, GetShop.TV
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+cabal-version:  >= 1.10
 
-  build-depends:       base >= 4.7 && < 5
-                     , turtle
-                     , optparse-applicative
-                     , ansi-terminal
-                     , text
-                     , yaml
-                     , aeson
-                     , mtl
-                     , exceptions
-                     , system-filepath
-                     , foldl
-                     , unordered-containers
-                     , vector
-                     , either
-  default-language:    Haskell2010
-  default-extensions:  OverloadedStrings
-                       RecordWildCards
-
-executable changelogged
-  hs-source-dirs:      app
-  main-is:             Main.hs
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
-  build-depends:       base
-                     , changelogged
-                     , turtle
-                     , unordered-containers
-                     , ansi-terminal
-  default-language:    Haskell2010
-  default-extensions:  OverloadedStrings
-                       RecordWildCards
-
-test-suite changelogged-test
-  type:                exitcode-stdio-1.0
-  hs-source-dirs:      test
-  main-is:             Spec.hs
-  build-depends:       base
-                     , changelogged
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
-  default-language:    Haskell2010
+extra-source-files:
+    README.md
 
 source-repository head
-  type:     git
+  type: git
   location: https://github.com/GetShopTV/changelogged
+
+library
+  hs-source-dirs:
+      src
+  default-extensions: OverloadedStrings RecordWildCards
+  build-depends:
+      aeson
+    , ansi-terminal
+    , base >=4.7 && <5
+    , either
+    , exceptions
+    , foldl
+    , mtl
+    , optparse-applicative
+    , system-filepath
+    , text
+    , turtle
+    , unordered-containers
+    , vector
+    , yaml
+  exposed-modules:
+      CheckLog.Check
+      CheckLog.Common
+      Bump.Common
+      Bump.Local
+      Bump.General
+      Utils
+      Pure
+      Types
+      Pattern
+      Git
+      Settings
+      Options
+  other-modules:
+      Paths_changelogged
+  default-language: Haskell2010
+
+executable changelogged
+  main-is: Main.hs
+  hs-source-dirs:
+      app
+  default-extensions: OverloadedStrings RecordWildCards
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      ansi-terminal
+    , base >=4.7 && <5
+    , changelogged
+    , turtle
+    , unordered-containers
+  other-modules:
+      Paths_changelogged
+  default-language: Haskell2010
