@@ -61,6 +61,7 @@ bumpPart version file@TaggedFile{..} = do
   case extension taggedFilePath of
     Just "hs" -> sh $ bumpAny hsGrep file version
     Just "json" -> sh $ bumpAny jsonGrep file version
+    Just "yaml" -> sh $ bumpAny yamlGrep file version
     Just "cabal" -> sh $ bumpAny cabalGrep file version
     _ -> throw (PatternMatchFail ("ERROR: Cannot bump version. Unsupported extension in file " <> encodeString taggedFilePath <> ". Check config."))
 

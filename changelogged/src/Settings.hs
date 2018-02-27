@@ -29,7 +29,7 @@ data Paths = Paths {
 
 makeDefaultPaths :: IO Paths
 makeDefaultPaths = do
-  cabals <- fold (find (suffix (text ".cabal")) ".") Fold.list
+  cabals <- fold (find (suffix (text "package.yaml")) ".") Fold.list
   let textualCabals = map encodeString cabals
       filedCabals a = map decodeString a
       taggedFiles = map (\path -> TaggedFile path "version") (filedCabals $ filter (not . isInfixOf "/.") textualCabals)

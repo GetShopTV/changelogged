@@ -124,6 +124,9 @@ cabalGrep var = choice [has $ cabalVarGrep var <> between spaces spaces1 version
 hsGrep :: Text -> Pattern Text
 hsGrep var = has $ hsVarGrep var <> spaces <> "\"" <> versionExactRegex <> "\""
 
+yamlGrep :: Text -> Pattern Text
+yamlGrep = cabalGrep
+
 -- >>> match (jsonVarGrep "var") "var :" 
 -- []
 -- >>> match (jsonVarGrep "var") "var =" 
@@ -150,3 +153,6 @@ cabalVarGrep var = text var <> spaces <> ":"
 -- []
 hsVarGrep :: Text -> Pattern Text
 hsVarGrep var = text var <> spaces <> "="
+
+yamlVarGrep :: Text -> Pattern Text
+yamlVarGrep = cabalVarGrep

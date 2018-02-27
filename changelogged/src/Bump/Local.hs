@@ -23,6 +23,7 @@ currentLocalVersion TaggedFile{..} = do
   ver <- case extension taggedFilePath of
     Just "json" -> fold (grep (has $ jsonVarGrep taggedFileVariable) (input taggedFilePath)) Fold.head
     Just "hs" -> fold (grep (has $ hsVarGrep taggedFileVariable) (input taggedFilePath)) Fold.head
+    Just "yaml" -> fold (grep (has $ yamlVarGrep taggedFileVariable) (input taggedFilePath)) Fold.head
     Just "cabal" -> fold (grep (has $ cabalVarGrep taggedFileVariable) (input taggedFilePath)) Fold.head
     _ -> throw (PatternMatchFail $ "ERROR: Cannot get local version. Unsupported extension in indicator file " <> encodeString taggedFilePath <> ". Check config.\n")
   return $ case ver of
