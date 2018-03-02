@@ -55,58 +55,58 @@ Available options:
 ```
 changelogged (master):$ changelogged
 ```
-![image1](common_run.png)
+![example_images/image1](common_run.png)
 
 #### Suggest changelog entries:
 ```
 changelogged (master):$ changelogged --format suggest
 ```
-![image2](suggest.png)
+![example_images/image2](suggest.png)
 
 Force with no entries in changelog:
 ```
 changelogged (master):$ changelogged --format suggest -f
 ```
-![image3](no_force.png)
+![example_images/image3](no_force.png)
 
 Force with explicit version:
 ```
 changelogged (master):$ changelogged -f -l major
 ```
-![image4](force.png)
+![example_images/image4](force.png)
 
 #### Write suggested entries to changelog (works only with `--format suggest`)
 ```
 changelogged (master):$ changelogged --format suggest -y
 ```
-![image5](suggest.png)
+![example_images/image5](suggest.png)
 ```
 changelogged (master):$ git diff ChangeLog.md
 ```
-![image6](chlog_diff.png)
+![example_images/image6](chlog_diff.png)
 It requires some manual editing after. And it will not bump version immediately.
 
 #### Bump version infering it from changelog:
 ```
 changelogged (master):$ changelogged --format suggest -y
 ```
-![image7](bump.png)
+![example_images/image7](bump.png)
 ```
 changelogged (master):$ git diff ChangeLog.md
 ```
-![image8](release.png)
+![example_images/image8](release.png)
 
 Do not bump even if changelogs are up to date
 ```
 changelogged -C
 ```
-![image9](no_bump.png)
+![example_images/image9](no_bump.png)
 
 Try to bump without checking changelogs. Seems that `-f` option is always preferrable. But it waits fr use cases.
 ```
 chagelogged -c
 ```
-![image10](no_check.png)
+![example_images/image10](no_check.png)
 
 ### Suggested simple workflow on release (for project with no `changelogged.yaml`):
 
