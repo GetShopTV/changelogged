@@ -18,8 +18,6 @@ And it's easy to add them yourself in local copy or fork (and hopefully make PR)
 
 Version relevant to common changelog is known from git.
 
-Attention. I've run into that so I describe. While bumping first run `changelogged`. Then release with generated version and pull. This way tool will now actual previous tag.
-
 Text of help message:
 ```
 This tool can check your changelogs and bump versions in project.
@@ -109,3 +107,28 @@ Try to bump without checking changelogs. Seems that `-f` option is always prefer
 chagelogged -c
 ```
 ![image10](no_check.png)
+
+### Suggested simple workflow on release (for project with no `changelogged.yaml`):
+
+You can see example of configuration in `changelogged.yaml.skel` file.
+
+```
+changelogged -C
+```
+```
+changelogged --format suggest -y
+```
+Manually edit changelog
+```
+changelogged
+```
+Next part is subject to change:
+
+Commit bumping versions.
+```
+changelogged --format suggest -y
+```
+Edit changelog - move new entry under version milestone.
+Note: changes in `.md` files are ignored.
+
+commit changelog, push and release.
