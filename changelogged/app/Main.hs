@@ -49,7 +49,8 @@ commonMain paths opts@Options{..} git = do
 
 apiMain :: Paths -> Options -> Git -> IO ()
 apiMain paths opts@Options{..} git = do
-  coloredPrint Green ("Checking " <> showPath (taggedLogPath $ chLog paths) <> " and creating it if missing.\n")
+  coloredPrint Green ("Checking " <> showPath (taggedLogPath $ chLog paths)
+                                  <> " and creating it if missing.\nIf no indicator exists it will be checked as global changelog.\n")
   touch $ taggedLogPath (chLog paths)
 
   bump <- checkChangelogWrap opts git optNoCheck (chLog paths)
