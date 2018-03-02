@@ -183,7 +183,7 @@ changelogged --format suggest -W -y
 ```
 And then edit changelogs manually.
 
-### Suggested simple workflow on release (for project with no `changelogged.yaml` and API CHANGELOG):
+### Suggested simple workflow on release (for project with no `changelogged.yaml` and API changelog):
 See missing entries:
 ```
 changelogged -C
