@@ -1,7 +1,7 @@
 resolver: nightly-2018-02-27 
 
 packages:
-- changelogged
+- '.'
 
 ghc-options:
   'changelogged': -Wall -Werror -Wno-type-defaults -Wno-orphans

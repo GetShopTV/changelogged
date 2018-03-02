@@ -2,6 +2,7 @@ hlint_report.lhs
 dist
 dist-*
 cabal-dev
+changelogged.cabal
 *.o
 *.hi
 *.chi
