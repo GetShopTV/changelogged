@@ -9,7 +9,33 @@ With proper usage it guarantees that every pull request or commit from git histo
 It can also write changelogs based on git history and infer new version from changelog if it contains rubrication by level of changes.
 
 ### Configuration file
-![example](./changelogged.yaml.skel)
+[example](changelogged.yaml.skel)
+```
+changelogs:
+  main:
+    # You can simply use arrays here.
+    path: "CHANGELOG.md"
+  api:
+    path: "API_CHANGELOG.md"
+    indicator:
+      path: "file.json"
+      variable: "version"
+versioned:
+  main:
+  - path: "file.cabal"
+    variable: "version"
+  - path: "file2.cabal"
+    variable: "version"
+  - path: "file3.hs"
+    variable: "version"
+  - path: "file4.json"
+    variable: "version"
+  api:
+  - path: "file.hs"
+    variable: "apiVersion"
+  - path: "file.json"
+    variable: "version"
+```
 
 Config is optional.
 With no config tool will try to check file named `ChangeLog.md` as far as it's part of Stack project template and bump versions in `package.yaml` files all over the project.
@@ -61,6 +87,7 @@ See examples [below](#guiding-examples)
 
 #### Checking changelogs
 This is default feature. Changelogged will output all missing pull requests and commits with their messages.
+It ignores commits and pull requests affecting only `.md` files.
 
 You can skip it with `-c` option or ignore results with `-f` option. Also you can check changelog from the first commit with `-e`.
 
