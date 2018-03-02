@@ -1,4 +1,4 @@
-This it the tool for tracking project history.
+### This it the tool for tracking project history.
 
 It can check if your changelogs are up to date, suggest changes you've missed and bump versions in given files automatically.
 It takes almost all data from git.
@@ -7,11 +7,12 @@ It can also write suggestions directly to changelog if you ask.
 
 It supports multiple special changelogs and can bump version in different files.
 You can specify all paths in config named `changelogged.yaml` and see example in `changelogged.yaml.skel`.
+Config is optional. With no it will check default `ChangeLog.md` and bump version in `project.yaml` files around the project.
 (Suggestion - if you have to bump version in the file you use as indicator, write it last.
 Thus if you were wrong in some previous field you will get correct version after fix and rerun with no need to roll back bumping in indicator.)
 
 It was written in Haskell and for Haskell first.
-So now it supports only `.cabal`, `.hs` and `.json` files to bump version in and to get version relevant to local changelog from.
+So now it supports only `.cabal`, `.yaml`, `.hs` and `.json` files to bump version in and to get version relevant to local changelog from.
 There is an [issue](https://github.com/GetShopTV/changelogged/issues/35) where you can call for new extensions.
 And it's easy to add them yourself in local copy or fork (and hopefully make PR). It will be documented on first demand.
 
@@ -49,3 +50,29 @@ Available options:
   -y,--write               Write changelog suggestions to changelog directly.
                            Available with --format suggest.
 ```
+
+### Guiding examples:
+
+#### Common run:
+```
+changelogged (master):$ changelogged
+```
+![image1](common_run.png)
+
+#### Suggest changelog entries:
+```
+changelogged (master):$ changelogged --format suggest
+```
+![image2](suggest.png)
+
+Force with no entries in changelog:
+```
+changelogged (master):$ changelogged --format suggest -f
+```
+![image3](no_force.png)
+
+Force with explicit version:
+```
+changelogged (master):$ changelogged -f -l major
+```
+![image4](force.png)
