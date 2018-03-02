@@ -76,3 +76,36 @@ Force with explicit version:
 changelogged (master):$ changelogged -f -l major
 ```
 ![image4](force.png)
+
+#### Write suggested entries to changelog (works only with `--format suggest`)
+```
+changelogged (master):$ changelogged --format suggest -y
+```
+![image5](suggest.png)
+```
+changelogged (master):$ git diff ChangeLog.md
+```
+![image6](chlog_diff.png)
+It requires some manual editing after. And it will not bump version immediately.
+
+#### Bump version infering it from changelog:
+```
+changelogged (master):$ changelogged --format suggest -y
+```
+![image7](bump.png)
+```
+changelogged (master):$ git diff ChangeLog.md
+```
+![image8](release.png)
+
+Do not bump even if changelogs are up to date
+```
+changelogged -C
+```
+![image9](no_bump.png)
+
+Try to bump without checking changelogs. Seems that `-f` option is always preferrable. But it waits fr use cases.
+```
+chagelogged -c
+```
+![image10](no_check.png)
