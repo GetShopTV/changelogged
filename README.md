@@ -9,7 +9,7 @@ With proper usage it guarantees that every pull request or commit from git histo
 It can also write changelogs based on git history and infer new version from changelog if it contains rubrication by level of changes.
 
 ### Configuration file
-![example](changelogged.yaml.skel)
+![example](./changelogged.yaml.skel)
 
 Config is optional.
 With no config tool will try to check file named `ChangeLog.md` as far as it's part of Stack project template and bump versions in `package.yaml` files all over the project.
@@ -217,4 +217,3 @@ Version bumping is restricted with extension of file. There is no euristic rules
 You may request for extension you want to be supported in [special issue](https://github.com/GetShopTV/changelogged/issues/35). It will be here ASAP.
 Or you may write it yourself.
 You are welcome to ask about how in comments in that issue (or browse comments).
-Or you know (Turtle)[https://hackage.haskell.org/package/turtle] better than maintaners and can guide us there.
