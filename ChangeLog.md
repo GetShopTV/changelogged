@@ -1,4 +1,23 @@
 * Major changes
+  - Add images for guide (see [`3983bd4`](https://github.com/GetShopTV/changelogged/commit/3983bd4));
+  - Switch back to GHC 8.0.1 (see [`b8f67d1`](https://github.com/GetShopTV/changelogged/commit/b8f67d1));
+  - Ignore commits which only update changelog (see [`9c83099`](https://github.com/GetShopTV/changelogged/commit/9c83099));
+  - Document every function with Haddock (not verbose) (see [`81ca111`](https://github.com/GetShopTV/changelogged/commit/81ca111));
+  - Fix version variable regexp and don't use pipes with sed (see [`f654844`](https://github.com/GetShopTV/changelogged/commit/f654844));
+  - Specify some imports (see [`7121831`](https://github.com/GetShopTV/changelogged/commit/7121831));
+  - Add version modifier to changelog after bumping (see [`c85eefc`](https://github.com/GetShopTV/changelogged/commit/c85eefc));
+  - Use lts-10.3 (closes #44) (see [`b6ad375`](https://github.com/GetShopTV/changelogged/commit/b6ad375));
+  - Make configuration file optional and rename changelog (see [`e2cb17a`](https://github.com/GetShopTV/changelogged/commit/e2cb17a));
+  - Use hpack and update resolver (see [`41e596b`](https://github.com/GetShopTV/changelogged/commit/41e596b));
+  - Use package.yaml files as defaults to bump version in (see [`27888d2`](https://github.com/GetShopTV/changelogged/commit/27888d2));
+  - Support uniform bumping strategies and multiple changelogs (see [#38](https://github.com/GetShopTV/changelogged/pull/38));
+  - GHC 8.2 (see [#40](https://github.com/GetShopTV/changelogged/pull/40));
+  - Remove unix-dependent calls in favor of Turtle mechanics (see [#41](https://github.com/GetShopTV/changelogged/pull/41));
+  - Add exceptions to handle incorrect bumping (see [#45](https://github.com/GetShopTV/changelogged/pull/45));
+  - Document Pattern module and fix regexps (see [#46](https://github.com/GetShopTV/changelogged/pull/46));
+  - Add option to write suggestions directly to log (see [#47](https://github.com/GetShopTV/changelogged/pull/47));
+  - Document a bit more and remove bump<Ext> functions as excess layer (see [#48](https://github.com/GetShopTV/changelogged/pull/48));
+  - Extend messages in exceptions (see [#49](https://github.com/GetShopTV/changelogged/pull/49));
   - Migrate to GHC 8.2.2 (see [`881b85b`](https://github.com/GetShopTV/changelogged/commit/881b85b));
   - Store current version in Git and thus call git describe once (see [`6aec329`](https://github.com/GetShopTV/changelogged/commit/6aec329));
   - Supress unnesessary output to stderr (see [`fa09134`](https://github.com/GetShopTV/changelogged/commit/fa09134));
