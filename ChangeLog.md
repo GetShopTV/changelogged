@@ -1,6 +1,3 @@
-0.1.0
----
-
 * Major changes
   - Migrate to GHC 8.2.2 (see [`881b85b`](https://github.com/GetShopTV/changelogged/commit/881b85b));
   - Store current version in Git and thus call git describe once (see [`6aec329`](https://github.com/GetShopTV/changelogged/commit/6aec329));
