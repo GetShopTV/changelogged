@@ -4,7 +4,7 @@ module Types where
 import Data.Text (Text)
 
 import Prelude hiding (FilePath)
-import Turtle hiding (option)
+import Turtle
 
 import GHC.Generics
 

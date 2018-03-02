@@ -20,9 +20,9 @@ defaultedEmpty :: Maybe (HM.HashMap k v) -> HM.HashMap k v
 defaultedEmpty = fromMaybe HM.empty
 
 -- |'@fromJust@' function with custom error message.
-fromJustCustom :: Maybe a -> String -> a
-fromJustCustom Nothing msg = error msg
-fromJustCustom (Just a) _ = a
+fromJustCustom :: String -> Maybe a -> a
+fromJustCustom msg Nothing = error msg
+fromJustCustom _ (Just a) = a
 
 -- I leave tuple here cause it's all functions for internal usage only (tuplify, delimited, bump).
 tuplify :: [Int] -> (Int, Int, Int, Int, Int)

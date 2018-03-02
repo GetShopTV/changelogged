@@ -6,6 +6,7 @@ import Control.Monad.Catch (catch)
 
 import Data.Char (isDigit)
 import Data.Either.Combinators (fromRight)
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as Text
 
@@ -25,9 +26,7 @@ latestGitTag repl = do
 getLink :: IO Text
 getLink = do
   raw <- strict $ inproc "git" ["remote", "get-url", "origin"] empty
-  return $ case Text.stripSuffix ".git\n" raw of
-    Just link -> link
-    Nothing -> Text.stripEnd raw
+  return $ fromMaybe (Text.stripEnd raw) (Text.stripSuffix ".git\n" raw)
 
 -- |Extract latest history and origin link from git through temporary file and store it in '@Git@'.
 gitData :: Bool -> IO Git

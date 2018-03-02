@@ -31,8 +31,8 @@ makeDefaultPaths :: IO Paths
 makeDefaultPaths = do
   cabals <- fold (find (suffix (text "package.yaml")) ".") Fold.list
   let textualCabals = map encodeString cabals
-      filedCabals a = map decodeString a
-      taggedFiles = map (\path -> TaggedFile path "version") (filedCabals $ filter (not . isInfixOf "/.") textualCabals)
+      filedCabals = map decodeString
+      taggedFiles = map (`TaggedFile` "version") (filedCabals $ filter (not . isInfixOf "/.") textualCabals)
       defaultChLog = TaggedLog ("ChangeLog" <.> "md") Nothing
   return $ Paths (Just $ HM.singleton "main" defaultChLog) (Just $ HM.singleton "main" taggedFiles)
 

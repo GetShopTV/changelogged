@@ -14,7 +14,7 @@ import Pure
 -- >>> match versionExactRegex "1.1.1   yy"
 -- []
 versionExactRegex :: Pattern Text
-versionExactRegex = once digit <> "." <> (intercalate "." <$> (plus digit) `sepBy1` ".")
+versionExactRegex = once digit <> "." <> (intercalate "." <$> plus digit `sepBy1` ".")
 
 -- >>> versionMatch "\"version\":    \"1.1.1\""
 -- Just "1.1.1"

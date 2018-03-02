@@ -1,11 +1,12 @@
 module Bump.Local where
 
 import Turtle
-import Prelude hiding (FilePath, log)
+import Prelude hiding (FilePath)
 
 import Control.Exception
 import qualified Control.Foldl as Fold
 
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 
 import Filesystem.Path.CurrentOS (encodeString)
@@ -27,9 +28,9 @@ currentLocalVersion TaggedFile{..} = do
     Just "cabal" -> fold (grep (has $ cabalVarGrep taggedFileVariable) (input taggedFilePath)) Fold.head
     _ -> throw (PatternMatchFail $ "ERROR: Cannot get local version. Unsupported extension in indicator file " <> encodeString taggedFilePath <> ". Check config.\n")
   return $ case ver of
-    Just realVer -> case versionMatch . lineToText $ realVer of
-      Just v -> v
-      Nothing -> throw (PatternMatchFail $ "ERROR: Cannot get local version. Given variable " <> show taggedFileVariable <> " doesn't store version. Check config.\n")
+    Just realVer -> fromMaybe
+      (throw (PatternMatchFail $ "ERROR: Cannot get local version. Given variable " <> show taggedFileVariable <> " doesn't store version. Check config.\n"))
+      (versionMatch . lineToText $ realVer)
     Nothing -> throw (PatternMatchFail $ "ERROR: Cannot get local version. Cannot find given variable " <> show taggedFileVariable <> " in file " <> encodeString taggedFilePath <> ". Check config.\n")
 
 -- |Generate new local version.
@@ -51,7 +52,7 @@ generateLocalVersionByChangelog True _ = do
 generateLocalVersionByChangelog False TaggedLog{..} = do
   versionedChanges <- getChangelogEntries taggedLogPath
   case versionedChanges of
-    Just lev -> Just <$> generateLocalVersion lev (fromJustCustom taggedLogIndicator "No file with current local version specified.")
+    Just lev -> Just <$> generateLocalVersion lev (fromJustCustom "No file with current local version specified." taggedLogIndicator)
     Nothing -> do
       coloredPrint Yellow ("WARNING: keep old API version since " <> showPath taggedLogPath <> " apparently does not contain any new entries.\n")
       return Nothing

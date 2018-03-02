@@ -6,6 +6,7 @@ import Turtle
 import Control.Exception
 import qualified Control.Foldl as Fold
 
+import Data.Functor (($>))
 import Data.Text (Text)
 
 import Filesystem.Path.CurrentOS (encodeString)
@@ -28,9 +29,9 @@ bumpAny :: (Text -> Pattern Text) -> TaggedFile -> Text -> Shell ()
 bumpAny extGrep TaggedFile{..} version = do
   file <- fold (input taggedFilePath) Fold.list
   matched <- fold (grep (extGrep taggedFileVariable) (select file)) Fold.list
-  when (matched == []) $
+  when (null matched) $
     throw (PatternMatchFail ("ERROR: Cannot bump. Cannot detect version in file " <> encodeString taggedFilePath <> ". Check config.\n"))
-  changed <- fold (sed (versionExactRegex *> return version) (select matched)) Fold.list
+  changed <- fold (sed (versionExactRegex $> version) (select matched)) Fold.list
   output taggedFilePath (select $ generateVersionedFile file changed matched)
 
 -- |Replace given lines in the file.
@@ -51,7 +52,7 @@ generateVersionedFile file (new:news) (old:olds) = generateVersionedFile (replac
   where
     replaceLine [] _ _ = []
     replaceLine (xvar:xvars) newLine oldLine 
-      | xvar == oldLine = (newLine:xvars)
+      | xvar == oldLine = newLine:xvars
       | otherwise = xvar : replaceLine xvars newLine oldLine
 
 -- |Bump version in file regarding extension.
@@ -86,4 +87,4 @@ getChangelogEntries changelogFile = do
       _ -> Just Major
     _ -> Just App
   where
-    unreleased = limitWhile (\line -> match (prefix versionExactRegex) (lineToText line) == []) (input changelogFile)
+    unreleased = limitWhile (null . match (prefix versionExactRegex) . lineToText) (input changelogFile)

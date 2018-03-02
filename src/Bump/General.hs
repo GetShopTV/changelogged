@@ -1,7 +1,7 @@
 module Bump.General where
 
 import Turtle
-import Prelude hiding (FilePath, log)
+import Prelude hiding (FilePath)
 
 import Data.Text (Text)
 

@@ -80,7 +80,7 @@ suggestMissing link item mode message = do
     Commit -> do
       coloredPrint Cyan ("[`" <> item <> "`]")
       printf ("("%s%")") (commitLink link item)
-  printf (");\n")
+  printf ");\n"
 
 -- |Add generated suggestion directly to changelog.
 addMissing :: Text -> Text -> Mode -> Text -> FilePath -> IO ()

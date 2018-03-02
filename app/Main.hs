@@ -58,7 +58,7 @@ apiMain paths opts@Options{..} git = do
   (when (bump && not optNoBump) $ do
     newVersion <- case optApiLevel of
       Nothing -> generateLocalVersionByChangelog optNoCheck (chLog paths)
-      Just lev -> Just <$> generateLocalVersion lev (fromJustCustom (taggedLogIndicator (chLog paths)) "No file with current API version specified.")
+      Just lev -> Just <$> generateLocalVersion lev (fromJustCustom "No file with current API version specified." (taggedLogIndicator (chLog paths)))
   
     case newVersion of
       Nothing -> return ()

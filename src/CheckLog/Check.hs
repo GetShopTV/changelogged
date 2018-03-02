@@ -2,7 +2,7 @@
 module CheckLog.Check where
 
 import Turtle
-import Prelude hiding (FilePath, log)
+import Prelude hiding (FilePath)
 
 import qualified Control.Foldl as Fold
 import Control.Monad (when, filterM)
@@ -22,11 +22,11 @@ checkCommonChangelogF :: WarningFormat -> Bool -> Git -> FilePath -> IO Bool
 checkCommonChangelogF fmt writeLog Git{..} changelog = do
   printf ("Checking "%fp%"\n") changelog
 
-  pullCommits <- map ((flip fromJustCustom "Cannot find commit hash in git log entry") . hashMatch . lineToText)
+  pullCommits <- map (fromJustCustom "Cannot find commit hash in git log entry" . hashMatch . lineToText)
     <$> fold (grep githubRefGrep (input gitHistory)) Fold.list
-  pulls <- map ((flip fromJustCustom "Cannot find pull request number in git log entry") . githubRefMatch . lineToText)
+  pulls <- map (fromJustCustom "Cannot find pull request number in git log entry" . githubRefMatch . lineToText)
     <$> fold (grep githubRefGrep (input gitHistory)) Fold.list
-  singles <- map ((flip fromJustCustom "Cannot find commit hash in git log entry") . hashMatch . lineToText)
+  singles <- map (fromJustCustom "Cannot find commit hash in git log entry" . hashMatch . lineToText)
     <$> fold (grep hashGrepExclude (input gitHistory)) Fold.list
   
   filteredSingles <- filterM noMarkdown singles
@@ -43,7 +43,7 @@ checkLocalChangelogF :: WarningFormat -> Bool -> Git -> FilePath -> FilePath -> 
 checkLocalChangelogF fmt writeLog Git{..} path indicator = do
   printf ("Checking "%fp%"\n") path
   
-  commits <- map ((flip fromJustCustom "Cannot find commit hash in git log entry") . hashMatch . lineToText)
+  commits <- map (fromJustCustom "Cannot find commit hash in git log entry" . hashMatch . lineToText)
     <$> fold (input gitHistory) Fold.list
 
   flags <- mapM (eval gitHistory) commits
@@ -57,7 +57,7 @@ checkLocalChangelogF fmt writeLog Git{..} path indicator = do
       case linePresent of
         0 -> return True
         _ -> do
-          pull <- fmap ((flip fromJustCustom "Cannot find commit hash in git log entry") . githubRefMatch . lineToText) <$>
+          pull <- fmap (fromJustCustom "Cannot find commit hash in git log entry" . githubRefMatch . lineToText) <$>
               fold (grep githubRefGrep (grep (has (text commit)) (input hist))) Fold.head
           case pull of
             Nothing -> do
@@ -85,6 +85,4 @@ checkChangelogWrap Options{..} git False TaggedLog{..} = do
     then return True
     else do
       coloredPrint Red ("ERROR: " <> showPath taggedLogPath <> " is not up-to-date. Use -c or --no-check options if you want to ignore changelog checks and -f to bump anyway.\n")
-      return $ if optForce
-        then True
-        else False
+      return optForce

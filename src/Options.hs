@@ -1,7 +1,6 @@
 module Options where
 
 import Data.Char (toLower)
-import Data.List (intercalate)
 
 import Options.Applicative hiding (switch)
 import Turtle hiding (option)
@@ -13,7 +12,7 @@ availableWarningFormats = [minBound..maxBound]
 
 availableWarningFormatsStr :: String
 availableWarningFormatsStr
-  = "(" <> intercalate " " (map (map toLower . show) availableWarningFormats) <> ")"
+  = "(" <> unwords (map (map toLower . show) availableWarningFormats) <> ")"
 
 readWarningFormat :: ReadM WarningFormat
 readWarningFormat = eitherReader (r . map toLower)
@@ -35,7 +34,7 @@ availableLevels = [minBound..maxBound]
 -- "(app major minor fix doc)"
 availableLevelsStr :: String
 availableLevelsStr
-  = "(" <> intercalate " " (map (map toLower . show) availableLevels) <> ")"
+  = "(" <> unwords (map (map toLower . show) availableLevels) <> ")"
 
 readLevel :: ReadM Level
 readLevel = eitherReader (r . map toLower)
