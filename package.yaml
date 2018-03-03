@@ -14,7 +14,7 @@ extra-source-files:
 
 dependencies:
   - base >= 4.7 && < 5
-  - turtle
+  - turtle >= 1.5.0
   - unordered-containers
   - ansi-terminal
 
