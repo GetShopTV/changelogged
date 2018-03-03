@@ -1,4 +1,4 @@
-module Pure where
+module Changelogged.Pure where
 
 import Prelude hiding (FilePath)
 import qualified Data.HashMap.Strict as HM
@@ -8,7 +8,7 @@ import qualified Data.Text as Text
 
 import Filesystem.Path.CurrentOS (encodeString, FilePath)
 
-import Types
+import Changelogged.Types
 
 -- | Maximum in list ordered by length.
 maxByLen :: [Text] -> Maybe Text

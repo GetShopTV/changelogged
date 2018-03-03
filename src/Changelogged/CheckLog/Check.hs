@@ -1,5 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module CheckLog.Check where
+module Changelogged.CheckLog.Check where
 
 import Turtle hiding (stdout, stderr)
 import Prelude hiding (FilePath)
@@ -9,12 +9,12 @@ import Control.Monad (when, filterM)
 
 import System.Console.ANSI (Color(..))
 
-import Types
-import Options
-import Utils
-import Pure
-import Pattern
-import CheckLog.Common
+import Changelogged.Types
+import Changelogged.Options
+import Changelogged.Utils
+import Changelogged.Pure
+import Changelogged.Pattern
+import Changelogged.CheckLog.Common
 
 -- |This is actually part if '@Main@'
 -- Check common changelog.

@@ -1,5 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module Git where
+module Changelogged.Git where
 
 import qualified Control.Foldl as Fold
 import Control.Monad.Catch (catch)
@@ -12,7 +12,7 @@ import qualified Data.Text as Text
 
 import Turtle
 
-import Types
+import Changelogged.Types
 
 -- |Get latest git tag in origin/master if present.
 latestGitTag :: Text -> IO Text

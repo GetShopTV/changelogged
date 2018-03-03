@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
-module Types where
+module Changelogged.Types where
 
 import Data.Text (Text)
 

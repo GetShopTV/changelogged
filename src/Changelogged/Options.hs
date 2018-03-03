@@ -1,11 +1,11 @@
-module Options where
+module Changelogged.Options where
 
 import Data.Char (toLower)
 
 import Options.Applicative hiding (switch)
 import Turtle hiding (option)
 
-import Types
+import Changelogged.Types
 
 availableWarningFormats :: [WarningFormat]
 availableWarningFormats = [minBound..maxBound]

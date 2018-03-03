@@ -1,4 +1,4 @@
-module Bump.Common where
+module Changelogged.Bump.Common where
 
 import Prelude hiding (FilePath)
 import Turtle
@@ -11,8 +11,8 @@ import Data.Text (Text)
 
 import Filesystem.Path.CurrentOS (encodeString)
 
-import Types
-import Pattern
+import Changelogged.Types
+import Changelogged.Pattern
 
 -- |Add version label to changelog.
 headChangelog :: Text -> FilePath -> IO ()

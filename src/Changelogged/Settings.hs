@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 
-module Settings where
+module Changelogged.Settings where
 
 import Prelude hiding (FilePath)
 import Turtle
@@ -18,7 +18,7 @@ import Data.Yaml ((.:), (.:?))
 
 import GHC.Generics
 
-import Types
+import Changelogged.Types
 
 data Paths = Paths {
   -- Changelogs data

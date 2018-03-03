@@ -1,4 +1,4 @@
-module CheckLog.Common where
+module Changelogged.CheckLog.Common where
 
 import Prelude hiding (FilePath)
 import Turtle
@@ -10,9 +10,9 @@ import qualified Data.Text as Text
 
 import System.Console.ANSI (Color(..))
 
-import Types
-import Utils
-import Pure
+import Changelogged.Types
+import Changelogged.Utils
+import Changelogged.Pure
 
 -- |Check if commit/pr is present in changelog. Return '@True@' if present.
 changelogIsUp :: WarningFormat -> Bool -> Text -> Text -> Mode -> Text -> FilePath -> IO Bool

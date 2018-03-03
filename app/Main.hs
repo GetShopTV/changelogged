@@ -10,16 +10,16 @@ import Data.Maybe (fromMaybe)
 
 import System.Console.ANSI (Color(..))
 
-import CheckLog.Check
-import Bump.Local
-import Bump.Common
-import Bump.General
-import Types
-import Git
-import Options
-import Utils
-import Pure (showPath, fromJustCustom, defaultedEmpty, showText)
-import Settings
+import Changelogged.CheckLog.Check
+import Changelogged.Bump.Local
+import Changelogged.Bump.Common
+import Changelogged.Bump.General
+import Changelogged.Types
+import Changelogged.Git
+import Changelogged.Options
+import Changelogged.Utils
+import Changelogged.Pure (showPath, fromJustCustom, defaultedEmpty, showText)
+import Changelogged.Settings
 
 commonMain :: Paths -> Options -> Git -> IO ()
 commonMain paths opts@Options{..} git = do

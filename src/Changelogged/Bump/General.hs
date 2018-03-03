@@ -1,4 +1,4 @@
-module Bump.General where
+module Changelogged.Bump.General where
 
 import Turtle
 import Prelude hiding (FilePath)
@@ -7,10 +7,10 @@ import Data.Text (Text)
 
 import System.Console.ANSI (Color(..))
 
-import Types
-import Pure
-import Utils
-import Bump.Common
+import Changelogged.Types
+import Changelogged.Pure
+import Changelogged.Utils
+import Changelogged.Bump.Common
 
 -- |Generate new version based on given level and current version.
 generateVersion :: Level -> Text -> IO Text

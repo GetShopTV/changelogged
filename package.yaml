@@ -30,19 +30,6 @@ default-extensions:
 
 library:
   source-dirs: src
-  exposed-modules:
-    - CheckLog.Check
-    - CheckLog.Common
-    - Bump.Common
-    - Bump.Local
-    - Bump.General
-    - Utils
-    - Pure
-    - Types
-    - Pattern
-    - Git
-    - Settings
-    - Options
   dependencies:
     - optparse-applicative
     - text

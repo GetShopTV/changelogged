@@ -1,11 +1,11 @@
 -- |Common regexps in Turtle syntax.
-module Pattern where
+module Changelogged.Pattern where
 
 import Turtle.Pattern
 import Turtle ((<>), (<|>))
 import Data.Text (Text, intercalate)
 
-import Pure
+import Changelogged.Pure
 
 -- >>> match versionExactRegex "version:   1.1.1"
 -- []

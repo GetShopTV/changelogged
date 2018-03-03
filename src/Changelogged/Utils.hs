@@ -1,4 +1,4 @@
-module Utils where
+module Changelogged.Utils where
 
 import Data.Text (Text)
 

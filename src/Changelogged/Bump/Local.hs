@@ -1,4 +1,4 @@
-module Bump.Local where
+module Changelogged.Bump.Local where
 
 import Turtle
 import Prelude hiding (FilePath)
@@ -12,11 +12,11 @@ import Data.Text (Text)
 import Filesystem.Path.CurrentOS (encodeString)
 import System.Console.ANSI (Color(..))
 
-import Types
-import Utils
-import Pure
-import Pattern
-import Bump.Common
+import Changelogged.Types
+import Changelogged.Utils
+import Changelogged.Pure
+import Changelogged.Pattern
+import Changelogged.Bump.Common
 
 -- |Get current local version.
 currentLocalVersion :: TaggedFile -> IO Text
