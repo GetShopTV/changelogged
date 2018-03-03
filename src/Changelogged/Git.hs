@@ -14,10 +14,10 @@ import Turtle
 
 import Changelogged.Types
 
--- |Get latest git tag in origin/master if present.
+-- | Get latest git tag in HEAD if present.
 latestGitTag :: Text -> IO Text
 latestGitTag repl = do
-  ver <- fold ((fromRight "" <$> inprocWithErr "git" ["describe", "--tags", "origin/master"] empty) `catch` \ (_ :: ExitCode) -> empty) Fold.head
+  ver <- fold ((fromRight "" <$> inprocWithErr "git" ["describe", "--tags"] empty) `catch` \ (_ :: ExitCode) -> empty) Fold.head
   return $ case ver of
     Nothing -> repl
     Just v -> lineToText v
