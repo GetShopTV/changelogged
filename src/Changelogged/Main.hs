@@ -28,7 +28,7 @@ commonMain paths opts@Options{..} git = do
 
   bump <- checkChangelogWrap opts git optNoCheck (chLog paths)
 
-  (when (bump && not optNoBump) $ do
+  (when (bump && optBumpVersions) $ do
     newVersion <- case optPackagesLevel of
       Nothing -> generateVersionByChangelog optNoCheck (taggedLogPath $ chLog paths) (gitRevision git)
       Just lev -> Just <$> generateVersion lev (gitRevision git)
@@ -59,7 +59,7 @@ apiMain paths opts@Options{..} git = do
 
       bump <- checkChangelogWrap opts git optNoCheck cl
 
-      (when (bump && not optNoBump) $ do
+      (when (bump && optBumpVersions) $ do
         newVersion <- case optApiLevel of
           Nothing -> generateLocalVersionByChangelog optNoCheck cl
           Just lev -> Just <$> generateLocalVersion lev (fromJustCustom "No file with current API version specified." (taggedLogIndicator cl))
@@ -91,7 +91,7 @@ otherMain paths opts@Options{..} git = do
     
       bump <- checkChangelogWrap opts git optNoCheck changelog
     
-      (when (bump && not optNoBump) $ do
+      (when (bump && optBumpVersions) $ do
         newVersion <- generateLocalVersionByChangelog optNoCheck changelog
       
         case newVersion of
