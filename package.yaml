@@ -1,7 +1,7 @@
 name: changelogged
 version: 0.1.0
-synopsis: Tool to manage project publishing history.
-description: Please see README.md
+synopsis: A simple changelog manager for Git projects.
+description: Please see the README on Github at <https://github.com/GetShopTV/changelogged#readme>
 maintainer: Vitalii Guzeev <vitaliy@getshoptv.com>
 copyright: (c) 2017-2018, GetShop.TV
 license: BSD3
@@ -12,6 +12,7 @@ category: Development
 extra-source-files:
   - README.md
   - ChangeLog.md
+  - images/*.png
 
 custom-setup:
   dependencies:
