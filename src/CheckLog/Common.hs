@@ -41,11 +41,6 @@ noMarkdown commit = do
   return $ chLogUpdated /= onlyChLogUpdated
 
 -- |
--- >>> warnMissing "#13" PR "Add new stuff"
--- - Pull request #13 is missing in changelog: Add new stuff.
---
--- >>> warnMissing "9e14840" Commit "Add new stuff"
--- - Single commit 9e14840 is missing in changelog: Add new stuff.
 warnMissing :: Text -> Mode -> Text -> IO ()
 warnMissing item mode message = do
   printf ("- "%s%" ") (showText mode)
@@ -53,23 +48,18 @@ warnMissing item mode message = do
   printf (" is missing: "%s%".\n") message
 
 -- |
--- >>> prLink "#13"
--- "https://github.com/GetShopTV/getshoptv/pull/13"
+-- >>> prLink "https://github.com/GetShopTV/changelogged" "#13"
+-- "https://github.com/GetShopTV/changelogged/pull/13"
 prLink :: Text -> Text -> Text
 prLink link num = link <> "/pull/" <> Text.drop 1 num
 
 -- |
--- >>> commitLink "9e14840"
--- "https://github.com/GetShopTV/getshoptv/commit/9e14840"
+-- >>> commitLink "https://github.com/GetShopTV/changelogged" "9e14840"
+-- "https://github.com/GetShopTV/changelogged/commit/9e14840"
 commitLink :: Text -> Text -> Text
 commitLink link sha = link <> "/commit/" <> sha
 
 -- |
--- >>> suggestMissing "#13" PR "Add new stuff"
--- - Add new stuff (see [#13](https://github.com/GetShopTV/getshoptv/pull/13));
---
--- >>> suggestMissing "9e14840" Commit "Add new stuff"
--- - Add new stuff (see [`9e14840`](https://github.com/GetShopTV/getshoptv/commit/9e14840));
 suggestMissing :: Text -> Text -> Mode -> Text -> IO ()
 suggestMissing link item mode message = do
   printf ("- "%s%" (see ") message

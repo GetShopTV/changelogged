@@ -1,7 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module CheckLog.Check where
 
-import Turtle
+import Turtle hiding (stdout, stderr)
 import Prelude hiding (FilePath)
 
 import qualified Control.Foldl as Fold
