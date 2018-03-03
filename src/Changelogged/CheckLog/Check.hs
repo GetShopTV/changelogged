@@ -76,7 +76,7 @@ checkChangelogWrap _ _ True _ = do
 checkChangelogWrap Options{..} git False TaggedLog{..} = do
   if (optUpdateChangelog && optFormat == WarnSimple)
     then do
-      coloredPrint Red "ERROR: --update-changelog does not work with --format simple. Try --format suggest.\n"
+      coloredPrint Red "ERROR: --update-changelog does not work with --format=simple. Try --format=suggest.\n"
       return False
     else do
       when optFromBC $ printf ("Checking "%fp%" from start of project\n") taggedLogPath
