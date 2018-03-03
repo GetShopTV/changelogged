@@ -2,8 +2,8 @@ module Changelogged.Options where
 
 import Data.Char (toLower)
 
-import Options.Applicative hiding (switch)
-import Turtle hiding (option)
+import Options.Applicative
+import Turtle hiding (option, switch)
 
 import Changelogged.Types
 
@@ -53,24 +53,26 @@ parser = Options
   <$> optional packagesLevel
   <*> optional apiLevel
   <*> warningFormat
-  <*> switch  "with-api"  'W' "Assume there is changelog for API."
-  <*> switch  "multiple"  'm' "Assume there is more than one changelog."
-  <*> switch  "no-check"  'c' "Do not check changelogs."
-  <*> switch  "no-bump"  'C' "Do not bump versions. Only check changelogs."
-  <*> switch  "from-bc"  'e' "Check changelogs from start of project."
-  <*> switch  "force"  'f' "Bump version even if changelogs are outdated. Cannot be mixed with -c."
-  <*> switch  "write"  'y' "Write changelog suggestions to changelog directly. Available with --format suggest."
+  <*> longSwitch  "no-check"  "Do not check changelogs."
+  <*> longSwitch  "no-bump"   "Do not bump versions. Only check changelogs."
+  <*> longSwitch  "from-bc"   "Check changelogs from start of project."
+  <*> longSwitch  "force"     "Bump version even if changelogs are outdated. Cannot be mixed with --no-check."
+  <*> longSwitch  "write"     "Write changelog suggestions to changelog directly. Available with --format suggest."
   where
+    longSwitch name description = switch $
+         long name
+      <> help description
     packagesLevel = option readLevel $
          long "level"
-      <> short 'l'
+      <> metavar "CHANGE_LEVEL"
       <> help ("Level of changes (for packages). One of " <> availableLevelsStr)
     apiLevel = option readLevel $
          long "api-level"
-      <> short 'a'
+      <> metavar "CHANGE_LEVEL"
       <> help ("Level of changes (for API). One of " <> availableLevelsStr)
     warningFormat = option readWarningFormat $
          long "format"
+      <> metavar "FORMAT"
       <> help ("Warning format. One of " <> availableWarningFormatsStr)
       <> value WarnSimple
       <> showDefault
@@ -90,10 +92,6 @@ data Options = Options
   , optApiLevel        :: Maybe Level
   -- |Output formatting.
   , optFormat          :: WarningFormat
-  -- |Assume there is API to check and bump.
-  , optWithAPI         :: Bool
-  -- |Assume there is some changelogs with unpredicted meanings.
-  , optDifferentChlogs :: Bool
   -- |Do not check changelogs.
   , optNoCheck         :: Bool
   -- |Do not bump versions.
