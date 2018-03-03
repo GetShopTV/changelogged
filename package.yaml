@@ -12,6 +12,12 @@ category: Development
 extra-source-files:
   - README.md
 
+custom-setup:
+  dependencies:
+  - base
+  - Cabal
+  - cabal-doctest >=1.0.2 && <1.1
+
 dependencies:
   - base >= 4.7 && < 5
   - turtle >= 1.5.0
@@ -59,3 +65,14 @@ executables:
       - -with-rtsopts=-N
     dependencies:
       - changelogged
+
+tests:
+  doctests:
+    source-dirs: test
+    main: doctests.hs
+    other-modules: []
+    dependencies:
+    - base
+    - doctest
+    - Glob
+    - QuickCheck
