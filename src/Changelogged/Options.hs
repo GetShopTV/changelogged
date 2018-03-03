@@ -53,11 +53,11 @@ parser = Options
   <$> optional packagesLevel
   <*> optional apiLevel
   <*> warningFormat
-  <*> longSwitch  "no-check"      "Do not check changelogs."
-  <*> longSwitch  "bump-versions" "Bump versions according to unreleased changelog entries."
-  <*> longSwitch  "from-bc"       "Check changelogs from start of project."
-  <*> longSwitch  "force"         "Bump version even if changelogs are outdated. Cannot be mixed with --no-check."
-  <*> longSwitch  "write"         "Write changelog suggestions to changelog directly. Available with --format suggest."
+  <*> longSwitch  "no-check"         "Do not check changelogs."
+  <*> longSwitch  "bump-versions"    "Bump versions according to unreleased changelog entries."
+  <*> longSwitch  "from-bc"          "Check changelogs from start of project."
+  <*> longSwitch  "force"            "Bump version even if changelogs are outdated. Cannot be mixed with --no-check."
+  <*> longSwitch  "update-changelog" "Prepend missing changelog entries to (every) changelog file. Available with --format suggest."
   where
     longSwitch name description = switch $
          long name
@@ -100,6 +100,6 @@ data Options = Options
   , optFromBC          :: Bool
   -- |Bump versions even if changelogs are outdated.
   , optForce           :: Bool
-  -- |Write suggestions to changelog directly.
-  , optWrite           :: Bool
+  -- | Write suggestions to changelog directly.
+  , optUpdateChangelog :: Bool
   }

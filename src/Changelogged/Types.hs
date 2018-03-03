@@ -47,7 +47,7 @@ instance Show Mode where
 data WarningFormat
   = WarnSimple
   | WarnSuggest
-  deriving (Enum, Bounded)
+  deriving (Eq, Enum, Bounded)
 
 instance Show WarningFormat where
   show WarnSimple  = "simple"
