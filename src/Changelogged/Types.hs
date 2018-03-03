@@ -1,7 +1,10 @@
 {-# LANGUAGE DeriveGeneric #-}
 module Changelogged.Types where
 
+import Data.Aeson
+import Data.Aeson.Types (typeMismatch)
 import Data.Text (Text)
+import Data.Vector ((!))
 
 import Prelude hiding (FilePath)
 import Turtle
@@ -49,3 +52,21 @@ data WarningFormat
 instance Show WarningFormat where
   show WarnSimple  = "simple"
   show WarnSuggest = "suggest"
+
+instance FromJSON TaggedFile where
+  parseJSON (Object v) = TaggedFile
+        <$> fmap fromText (v .: "path")
+        <*> v .: "variable"
+  parseJSON (Array v) = TaggedFile
+        <$> fmap fromText (parseJSON (v ! 0))
+        <*> parseJSON (v ! 1)
+  parseJSON invalid = typeMismatch "TaggedFile" invalid
+
+instance FromJSON TaggedLog where
+  parseJSON (Object v) = TaggedLog
+        <$> fmap fromText (v .: "path")
+        <*> v .:? "indicator"
+  parseJSON (Array v) = TaggedLog
+        <$> fmap fromText (parseJSON (v ! 0))
+        <*> parseJSON (v ! 1)
+  parseJSON invalid = typeMismatch "TaggedLog" invalid

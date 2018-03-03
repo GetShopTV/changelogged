@@ -4,4 +4,6 @@ packages:
 - '.'
 
 ghc-options:
-  'changelogged': -Wall -Werror -Wno-type-defaults -Wno-orphans
+  # we need -optP-Wno-nonportable-include-path, although I'm not sure why
+  # see https://github.com/haskell/cabal/issues/4739#issuecomment-359209133
+  'changelogged': -Wall -Werror -Wno-type-defaults -optP-Wno-nonportable-include-path
