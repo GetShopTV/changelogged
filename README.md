@@ -1,4 +1,8 @@
-# Changelogged
+# changelogged
+
+[![Hackage](https://img.shields.io/hackage/v/changelogged.svg)](http://hackage.haskell.org/package/changelogged)
+[![Build Status](https://travis-ci.org/GetShopTV/changelogged.svg?branch=master)](https://travis-ci.org/GetShopTV/changelogged)
+
 
 ## What and how to?
 
