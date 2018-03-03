@@ -11,6 +11,7 @@ github: GetShopTV/changelogged
 category: Development
 extra-source-files:
   - README.md
+  - ChangeLog.md
 
 custom-setup:
   dependencies:
