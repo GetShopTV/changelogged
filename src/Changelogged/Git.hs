@@ -17,7 +17,7 @@ import Changelogged.Types
 -- | Get latest git tag in HEAD if present.
 latestGitTag :: Text -> IO Text
 latestGitTag repl = do
-  ver <- fold ((fromRight "" <$> inprocWithErr "git" ["describe", "--tags", "--abbrev=0"] empty) `catch` \ (_ :: ExitCode) -> empty) Fold.head
+  ver <- fold ((fromRight "" <$> inprocWithErr "git" ["describe", "--tags", "--abbrev=0", "HEAD^"] empty) `catch` \ (_ :: ExitCode) -> empty) Fold.head
   return $ case ver of
     Nothing -> repl
     Just v -> lineToText v
