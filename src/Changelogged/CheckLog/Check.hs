@@ -3,6 +3,7 @@ module Changelogged.CheckLog.Check where
 
 import Turtle hiding (stdout, stderr)
 import Prelude hiding (FilePath)
+import Data.Foldable (asum)
 
 import qualified Control.Foldl as Fold
 import Control.Monad (when, filterM)
@@ -40,8 +41,8 @@ checkCommonChangelogF fmt writeLog Git{..} changelog = do
 
 -- |This is actually part if '@Main@'
 -- Check local changelog - local means what changelog is specific and has some indicator file. If file is changed changelog must change.
-checkLocalChangelogF :: WarningFormat -> Bool -> Git -> FilePath -> FilePath -> IO Bool
-checkLocalChangelogF fmt writeLog Git{..} path indicator = do
+checkLocalChangelogF :: WarningFormat -> Bool -> Git -> FilePath -> [FilePath] -> IO Bool
+checkLocalChangelogF fmt writeLog Git{..} path versionFilePaths = do
   printf ("Checking "%fp%"\n") path
   
   commits <- map (fromJustCustom "Cannot find commit hash in git log entry" . hashMatch . lineToText)
@@ -52,7 +53,7 @@ checkLocalChangelogF fmt writeLog Git{..} path indicator = do
   where
     eval hist commit = do
       linePresent <- fold
-        (grep (has $ text $ showPath indicator)
+        (grep (asum (map (has . text . showPath) versionFilePaths))
           (inproc "git" ["show", "--stat", commit] empty))
         countLines
       case linePresent of
@@ -83,8 +84,7 @@ checkChangelogWrap Options{..} git False ChangelogConfig{..} = do
       when optFromBC $ printf ("Checking "%fp%" from start of project\n") changelogChangelog
       upToDate <- case changelogVersionFiles of
         Nothing -> checkCommonChangelogF optFormat optUpdateChangelog git changelogChangelog
-        Just versionFiles ->
-          and <$> mapM (checkLocalChangelogF optFormat optUpdateChangelog git changelogChangelog . versionFilePath) versionFiles
+        Just versionFiles -> checkLocalChangelogF optFormat optUpdateChangelog git changelogChangelog (map versionFilePath versionFiles)
       if upToDate
         then coloredPrint Green (showPath changelogChangelog <> " is up to date.\n")
         else coloredPrint Yellow ("WARNING: " <> showPath changelogChangelog <> " is out of date.\n")
