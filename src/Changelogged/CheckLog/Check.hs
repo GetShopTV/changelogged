@@ -89,5 +89,5 @@ checkChangelogWrap Options{..} git False TaggedLog{..} = do
       if upToDate
         then return True
         else do
-          coloredPrint Red ("ERROR: " <> showPath taggedLogPath <> " is not up-to-date. Use -c or --no-check options if you want to ignore changelog checks and -f to bump anyway.\n")
+          coloredPrint Red ("ERROR: " <> showPath taggedLogPath <> " is not up-to-date. Use --no-check if you want to ignore changelog checks and --force to bump anyway.\n")
           return optForce
