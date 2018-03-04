@@ -9,9 +9,15 @@ import Turtle (Description(..))
 
 import Changelogged.Types
 
+-- |
+-- >>> availableWarningFormats
+-- [simple,suggest]
 availableWarningFormats :: [WarningFormat]
 availableWarningFormats = [minBound..maxBound]
 
+-- |
+-- >>> availableWarningFormatsStr
+-- "'simple' or 'suggest'"
 availableWarningFormatsStr :: String
 availableWarningFormatsStr = prettyPossibleValues availableWarningFormats
 
@@ -32,7 +38,7 @@ availableLevels = [minBound..maxBound]
 
 -- |
 -- >>> availableLevelsStr
--- "(app major minor fix doc)"
+-- "'app', 'major', 'minor', 'fix' or 'doc'"
 availableLevelsStr :: String
 availableLevelsStr = prettyPossibleValues availableLevels
 
