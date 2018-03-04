@@ -15,6 +15,7 @@ import Changelogged.Utils
 import Changelogged.Pure
 import Changelogged.Pattern
 import Changelogged.CheckLog.Common
+import Changelogged.Config
 
 -- |This is actually part if '@Main@'
 -- Check common changelog.
@@ -69,25 +70,26 @@ checkLocalChangelogF fmt writeLog Git{..} path indicator = do
 
 -- |This is actually part if '@Main@'
 -- Check given changelog regarding options.
-checkChangelogWrap :: Options -> Git -> Bool -> TaggedLog -> IO Bool
+checkChangelogWrap :: Options -> Git -> Bool -> ChangelogConfig -> IO Bool
 checkChangelogWrap _ _ True _ = do
   coloredPrint Yellow "WARNING: skipping checks for API changelog.\n"
   return True
-checkChangelogWrap Options{..} git False TaggedLog{..} = do
+checkChangelogWrap Options{..} git False ChangelogConfig{..} = do
   if (optUpdateChangelog && optFormat == WarnSimple)
     then do
       coloredPrint Red "ERROR: --update-changelog does not work with --format=simple. Try --format=suggest.\n"
       return False
     else do
-      when optFromBC $ printf ("Checking "%fp%" from start of project\n") taggedLogPath
-      upToDate <- case taggedLogIndicator of
-        Nothing -> checkCommonChangelogF optFormat optUpdateChangelog git taggedLogPath
-        Just ind -> checkLocalChangelogF optFormat optUpdateChangelog git taggedLogPath (taggedFilePath ind)
+      when optFromBC $ printf ("Checking "%fp%" from start of project\n") changelogChangelog
+      upToDate <- case changelogVersionFiles of
+        Nothing -> checkCommonChangelogF optFormat optUpdateChangelog git changelogChangelog
+        Just versionFiles ->
+          and <$> mapM (checkLocalChangelogF optFormat optUpdateChangelog git changelogChangelog . versionFilePath) versionFiles
       if upToDate
-        then coloredPrint Green (showPath taggedLogPath <> " is up to date.\n")
-        else coloredPrint Yellow ("WARNING: " <> showPath taggedLogPath <> " is out of date.\n")
+        then coloredPrint Green (showPath changelogChangelog <> " is up to date.\n")
+        else coloredPrint Yellow ("WARNING: " <> showPath changelogChangelog <> " is out of date.\n")
       if upToDate
         then return True
         else do
-          coloredPrint Red ("ERROR: " <> showPath taggedLogPath <> " is not up-to-date. Use --no-check if you want to ignore changelog checks and --force to bump anyway.\n")
+          coloredPrint Red ("ERROR: " <> showPath changelogChangelog <> " is not up-to-date. Use --no-check if you want to ignore changelog checks and --force to bump anyway.\n")
           return optForce
