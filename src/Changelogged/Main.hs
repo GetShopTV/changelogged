@@ -21,7 +21,7 @@ import Changelogged.Config
 defaultMain :: IO ()
 defaultMain = do
   -- parse command line options
-  opts@Options{..} <- options welcome parser
+  opts@Options{..} <- parseOptions
   -- load config file (or default config)
   config <- fromMaybe defaultConfig <$> loadConfig "changelogged.yaml"
   -- load git info
