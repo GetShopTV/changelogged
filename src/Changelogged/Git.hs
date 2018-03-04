@@ -22,7 +22,7 @@ data GitInfo = GitInfo
     -- This will be used to construct links to issues, commits and pull requests.
   , gitLatestVersion :: Maybe Text
     -- ^ Latest version (tag) in the current branch.
-  }
+  } deriving (Show)
 
 -- | Get latest git tag in HEAD if present.
 loadGitLatestTag :: IO (Maybe Text)
@@ -32,9 +32,23 @@ loadGitLatestTag = do
 
 -- | Get link to origin and strip '.git' to get valid url to project page.
 loadGitRemoteUrl :: IO Text
-loadGitRemoteUrl = do
-  raw <- strict $ inproc "git" ["remote", "get-url", "origin"] empty
-  return $ fromMaybe (Text.stripEnd raw) (Text.stripSuffix ".git\n" raw)
+loadGitRemoteUrl = remoteUrlToHttps
+  <$> strict (inproc "git" ["remote", "get-url", "origin"] empty)
+
+-- | Change git remote URL so that it can be used in the browser.
+--
+-- >>> remoteUrlToHttps "git@github.com:GetShopTV/changelogged.git"
+-- "https://github.com/GetShopTV/changelogged"
+--
+-- >>> remoteUrlToHttps "https://github.com/GetShopTV/changelogged.git"
+-- "https://github.com/GetShopTV/changelogged"
+remoteUrlToHttps :: Text -> Text
+remoteUrlToHttps
+  = whenPossible (Text.stripSuffix ".git")
+  . Text.replace "git@github.com:" "https://github.com/"
+  . Text.strip
+  where
+    whenPossible fn y = fromMaybe y (fn y)
 
 -- | Load git history from a given commit or from the start of the project.
 loadGitHistory
