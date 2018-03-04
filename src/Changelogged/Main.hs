@@ -28,7 +28,7 @@ commonMain paths opts@Options{..} git = do
 
   bump <- checkChangelogWrap opts git optNoCheck (chLog paths)
 
-  (when (bump && not optNoBump) $ do
+  (when (bump && optBumpVersions) $ do
     newVersion <- case optPackagesLevel of
       Nothing -> generateVersionByChangelog optNoCheck (taggedLogPath $ chLog paths) (gitRevision git)
       Just lev -> Just <$> generateVersion lev (gitRevision git)
@@ -49,28 +49,33 @@ commonMain paths opts@Options{..} git = do
 
 apiMain :: Paths -> Options -> Git -> IO ()
 apiMain paths opts@Options{..} git = do
-  coloredPrint Green ("Checking " <> showPath (taggedLogPath $ chLog paths)
-                                  <> " and creating it if missing.\nIf no indicator exists it will be checked as global changelog.\n")
-  touch $ taggedLogPath (chLog paths)
+  case chLog paths of
+    Nothing -> return ()
+    Just cl -> do
+      let tlp = taggedLogPath cl
+      coloredPrint Green ("Checking " <> showPath tlp
+                                      <> " and creating it if missing.\nIf no indicator exists it will be checked as global changelog.\n")
+      touch $ tlp
 
-  bump <- checkChangelogWrap opts git optNoCheck (chLog paths)
+      bump <- checkChangelogWrap opts git optNoCheck cl
 
-  (when (bump && not optNoBump) $ do
-    newVersion <- case optApiLevel of
-      Nothing -> generateLocalVersionByChangelog optNoCheck (chLog paths)
-      Just lev -> Just <$> generateLocalVersion lev (fromJustCustom "No file with current API version specified." (taggedLogIndicator (chLog paths)))
-  
-    case newVersion of
-      Nothing -> return ()
-      Just version -> case HM.lookup "api" (defaultedEmpty (versioned paths)) of
-        Just files -> do
-          mapM_ (bumpPart version) files
-          headChangelog version (taggedLogPath $ chLog paths)
-        Nothing -> coloredPrint Yellow "WARNING: no files to bump API version in specified.\n"
-    ) `catch` (\(ex :: PatternMatchFail) -> coloredPrint Red (showText ex))
+      (when (bump && optBumpVersions) $ do
+        newVersion <- case optApiLevel of
+          Nothing -> generateLocalVersionByChangelog optNoCheck cl
+          Just lev -> Just <$> generateLocalVersion lev (fromJustCustom "No file with current API version specified." (taggedLogIndicator cl))
+
+        case newVersion of
+          Nothing -> return ()
+          Just version -> case HM.lookup "api" (defaultedEmpty (versioned paths)) of
+            Just files -> do
+              mapM_ (bumpPart version) files
+              headChangelog version tlp
+            Nothing -> coloredPrint Yellow "WARNING: no files to bump API version in specified.\n"
+        ) `catch` (\(ex :: PatternMatchFail) -> coloredPrint Red (showText ex))
   where
-    chLog cfg = HM.lookupDefault (TaggedLog "ApiChangeLog.md" Nothing) "api"
-      (fromMaybe (HM.singleton "api" (TaggedLog "ApiChangeLog.md" Nothing)) (changelogs cfg))
+    chLog cfg = do
+      hm <- changelogs cfg
+      HM.lookup "api" hm
 
 otherMain :: Paths -> Options -> Git -> IO ()
 otherMain paths opts@Options{..} git = do
@@ -86,7 +91,7 @@ otherMain paths opts@Options{..} git = do
     
       bump <- checkChangelogWrap opts git optNoCheck changelog
     
-      (when (bump && not optNoBump) $ do
+      (when (bump && optBumpVersions) $ do
         newVersion <- generateLocalVersionByChangelog optNoCheck changelog
       
         case newVersion of
@@ -110,8 +115,8 @@ defaultMain = do
 
   commonMain paths opts git
 
-  when optWithAPI $ apiMain paths opts git
+  apiMain paths opts git
 
-  when optDifferentChlogs $ otherMain paths opts git
+  otherMain paths opts git
   
   sh $ rm $ gitHistory git

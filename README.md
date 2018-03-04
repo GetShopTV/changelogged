@@ -3,7 +3,6 @@
 [![Hackage](https://img.shields.io/hackage/v/changelogged.svg)](http://hackage.haskell.org/package/changelogged)
 [![Build Status](https://travis-ci.org/GetShopTV/changelogged.svg?branch=master)](https://travis-ci.org/GetShopTV/changelogged)
 
-
 ## What and how to?
 
 ### Purpose
@@ -56,35 +55,32 @@ Current version for parts tracked by local changelogs is known from `indicator`.
 
 ### Features reference
 
-#### Text of help message:
-```
-This tool can check your changelogs and bump versions in project.
-It assumes to be run in root directory of project and that changelog is here.
-You can specify these levels of changes: app, major, minor, fix, doc.
-It can infer version from changelog.
-But it will refuse to do it if it's not sure changelogs are up to date.
+#### Help message
 
-Usage: changelogged [-l|--level ARG] [-a|--api-level ARG] [--format ARG]
-                    [-W|--with-api] [-m|--multiple] [-c|--no-check]
-                    [-C|--no-bump] [-e|--from-bc] [-f|--force] [-y|--write]
+```
+changelogged --help
+```
+
+```
+changelogged - Changelog Manager for Git Projects
+
+Usage: changelogged [--format FORMAT] [--update-changelog] [--bump-versions]
 
 Available options:
   -h,--help                Show this help text
-  -l,--level ARG           Level of changes (for packages). One of (app major
-                           minor fix doc)
-  -a,--api-level ARG       Level of changes (for API). One of (app major minor
-                           fix doc)
-  --format ARG             Warning format. One of (simple
-                           suggest) (default: simple)
-  -W,--with-api            Assume there is changelog for API.
-  -m,--multiple            Assume there is more than one changelog.
-  -c,--no-check            Do not check changelogs.
-  -C,--no-bump             Do not bump versions. Only check changelogs.
-  -e,--from-bc             Check changelogs from start of project.
-  -f,--force               Bump version even if changelogs are outdated. Cannot
-                           be mixed with -c.
-  -y,--write               Write changelog suggestions to changelog directly.
-                           Available with --format suggest.
+  --format FORMAT          Missing entries report format. FORMAT can be 'simple'
+                           or 'suggest'. (default: simple)
+  --update-changelog       Prepend missing entries to changelogs. Available with
+                           --format=suggest.
+  --bump-versions          Bump versions according to change level.
+  --level CHANGE_LEVEL     Level of changes (for packages). CHANGE_LEVEL can be
+                           'app', 'major', 'minor', 'fix' or 'doc'.
+  --api-level CHANGE_LEVEL Level of changes (for API). CHANGE_LEVEL can be
+                           'app', 'major', 'minor', 'fix' or 'doc'.
+  --from-bc                Check changelogs for the entire history of the
+                           project.
+  --force                  Bump versions even when changelogs are outdated.
+  --no-check               Do not check changelogs.
 ```
 
 See examples [below](#guiding-examples)

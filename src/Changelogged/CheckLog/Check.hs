@@ -74,15 +74,20 @@ checkChangelogWrap _ _ True _ = do
   coloredPrint Yellow "WARNING: skipping checks for API changelog.\n"
   return True
 checkChangelogWrap Options{..} git False TaggedLog{..} = do
-  when optFromBC $ printf ("Checking "%fp%" from start of project\n") taggedLogPath
-  upToDate <- case taggedLogIndicator of
-    Nothing -> checkCommonChangelogF optFormat optWrite git taggedLogPath
-    Just ind -> checkLocalChangelogF optFormat optWrite git taggedLogPath (taggedFilePath ind)
-  if upToDate
-    then coloredPrint Green (showPath taggedLogPath <> " is up to date.\n")
-    else coloredPrint Yellow ("WARNING: " <> showPath taggedLogPath <> " is out of date.\n")
-  if upToDate
-    then return True
+  if (optUpdateChangelog && optFormat == WarnSimple)
+    then do
+      coloredPrint Red "ERROR: --update-changelog does not work with --format=simple. Try --format=suggest.\n"
+      return False
     else do
-      coloredPrint Red ("ERROR: " <> showPath taggedLogPath <> " is not up-to-date. Use -c or --no-check options if you want to ignore changelog checks and -f to bump anyway.\n")
-      return optForce
+      when optFromBC $ printf ("Checking "%fp%" from start of project\n") taggedLogPath
+      upToDate <- case taggedLogIndicator of
+        Nothing -> checkCommonChangelogF optFormat optUpdateChangelog git taggedLogPath
+        Just ind -> checkLocalChangelogF optFormat optUpdateChangelog git taggedLogPath (taggedFilePath ind)
+      if upToDate
+        then coloredPrint Green (showPath taggedLogPath <> " is up to date.\n")
+        else coloredPrint Yellow ("WARNING: " <> showPath taggedLogPath <> " is out of date.\n")
+      if upToDate
+        then return True
+        else do
+          coloredPrint Red ("ERROR: " <> showPath taggedLogPath <> " is not up-to-date. Use --no-check if you want to ignore changelog checks and --force to bump anyway.\n")
+          return optForce
