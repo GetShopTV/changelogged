@@ -17,41 +17,42 @@ import Changelogged.Pure
 import Changelogged.Pattern
 import Changelogged.CheckLog.Common
 import Changelogged.Config
+import Changelogged.Git
 
 -- |This is actually part if '@Main@'
 -- Check common changelog.
-checkCommonChangelogF :: WarningFormat -> Bool -> Git -> FilePath -> IO Bool
-checkCommonChangelogF fmt writeLog Git{..} changelog = do
+checkCommonChangelogF :: WarningFormat -> Bool -> GitInfo -> FilePath -> IO Bool
+checkCommonChangelogF fmt writeLog GitInfo{..} changelog = do
   printf ("Checking "%fp%"\n") changelog
 
   pullCommits <- map (fromJustCustom "Cannot find commit hash in git log entry" . hashMatch . lineToText)
-    <$> fold (grep githubRefGrep (input gitHistory)) Fold.list
+    <$> fold (grep githubRefGrep (select gitHistory)) Fold.list
   pulls <- map (fromJustCustom "Cannot find pull request number in git log entry" . githubRefMatch . lineToText)
-    <$> fold (grep githubRefGrep (input gitHistory)) Fold.list
+    <$> fold (grep githubRefGrep (select gitHistory)) Fold.list
   singles <- map (fromJustCustom "Cannot find commit hash in git log entry" . hashMatch . lineToText)
-    <$> fold (grep hashGrepExclude (input gitHistory)) Fold.list
+    <$> fold (grep hashGrepExclude (select gitHistory)) Fold.list
   
   filteredSingles <- filterM noMarkdown singles
   
   pullHeaders <- mapM (commitMessage PR) pullCommits
   singleHeaders <- mapM (commitMessage Commit) filteredSingles
-  flagsPR <- mapM (\(i,m) -> changelogIsUp fmt writeLog gitLink i PR m changelog) (zip pulls pullHeaders)
-  flagsCommit <- mapM (\(i, m) -> changelogIsUp fmt writeLog gitLink i Commit m changelog) (zip filteredSingles singleHeaders)
+  flagsPR <- mapM (\(i,m) -> changelogIsUp fmt writeLog gitRemoteUrl i PR m changelog) (zip pulls pullHeaders)
+  flagsCommit <- mapM (\(i, m) -> changelogIsUp fmt writeLog gitRemoteUrl i Commit m changelog) (zip filteredSingles singleHeaders)
   return $ and (flagsPR ++ flagsCommit)
 
 -- |This is actually part if '@Main@'
 -- Check local changelog - local means what changelog is specific and has some indicator file. If file is changed changelog must change.
-checkLocalChangelogF :: WarningFormat -> Bool -> Git -> FilePath -> [FilePath] -> IO Bool
-checkLocalChangelogF fmt writeLog Git{..} path versionFilePaths = do
+checkLocalChangelogF :: WarningFormat -> Bool -> GitInfo -> FilePath -> [FilePath] -> IO Bool
+checkLocalChangelogF fmt writeLog GitInfo{..} path versionFilePaths = do
   printf ("Checking "%fp%"\n") path
   
   commits <- map (fromJustCustom "Cannot find commit hash in git log entry" . hashMatch . lineToText)
-    <$> fold (input gitHistory) Fold.list
+    <$> fold (select gitHistory) Fold.list
 
-  flags <- mapM (eval gitHistory) commits
+  flags <- mapM eval commits
   return $ and flags
   where
-    eval hist commit = do
+    eval commit = do
       linePresent <- fold
         (grep (asum (map (has . text . showPath) versionFilePaths))
           (inproc "git" ["show", "--stat", commit] empty))
@@ -60,18 +61,18 @@ checkLocalChangelogF fmt writeLog Git{..} path versionFilePaths = do
         0 -> return True
         _ -> do
           pull <- fmap (fromJustCustom "Cannot find commit hash in git log entry" . githubRefMatch . lineToText) <$>
-              fold (grep githubRefGrep (grep (has (text commit)) (input hist))) Fold.head
+              fold (grep githubRefGrep (grep (has (text commit)) (select gitHistory))) Fold.head
           case pull of
             Nothing -> do
               message <- commitMessage Commit commit
-              changelogIsUp fmt writeLog gitLink commit Commit message path
+              changelogIsUp fmt writeLog gitRemoteUrl commit Commit message path
             Just pnum -> do
               message <- commitMessage PR commit
-              changelogIsUp fmt writeLog gitLink pnum PR message path
+              changelogIsUp fmt writeLog gitRemoteUrl pnum PR message path
 
 -- |This is actually part if '@Main@'
 -- Check given changelog regarding options.
-checkChangelogWrap :: Options -> Git -> ChangelogConfig -> IO Bool
+checkChangelogWrap :: Options -> GitInfo -> ChangelogConfig -> IO Bool
 checkChangelogWrap Options{..} git ChangelogConfig{..} = do
   if (optUpdateChangelog && optFormat == WarnSimple)
     then do

@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 module Changelogged.Types where
 
-import qualified Turtle
 import Data.Text (Text)
 
 type Variable = Text
@@ -13,13 +12,6 @@ data Level = App | Major | Minor | Fix | Doc
 
 -- |Type of entry in git history.
 data Mode = PR | Commit
-
--- |Structure to save once token git data.
-data Git = Git
-  { gitHistory :: Turtle.FilePath
-  , gitLink :: Text
-  , gitRevision :: Text
-  }
 
 instance Show Mode where
   show PR = "Pull request"

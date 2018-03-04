@@ -11,7 +11,6 @@ import System.Console.ANSI (Color(..))
 import Changelogged.CheckLog.Check
 import Changelogged.Bump.Local
 import Changelogged.Bump.Common
-import Changelogged.Types
 import Changelogged.Git
 import Changelogged.Options
 import Changelogged.Utils
@@ -25,18 +24,16 @@ defaultMain = do
   -- load config file (or default config)
   config <- fromMaybe defaultConfig <$> loadConfig "changelogged.yaml"
   -- load git info
-  git <- gitData optFromBC
+  gitInfo <- loadGitInfo optFromBC
   -- process changelogs
-  processChangelogs config opts git
-  -- ???
-  sh $ rm $ gitHistory git
+  processChangelogs config opts gitInfo
 
-processChangelogs :: Config -> Options -> Git -> IO ()
-processChangelogs config opts git = do
-  mapM_ (processChangelog opts git) (configChangelogs config)
+processChangelogs :: Config -> Options -> GitInfo -> IO ()
+processChangelogs config opts gitInfo = do
+  mapM_ (processChangelog opts gitInfo) (configChangelogs config)
 
-processChangelog :: Options -> Git -> ChangelogConfig -> IO ()
-processChangelog opts@Options{..} git config@ChangelogConfig{..} = do
+processChangelog :: Options -> GitInfo -> ChangelogConfig -> IO ()
+processChangelog opts@Options{..} gitInfo config@ChangelogConfig{..} = do
   coloredPrint Green ("Checking " <> format fp changelogChangelog <> " and creating it if missing.\n")
   touch changelogChangelog
 
@@ -45,7 +42,7 @@ processChangelog opts@Options{..} git config@ChangelogConfig{..} = do
       warning $ "skipping checks for " <> format fp changelogChangelog <> " (due to --no-check).\n"
       return True
     else do
-      checkChangelogWrap opts git config
+      checkChangelogWrap opts gitInfo config
 
   (when (bump && optBumpVersions) $ do
     newVersion <- if optNoCheck
