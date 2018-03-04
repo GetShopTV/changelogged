@@ -75,7 +75,7 @@ checkChangelogWrap :: Options -> Git -> ChangelogConfig -> IO Bool
 checkChangelogWrap Options{..} git ChangelogConfig{..} = do
   if (optUpdateChangelog && optFormat == WarnSimple)
     then do
-      coloredPrint Red "ERROR: --update-changelog does not work with --format=simple. Try --format=suggest.\n"
+      failure "--update-changelog does not work with --format=simple (try --format=suggest instead)"
       return False
     else do
       when optFromBC $ printf ("Checking "%fp%" from start of project\n") changelogChangelog
@@ -84,9 +84,9 @@ checkChangelogWrap Options{..} git ChangelogConfig{..} = do
         Just versionFiles -> checkLocalChangelogF optFormat optUpdateChangelog git changelogChangelog (map versionFilePath versionFiles)
       if upToDate
         then coloredPrint Green (showPath changelogChangelog <> " is up to date.\n")
-        else coloredPrint Yellow ("WARNING: " <> showPath changelogChangelog <> " is out of date.\n")
+        else warning $ showPath changelogChangelog <> " is out of date"
       if upToDate
         then return True
         else do
-          coloredPrint Red ("ERROR: " <> showPath changelogChangelog <> " is not up-to-date. Use --no-check if you want to ignore changelog checks and --force to bump anyway.\n")
+          failure $ showPath changelogChangelog <> " is out of date. Use --no-check if you want to ignore changelog checks and --force to force bump version."
           return optForce

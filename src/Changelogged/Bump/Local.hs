@@ -46,11 +46,8 @@ generateLocalVersion lev indicator = do
     new current = bump (delimited current) lev
 
 -- |Infer new local version.
-generateLocalVersionByChangelog :: Bool -> ChangelogConfig -> IO (Maybe Text)
-generateLocalVersionByChangelog True _ = do
-  coloredPrint Yellow "You are bumping API version with no explicit version modifiers and changelog checks. It can result in anything. Please retry.\n"
-  return Nothing
-generateLocalVersionByChangelog False ChangelogConfig{..} = do
+generateLocalVersionByChangelog :: ChangelogConfig -> IO (Maybe Text)
+generateLocalVersionByChangelog ChangelogConfig{..} = do
   versionedChanges <- getChangelogEntries changelogChangelog
   case versionedChanges of
     Just lev -> do
@@ -60,5 +57,5 @@ generateLocalVersionByChangelog False ChangelogConfig{..} = do
           localVersions <- mapM (generateLocalVersion lev) versionFiles
           return (listToMaybe localVersions) -- FIXME: don't ignore other version files
     Nothing -> do
-      coloredPrint Yellow ("WARNING: keep old API version since " <> showPath changelogChangelog <> " apparently does not contain any new entries.\n")
+      warning $ "keeping current version since " <> showPath changelogChangelog <> " apparently does not contain any new entries"
       return Nothing

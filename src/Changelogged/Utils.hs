@@ -1,6 +1,7 @@
 module Changelogged.Utils where
 
 import Data.Text (Text)
+import Data.Monoid ((<>))
 
 import System.Console.ANSI
 
@@ -14,4 +15,9 @@ coloredPrint color line = do
   setSGR [Reset]
 
 warning :: Text -> IO ()
-warning = coloredPrint Yellow . mappend "WARNING: "
+warning msg = coloredPrint Yellow $
+  "WARNING: " <> msg <> "\n"
+
+failure :: Text -> IO ()
+failure msg = coloredPrint Red $
+  "FAILURE: " <> msg <> "\n"

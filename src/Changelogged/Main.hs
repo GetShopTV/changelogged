@@ -48,7 +48,12 @@ processChangelog opts@Options{..} git config@ChangelogConfig{..} = do
       checkChangelogWrap opts git config
 
   (when (bump && optBumpVersions) $ do
-    newVersion <- generateLocalVersionByChangelog optNoCheck config
+    newVersion <- if optNoCheck
+      then do
+        warning "cannot infer new version from changelog because of --no-check"
+        return Nothing
+      else do
+        generateLocalVersionByChangelog config
 
     case newVersion of
       Nothing -> return ()
@@ -56,6 +61,6 @@ processChangelog opts@Options{..} git config@ChangelogConfig{..} = do
         Just versionFiles -> do
           mapM_ (bumpPart version) versionFiles
           headChangelog version changelogChangelog
-        Nothing -> coloredPrint Yellow "WARNING: no files to bump version in specified.\n"
-    ) `catch` (\(ex :: PatternMatchFail) -> coloredPrint Red (showText ex))
+        Nothing -> warning "no files specified to bump versions in"
+    ) `catch` (\(ex :: PatternMatchFail) -> failure (showText ex))
 
