@@ -12,3 +12,6 @@ coloredPrint color line = do
   setSGR [SetColor Foreground Vivid color]
   printf s line
   setSGR [Reset]
+
+warning :: Text -> IO ()
+warning = coloredPrint Yellow . mappend "WARNING: "

@@ -71,11 +71,8 @@ checkLocalChangelogF fmt writeLog Git{..} path versionFilePaths = do
 
 -- |This is actually part if '@Main@'
 -- Check given changelog regarding options.
-checkChangelogWrap :: Options -> Git -> Bool -> ChangelogConfig -> IO Bool
-checkChangelogWrap _ _ True _ = do
-  coloredPrint Yellow "WARNING: skipping checks for API changelog.\n"
-  return True
-checkChangelogWrap Options{..} git False ChangelogConfig{..} = do
+checkChangelogWrap :: Options -> Git -> ChangelogConfig -> IO Bool
+checkChangelogWrap Options{..} git ChangelogConfig{..} = do
   if (optUpdateChangelog && optFormat == WarnSimple)
     then do
       coloredPrint Red "ERROR: --update-changelog does not work with --format=simple. Try --format=suggest.\n"

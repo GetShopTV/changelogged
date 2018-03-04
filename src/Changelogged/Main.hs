@@ -40,7 +40,12 @@ processChangelog opts@Options{..} git config@ChangelogConfig{..} = do
   coloredPrint Green ("Checking " <> format fp changelogChangelog <> " and creating it if missing.\n")
   touch changelogChangelog
 
-  bump <- checkChangelogWrap opts git optNoCheck config
+  bump <- if optNoCheck
+    then do
+      warning $ "skipping checks for " <> format fp changelogChangelog <> " (due to --no-check).\n"
+      return True
+    else do
+      checkChangelogWrap opts git config
 
   (when (bump && optBumpVersions) $ do
     newVersion <- generateLocalVersionByChangelog optNoCheck config
