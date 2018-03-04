@@ -1,0 +1,38 @@
+# Template configuration file for changelogged - Changelog Manager for Git Projects
+# See documentation at https://github.com/GetShopTV/changelogged#readme
+changelogs:
+  # package changelog (for library and executables)
+  - changelog: ChangeLog.md
+
+    # watch all files except for the changelog itself
+    ignore_files:
+      - ChangeLog.md
+
+    # which files to modify when performing a regular version bump
+    version_files:
+      # for hpack-enabled Haskell projects
+      # version in package.yaml should be updated
+      - path: package.yaml
+        version_pattern: "version:"
+
+  # HTTP API changelog
+  - changelog: API_ChangeLog.md
+
+    # only watch changes to swagger.json file
+    watch_files:
+      - swagger.json
+
+    # which files to modify when performing
+    # an API version bump
+    version_files:
+      # version should be changed in Haskell module
+      # that specifies version for a generated swagger.json
+      - path: 'src/MyProject/API/Version.hs'
+        version_pattern: 'apiVersion ='
+
+      # swagger.json should also be updated
+      - path: 'swagger.json'
+        version_pattern: '"version":'
+        
+# which individual changes to ignore
+# ignore_commits: []
