@@ -68,8 +68,7 @@ parser = Options
   <*> longSwitch "update-changelog"
         "Add missing entries to changelogs (works with --format=suggest)."
   <*> longSwitch "bump-versions" "Bump versions in version files."
-  <*> optional packagesLevel
-  <*> optional apiLevel
+  <*> optional changesLevel
   <*> hiddenSwitch "from-bc"
         "Look for missing changelog entries from the start of the project."
   <*> hiddenSwitch "force" "Bump versions ignoring possibly outdated changelogs."
@@ -84,15 +83,13 @@ parser = Options
       <> help description
       <> hidden
 
-    packagesLevel = option readLevel $
+    changesLevel = option readLevel $
          long "level"
       <> metavar "CHANGE_LEVEL"
-      <> help ("Level of changes (for packages). CHANGE_LEVEL can be " <> availableLevelsStr <> ".")
-      <> hidden
-    apiLevel = option readLevel $
-         long "api-level"
-      <> metavar "CHANGE_LEVEL"
-      <> help ("Level of changes (for API). CHANGE_LEVEL can be " <> availableLevelsStr <> ".")
+      <> help (unlines
+           [ "Level of changes (to override one inferred from changelogs)."
+           , "CHANGE_LEVEL can be " <> availableLevelsStr <> "."
+           ])
       <> hidden
     warningFormat = option readWarningFormat $
          long "format"
@@ -112,10 +109,8 @@ data Options = Options
   , optUpdateChangelog :: Bool
     -- | Bump versions in version files.
   , optBumpVersions    :: Bool
-    -- | Explicit level of changes for files with common versioning.
-  , optPackagesLevel   :: Maybe Level
-    -- | Explicit level of changes in API.
-  , optApiLevel        :: Maybe Level
+    -- | Level of changes (to override one inferred from changelogs).
+  , optChangeLevel     :: Maybe Level
     -- | Look for missing changelog entries from the start of the project.
   , optFromBC          :: Bool
     -- | Bump versions ignoring possibly outdated changelogs.
