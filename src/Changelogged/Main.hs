@@ -37,6 +37,7 @@ processChangelogs config opts gitInfo = do
 
 processChangelog :: Options -> GitInfo -> ChangelogConfig -> IO ()
 processChangelog opts@Options{..} gitInfo config@ChangelogConfig{..} = do
+  putStrLn ""
   info $ "processing " <> format fp changelogChangelog
   changelogExists <- testfile changelogChangelog
   when (not changelogExists) $ do

@@ -88,4 +88,4 @@ ppGitInfo GitInfo{..} = Text.unlines
   [ "Git remote URL: " <> gitRemoteUrl
   , "Latest release: " <> fromMaybe "<none>" gitLatestVersion
   , "Changes since last release: " <> Text.pack (show (length gitHistory))
-  ] <> "\n"
+  ]
