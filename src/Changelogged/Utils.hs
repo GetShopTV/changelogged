@@ -21,3 +21,7 @@ warning msg = coloredPrint Yellow $
 failure :: Text -> IO ()
 failure msg = coloredPrint Red $
   "FAILURE: " <> msg <> "\n"
+
+info :: Text -> IO ()
+info msg = coloredPrint Cyan $
+  "INFO: " <> msg <> "\n"

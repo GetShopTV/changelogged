@@ -23,7 +23,7 @@ import Changelogged.Git
 -- Check common changelog.
 checkCommonChangelogF :: WarningFormat -> Bool -> GitInfo -> FilePath -> IO Bool
 checkCommonChangelogF fmt writeLog GitInfo{..} changelog = do
-  printf ("Checking "%fp%"\n") changelog
+  info $ "looking for missing entries in " <> format fp changelog
 
   pullCommits <- map (fromJustCustom "Cannot find commit hash in git log entry" . hashMatch . lineToText)
     <$> fold (grep githubRefGrep (select gitHistory)) Fold.list
@@ -44,7 +44,7 @@ checkCommonChangelogF fmt writeLog GitInfo{..} changelog = do
 -- Check local changelog - local means what changelog is specific and has some indicator file. If file is changed changelog must change.
 checkLocalChangelogF :: WarningFormat -> Bool -> GitInfo -> FilePath -> [FilePath] -> IO Bool
 checkLocalChangelogF fmt writeLog GitInfo{..} path versionFilePaths = do
-  printf ("Checking "%fp%"\n") path
+  info $ "looking for missing entries in " <> format fp path
   
   commits <- map (fromJustCustom "Cannot find commit hash in git log entry" . hashMatch . lineToText)
     <$> fold (select gitHistory) Fold.list
@@ -86,8 +86,4 @@ checkChangelogWrap Options{..} git ChangelogConfig{..} = do
       if upToDate
         then coloredPrint Green (showPath changelogChangelog <> " is up to date.\n")
         else warning $ showPath changelogChangelog <> " is out of date"
-      if upToDate
-        then return True
-        else do
-          failure $ showPath changelogChangelog <> " is out of date. Use --no-check if you want to ignore changelog checks and --force to force bump version."
-          return optForce
+      return upToDate
