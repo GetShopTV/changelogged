@@ -3,8 +3,10 @@
 module Changelogged.Config where
 
 import Data.Aeson
+import Data.Monoid ((<>))
 import Data.String (fromString)
 import Data.Text (Text)
+import qualified Data.Text as Text
 import qualified Data.Yaml as Yaml
 
 import qualified Turtle
@@ -63,3 +65,20 @@ loadConfig path = do
   return $ case ms of
     Left _wrong -> Nothing
     Right paths -> Just paths
+
+ppConfig :: Config -> Text
+ppConfig Config{..} = mconcat
+  [ "Main branch (with version tags)" ?: configBranch
+  , "Ignored commits" ?: (Text.pack . show . length <$> configIgnoreCommits)
+  , "Changelogs" !: formatItems Turtle.fp (map changelogChangelog configChangelogs)
+  ]
+  where
+    formatItems fmt
+      = ("\n" <>)
+      . Text.unlines
+      . map (\x -> "- " <> Turtle.format fmt x)
+
+    name !: val = name <> ": " <> val <> "\n"
+
+    _    ?: Nothing = ""
+    name ?: Just val = name !: val
