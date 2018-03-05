@@ -23,9 +23,9 @@ defaultMain = do
   -- parse command line options
   opts@Options{..} <- parseOptions
   -- load config file (or default config)
-  config <- fromMaybe defaultConfig <$> loadConfig "changelogged.yaml"
+  config@Config{..} <- fromMaybe defaultConfig <$> loadConfig "changelogged.yaml"
   -- load git info
-  gitInfo <- loadGitInfo optFromBC
+  gitInfo <- loadGitInfo optFromBC configBranch
   coloredPrint Blue (ppGitInfo gitInfo)
   -- process changelogs
   processChangelogs config opts gitInfo

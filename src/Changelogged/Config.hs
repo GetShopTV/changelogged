@@ -12,6 +12,7 @@ import qualified Turtle
 data Config = Config
   { configChangelogs    :: [ChangelogConfig]
   , configIgnoreCommits :: Maybe [Text]
+  , configBranch        :: Maybe Text
   }
 
 data ChangelogConfig = ChangelogConfig
@@ -30,6 +31,7 @@ instance FromJSON Config where
   parseJSON = withObject "Config" $ \o -> Config
     <$> o .:  "changelogs"
     <*> o .:? "ignore_commits"
+    <*> o .:? "branch"
 
 instance FromJSON ChangelogConfig where
   parseJSON = withObject "ChangelogConfig" $ \o -> ChangelogConfig
@@ -52,6 +54,7 @@ defaultConfig = Config
       , changelogVersionFiles = Just [VersionFile "package.yaml" "version:"]
       }
   , configIgnoreCommits = Nothing
+  , configBranch = Nothing
   }
 
 loadConfig :: FilePath -> IO (Maybe Config)

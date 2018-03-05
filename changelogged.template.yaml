@@ -34,5 +34,12 @@ changelogs:
       - path: 'swagger.json'
         version_pattern: '"version":'
         
+# branch with version tags
+# for projects following Git Flow this should be master,
+# since development and feature branches might not have version tags
+#
+# branch: master
+
 # which individual changes to ignore
+#
 # ignore_commits: []

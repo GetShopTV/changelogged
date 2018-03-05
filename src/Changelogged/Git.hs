@@ -24,10 +24,12 @@ data GitInfo = GitInfo
     -- ^ Latest version (tag) in the current branch.
   } deriving (Show)
 
--- | Get latest git tag in HEAD if present.
-loadGitLatestTag :: IO (Maybe Text)
-loadGitLatestTag = do
-  ver <- fold ((fromRight "" <$> inprocWithErr "git" ["describe", "--tags", "--abbrev=0", "HEAD^"] empty) `catch` \ (_ :: ExitCode) -> empty) Fold.head
+-- | Get latest git tag in a given branch (if present).
+-- If no branch is specified then @HEAD^@ is used.
+loadGitLatestTag :: Maybe Text -> IO (Maybe Text)
+loadGitLatestTag mbranch = do
+  let branch = fromMaybe "HEAD^" mbranch
+  ver <- fold ((fromRight "" <$> inprocWithErr "git" ["describe", "--tags", "--abbrev=0", branch] empty) `catch` \ (_ :: ExitCode) -> empty) Fold.head
   return $ fmap lineToText ver
 
 -- | Get link to origin and strip '.git' to get valid url to project page.
@@ -66,10 +68,11 @@ loadGitHistory from = do
 
 -- | Extract latest history and origin link from git through temporary file and store it in 'GitInfo'.
 loadGitInfo
-  :: Bool  -- ^ Include the whole project history?
+  :: Bool       -- ^ Include the whole project history?
+  -> Maybe Text -- ^ Branch with version tags (@HEAD@ is used by default).
   -> IO GitInfo
-loadGitInfo entireHistory = do
-  latestTag    <- loadGitLatestTag
+loadGitInfo entireHistory branch = do
+  latestTag    <- loadGitLatestTag branch
   gitHistory   <- loadGitHistory (if entireHistory then Nothing else latestTag)
   gitRemoteUrl <- loadGitRemoteUrl
   let gitLatestVersion = extractVersion latestTag
