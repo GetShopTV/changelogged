@@ -15,7 +15,7 @@ data Mode = PR | Commit
 
 instance Show Mode where
   show PR = "Pull request"
-  show Commit = "Single commit"
+  show Commit = "Commit"
 
 data WarningFormat
   = WarnSimple
