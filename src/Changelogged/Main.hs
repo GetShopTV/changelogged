@@ -25,6 +25,7 @@ defaultMain = do
   config <- fromMaybe defaultConfig <$> loadConfig "changelogged.yaml"
   -- load git info
   gitInfo <- loadGitInfo optFromBC
+  coloredPrint Cyan (ppGitInfo gitInfo)
   -- process changelogs
   processChangelogs config opts gitInfo
 

@@ -78,3 +78,11 @@ loadGitInfo entireHistory = do
     extractVersion tag = case Text.dropWhile (not . isDigit) <$> tag of
       Just ver | not (Text.null ver) -> Just ver
       _ -> Nothing
+
+-- | Pretty print known information about a Git project.
+ppGitInfo :: GitInfo -> Text
+ppGitInfo GitInfo{..} = Text.unlines
+  [ "Git remote URL: " <> gitRemoteUrl
+  , "Latest release: " <> fromMaybe "<none>" gitLatestVersion
+  , "Changes since last release: " <> Text.pack (show (length gitHistory))
+  ]
