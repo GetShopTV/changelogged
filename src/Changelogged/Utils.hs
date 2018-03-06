@@ -1,6 +1,7 @@
 module Changelogged.Utils where
 
 import Data.Text (Text)
+import Data.Monoid ((<>))
 
 import System.Console.ANSI
 
@@ -12,3 +13,15 @@ coloredPrint color line = do
   setSGR [SetColor Foreground Vivid color]
   printf s line
   setSGR [Reset]
+
+warning :: Text -> IO ()
+warning msg = coloredPrint Yellow $
+  "WARNING: " <> msg <> "\n"
+
+failure :: Text -> IO ()
+failure msg = coloredPrint Red $
+  "FAILURE: " <> msg <> "\n"
+
+info :: Text -> IO ()
+info msg = coloredPrint Cyan $
+  "INFO: " <> msg <> "\n"

@@ -1,11 +1,10 @@
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Changelogged.Main where
 
-import Prelude hiding (FilePath)
-import Turtle
+import Turtle hiding (FilePath)
 
 import Control.Exception
-import qualified Data.HashMap.Strict as HM
 import Data.Maybe (fromMaybe)
 
 import System.Console.ANSI (Color(..))
@@ -13,110 +12,64 @@ import System.Console.ANSI (Color(..))
 import Changelogged.CheckLog.Check
 import Changelogged.Bump.Local
 import Changelogged.Bump.Common
-import Changelogged.Bump.General
-import Changelogged.Types
 import Changelogged.Git
 import Changelogged.Options
 import Changelogged.Utils
-import Changelogged.Pure (showPath, fromJustCustom, defaultedEmpty, showText)
-import Changelogged.Settings
-
-commonMain :: Paths -> Options -> Git -> IO ()
-commonMain paths opts@Options{..} git = do
-  coloredPrint Green ("Checking " <> showPath (taggedLogPath $ chLog paths) <> " and creating it if missing.\n")
-  touch $ taggedLogPath (chLog paths)
-
-  bump <- checkChangelogWrap opts git optNoCheck (chLog paths)
-
-  (when (bump && optBumpVersions) $ do
-    newVersion <- case optPackagesLevel of
-      Nothing -> generateVersionByChangelog optNoCheck (taggedLogPath $ chLog paths) (gitRevision git)
-      Just lev -> Just <$> generateVersion lev (gitRevision git)
-  
-    case newVersion of
-      Nothing -> return ()
-      Just version -> case HM.lookup "main" (defaultedEmpty (versioned paths)) of
-        Just files -> do
-          printf ("Version: "%s%" -> ") (gitRevision git)
-          coloredPrint Yellow (version <> "\n")
-          mapM_ (bumpPart version) files
-          headChangelog version (taggedLogPath $ chLog paths)
-        Nothing -> coloredPrint Yellow "WARNING: no files to bump project version in specified.\n"
-    ) `catch` (\(ex :: PatternMatchFail) -> coloredPrint Red (showText ex))
-  where
-    chLog cfg = HM.lookupDefault (TaggedLog "ChangeLog.md" Nothing) "main"
-      (fromMaybe (HM.singleton "main" (TaggedLog "ChangeLog.md" Nothing)) (changelogs cfg))
-
-apiMain :: Paths -> Options -> Git -> IO ()
-apiMain paths opts@Options{..} git = do
-  case chLog paths of
-    Nothing -> return ()
-    Just cl -> do
-      let tlp = taggedLogPath cl
-      coloredPrint Green ("Checking " <> showPath tlp
-                                      <> " and creating it if missing.\nIf no indicator exists it will be checked as global changelog.\n")
-      touch $ tlp
-
-      bump <- checkChangelogWrap opts git optNoCheck cl
-
-      (when (bump && optBumpVersions) $ do
-        newVersion <- case optApiLevel of
-          Nothing -> generateLocalVersionByChangelog optNoCheck cl
-          Just lev -> Just <$> generateLocalVersion lev (fromJustCustom "No file with current API version specified." (taggedLogIndicator cl))
-
-        case newVersion of
-          Nothing -> return ()
-          Just version -> case HM.lookup "api" (defaultedEmpty (versioned paths)) of
-            Just files -> do
-              mapM_ (bumpPart version) files
-              headChangelog version tlp
-            Nothing -> coloredPrint Yellow "WARNING: no files to bump API version in specified.\n"
-        ) `catch` (\(ex :: PatternMatchFail) -> coloredPrint Red (showText ex))
-  where
-    chLog cfg = do
-      hm <- changelogs cfg
-      HM.lookup "api" hm
-
-otherMain :: Paths -> Options -> Git -> IO ()
-otherMain paths opts@Options{..} git = do
-  mapM_ act (entries (changelogs paths))
-  where
-    entries :: Maybe (HM.HashMap Text TaggedLog) -> [(Text, TaggedLog)]
-    entries (Just a) = HM.toList $ HM.delete "main" $ HM.delete "api" a
-    entries Nothing = []
-    
-    act (key, changelog) = do
-      coloredPrint Green ("Checking " <> showPath (taggedLogPath changelog) <> " and creating it if missing.\n")
-      touch (taggedLogPath changelog)
-    
-      bump <- checkChangelogWrap opts git optNoCheck changelog
-    
-      (when (bump && optBumpVersions) $ do
-        newVersion <- generateLocalVersionByChangelog optNoCheck changelog
-      
-        case newVersion of
-          Nothing -> return ()
-          Just version -> case HM.lookup key (defaultedEmpty (versioned paths)) of
-            Just files -> do
-              mapM_ (bumpPart version) files
-              headChangelog version (taggedLogPath changelog)
-            Nothing -> coloredPrint Yellow "WARNING: no files to bump version in specified.\n"
-        ) `catch` (\(ex :: PatternMatchFail) -> coloredPrint Red (showText ex))
+import Changelogged.Pure (showText)
+import Changelogged.Config
 
 defaultMain :: IO ()
 defaultMain = do
-  opts@Options{..} <- options welcome parser
+  -- parse command line options
+  opts@Options{..} <- parseOptions
+  -- load config file (or default config)
+  config@Config{..} <- fromMaybe defaultConfig <$> loadConfig ".changelogged.yaml"
+  -- load git info
+  gitInfo <- loadGitInfo optFromBC configBranch
+  coloredPrint Blue (ppConfig  config)
+  coloredPrint Blue (ppGitInfo gitInfo)
+  -- process changelogs
+  processChangelogs config opts gitInfo
 
-  defaultPaths <- makeDefaultPaths
+processChangelogs :: Config -> Options -> GitInfo -> IO ()
+processChangelogs config opts gitInfo = do
+  mapM_ (processChangelog opts gitInfo) (configChangelogs config)
 
-  paths <- fromMaybe defaultPaths <$> loadPaths
+processChangelog :: Options -> GitInfo -> ChangelogConfig -> IO ()
+processChangelog opts@Options{..} gitInfo config@ChangelogConfig{..} = do
+  putStrLn ""
+  info $ "processing " <> format fp changelogChangelog
+  changelogExists <- testfile changelogChangelog
+  when (not changelogExists) $ do
+    info (format fp changelogChangelog <> " does not exist. Creating an empty changelog.")
+    touch changelogChangelog
 
-  git <- gitData optFromBC
+  upToDate <- if optNoCheck
+    then do
+      warning $ "skipping checks for " <> format fp changelogChangelog <> " (due to --no-check)."
+      return True
+    else do
+      checkChangelogWrap opts gitInfo config
 
-  commonMain paths opts git
+  when optBumpVersions $ if
+    | not upToDate && not optForce ->
+        failure $ "cannot bump versions because " <> format fp changelogChangelog <> " is out of date.\nUse --no-check to skip changelog checks.\nUse --force to force bump version."
+    | not upToDate && optForce ->
+        warning $ format fp changelogChangelog <> " is out of date. Bumping versions anyway due to --force."
+    | otherwise -> (do
+        newVersion <- if optNoCheck
+          then do
+            failure "cannot infer new version from changelog because of --no-check.\nUse explicit --level CHANGE_LEVEL."
+            return Nothing
+          else do
+            generateLocalVersionByChangelog config
 
-  apiMain paths opts git
+        case newVersion of
+          Nothing -> return ()
+          Just version -> case changelogVersionFiles of
+            Just versionFiles -> do
+              mapM_ (bumpPart version) versionFiles
+              headChangelog version changelogChangelog
+            Nothing -> warning "no files specified to bump versions in"
+        ) `catch` (\(ex :: PatternMatchFail) -> failure (showText ex))
 
-  otherMain paths opts git
-  
-  sh $ rm $ gitHistory git

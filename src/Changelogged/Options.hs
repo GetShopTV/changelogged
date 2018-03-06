@@ -5,7 +5,7 @@ import Data.List (intercalate)
 import Data.Monoid ((<>))
 
 import Options.Applicative
-import Turtle (Description(..))
+import qualified Turtle
 
 import Changelogged.Types
 
@@ -65,13 +65,14 @@ readLevel = eitherReader (r . map toLower)
 parser :: Parser Options
 parser = Options
   <$> warningFormat
-  <*> longSwitch  "update-changelog" "Prepend missing entries to changelogs. Available with --format=suggest."
-  <*> longSwitch  "bump-versions"    "Bump versions according to change level."
-  <*> optional packagesLevel
-  <*> optional apiLevel
-  <*> hiddenSwitch "from-bc"  "Check changelogs for the entire history of the project."
-  <*> hiddenSwitch "force"    "Bump versions even when changelogs are outdated."
-  <*> hiddenSwitch "no-check" "Do not check changelogs."
+  <*> longSwitch "update-changelog"
+        "Add missing entries to changelogs (works with --format=suggest)."
+  <*> longSwitch "bump-versions" "Bump versions in version files."
+  <*> optional changesLevel
+  <*> hiddenSwitch "from-bc"
+        "Look for missing changelog entries from the start of the project."
+  <*> hiddenSwitch "force" "Bump versions ignoring possibly outdated changelogs."
+  <*> hiddenSwitch "no-check" "Do not check if changelogs have any missing entries."
   where
     longSwitch name description = switch $
          long name
@@ -82,42 +83,42 @@ parser = Options
       <> help description
       <> hidden
 
-    packagesLevel = option readLevel $
+    changesLevel = option readLevel $
          long "level"
       <> metavar "CHANGE_LEVEL"
-      <> help ("Level of changes (for packages). CHANGE_LEVEL can be " <> availableLevelsStr <> ".")
-      <> hidden
-    apiLevel = option readLevel $
-         long "api-level"
-      <> metavar "CHANGE_LEVEL"
-      <> help ("Level of changes (for API). CHANGE_LEVEL can be " <> availableLevelsStr <> ".")
+      <> help (unlines
+           [ "Level of changes (to override one inferred from changelogs)."
+           , "CHANGE_LEVEL can be " <> availableLevelsStr <> "."
+           ])
       <> hidden
     warningFormat = option readWarningFormat $
          long "format"
       <> metavar "FORMAT"
-      <> help ("Missing entries report format. FORMAT can be " <> availableWarningFormatsStr <> ".")
+      <> help ("Format for missing changelog entry warnings. FORMAT can be " <> availableWarningFormatsStr <> ".")
       <> value WarnSimple
       <> showDefault
 
-welcome :: Description
-welcome = Description "changelogged - Changelog Manager for Git Projects"
+welcome :: Turtle.Description
+welcome = Turtle.Description "changelogged - Changelog Manager for Git Projects"
 
+-- | Command line options for @changelogged@.
 data Options = Options
-  {
-  -- |Output formatting.
+  { -- | Format for missing changelog entry warnings.
     optFormat          :: WarningFormat
-  -- | Write suggestions to changelog directly.
+    -- | Add missing changelog entries to changelog files.
   , optUpdateChangelog :: Bool
-  -- | Bump versions according to unreleased changelog entries.
+    -- | Bump versions in version files.
   , optBumpVersions    :: Bool
-  -- |Explicit level of changes for files with common versioning.
-  , optPackagesLevel   :: Maybe Level
-  -- |Explicit level of changes in API.
-  , optApiLevel        :: Maybe Level
-  -- |Check changelogs from start of project.
+    -- | Level of changes (to override one inferred from changelogs).
+  , optChangeLevel     :: Maybe Level
+    -- | Look for missing changelog entries from the start of the project.
   , optFromBC          :: Bool
-  -- |Bump versions even if changelogs are outdated.
+    -- | Bump versions ignoring possibly outdated changelogs.
   , optForce           :: Bool
-  -- |Do not check changelogs.
+    -- | Do not check if changelogs have any missing entries.
   , optNoCheck         :: Bool
   }
+
+-- | Parse command line options.
+parseOptions :: IO Options
+parseOptions = Turtle.options welcome parser

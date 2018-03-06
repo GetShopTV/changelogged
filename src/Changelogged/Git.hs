@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Changelogged.Git where
 
@@ -12,35 +13,79 @@ import qualified Data.Text as Text
 
 import Turtle
 
-import Changelogged.Types
+-- | Information about the state of a git repository.
+data GitInfo = GitInfo
+  { gitHistory   :: [Turtle.Line]
+    -- ^ A list of git commit messages.
+  , gitRemoteUrl :: Text
+    -- ^ An HTTP(S) link to the repository.
+    -- This will be used to construct links to issues, commits and pull requests.
+  , gitLatestVersion :: Maybe Text
+    -- ^ Latest version (tag) in the current branch.
+  } deriving (Show)
 
--- | Get latest git tag in HEAD if present.
-latestGitTag :: Text -> IO Text
-latestGitTag repl = do
-  ver <- fold ((fromRight "" <$> inprocWithErr "git" ["describe", "--tags", "--abbrev=0", "HEAD^"] empty) `catch` \ (_ :: ExitCode) -> empty) Fold.head
-  return $ case ver of
-    Nothing -> repl
-    Just v -> lineToText v
+-- | Get latest git tag in a given branch (if present).
+-- If no branch is specified then @HEAD^@ is used.
+loadGitLatestTag :: Maybe Text -> IO (Maybe Text)
+loadGitLatestTag mbranch = do
+  let branch = fromMaybe "HEAD^" mbranch
+  ver <- fold ((fromRight "" <$> inprocWithErr "git" ["describe", "--tags", "--abbrev=0", branch] empty) `catch` \ (_ :: ExitCode) -> empty) Fold.head
+  return $ fmap lineToText ver
 
--- |Get link to origin and strip '.git' to get valid url to project page.
-getLink :: IO Text
-getLink = do
-  raw <- strict $ inproc "git" ["remote", "get-url", "origin"] empty
-  return $ fromMaybe (Text.stripEnd raw) (Text.stripSuffix ".git\n" raw)
+-- | Get link to origin and strip '.git' to get valid url to project page.
+loadGitRemoteUrl :: IO Text
+loadGitRemoteUrl = remoteUrlToHttps
+  <$> strict (inproc "git" ["remote", "get-url", "origin"] empty)
 
--- |Extract latest history and origin link from git through temporary file and store it in '@Git@'.
-gitData :: Bool -> IO Git
-gitData start = do
-  curDir <- pwd
-  tmpFile <- with (mktempfile curDir "tmp_") return
-  latestTag <- latestGitTag ""
-  link <- getLink
-  hist <- if start || (latestTag == "")
-    then fold (grep (invert (has (text "Merge branch"))) (inproc "git" ["log", "--oneline", "--first-parent"] empty)) Fold.list
-    else fold (grep (invert (has (text "Merge branch"))) (inproc "git" ["log", "--oneline", "--first-parent", latestTag <> "..HEAD"] empty)) Fold.list
-  liftIO $ append tmpFile (select hist)
-  return $ Git tmpFile link (version latestTag)
+-- | Change git remote URL so that it can be used in the browser.
+--
+-- >>> remoteUrlToHttps "git@github.com:GetShopTV/changelogged.git"
+-- "https://github.com/GetShopTV/changelogged"
+--
+-- >>> remoteUrlToHttps "https://github.com/GetShopTV/changelogged.git"
+-- "https://github.com/GetShopTV/changelogged"
+remoteUrlToHttps :: Text -> Text
+remoteUrlToHttps
+  = whenPossible (Text.stripSuffix ".git")
+  . Text.replace "git@github.com:" "https://github.com/"
+  . Text.strip
   where
-    version tag = case tag of
-      "" -> "0.0.0.0.0"
-      v -> Text.dropWhile (not . isDigit) v
+    whenPossible fn y = fromMaybe y (fn y)
+
+-- | Load git history from a given commit or from the start of the project.
+loadGitHistory
+  :: Maybe Text  -- ^ A commit/tag to mark the start of history.
+  -> IO [Turtle.Line]
+loadGitHistory from = do
+  fold (grep
+    (invert (has (text "Merge branch"))) -- FIXME: why ignore Merge branch commits?
+    (inproc "git" (["log", "--oneline", "--first-parent"] <> range) empty))
+    Fold.list
+  where
+    range = case from of
+      Nothing     -> []
+      Just commit -> [commit <> "..HEAD"]
+
+-- | Extract latest history and origin link from git through temporary file and store it in 'GitInfo'.
+loadGitInfo
+  :: Bool       -- ^ Include the whole project history?
+  -> Maybe Text -- ^ Branch with version tags (@HEAD@ is used by default).
+  -> IO GitInfo
+loadGitInfo entireHistory branch = do
+  latestTag    <- loadGitLatestTag branch
+  gitHistory   <- loadGitHistory (if entireHistory then Nothing else latestTag)
+  gitRemoteUrl <- loadGitRemoteUrl
+  let gitLatestVersion = extractVersion latestTag
+  return GitInfo {..}
+  where
+    extractVersion tag = case Text.dropWhile (not . isDigit) <$> tag of
+      Just ver | not (Text.null ver) -> Just ver
+      _ -> Nothing
+
+-- | Pretty print known information about a Git project.
+ppGitInfo :: GitInfo -> Text
+ppGitInfo GitInfo{..} = Text.unlines
+  [ "Git remote URL: " <> gitRemoteUrl
+  , "Latest release: " <> fromMaybe "<none>" gitLatestVersion
+  , "Changes since last release: " <> Text.pack (show (length gitHistory))
+  ]
