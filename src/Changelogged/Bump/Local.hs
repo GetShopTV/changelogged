@@ -22,17 +22,12 @@ import Changelogged.Config
 -- |Get current local version.
 currentLocalVersion :: VersionFile -> IO Text
 currentLocalVersion VersionFile{..} = do
-  ver <- case extension versionFilePath of
-    Just "json" -> fold (grep (has $ jsonVarGrep versionFileVersionPattern) (input versionFilePath)) Fold.head
-    Just "hs" -> fold (grep (has $ hsVarGrep versionFileVersionPattern) (input versionFilePath)) Fold.head
-    Just "yaml" -> fold (grep (has $ yamlVarGrep versionFileVersionPattern) (input versionFilePath)) Fold.head
-    Just "cabal" -> fold (grep (has $ cabalVarGrep versionFileVersionPattern) (input versionFilePath)) Fold.head
-    _ -> throw (PatternMatchFail $ "ERROR: Cannot get local version. Unsupported extension in indicator file " <> encodeString versionFilePath <> ". Check config.\n")
+  ver <- fold (grep (has (text versionFileVersionPattern)) (input versionFilePath)) Fold.head
   return $ case ver of
     Just realVer -> fromMaybe
-      (throw (PatternMatchFail $ "ERROR: Cannot get local version. Given variable " <> show versionFileVersionPattern <> " doesn't store version. Check config.\n"))
+      (throw (PatternMatchFail $ "cannot get local version. Given variable " <> show versionFileVersionPattern <> " doesn't store version. Check config.\n"))
       (versionMatch . lineToText $ realVer)
-    Nothing -> throw (PatternMatchFail $ "ERROR: Cannot get local version. Cannot find given variable " <> show versionFileVersionPattern <> " in file " <> encodeString versionFilePath <> ". Check config.\n")
+    Nothing -> throw (PatternMatchFail $ "cannot get local version. Cannot find given variable " <> show versionFileVersionPattern <> " in file " <> encodeString versionFilePath <> ". Check config.\n")
 
 -- |Generate new local version.
 generateLocalVersion :: Level -> VersionFile -> IO Text

@@ -26,10 +26,10 @@ headChangelog version changelog = do
 
 -- |Bump version in any supported file.
 -- Unlike sed it reads all the file and is less memory efficient.
-bumpAny :: (Text -> Pattern Text) -> VersionFile -> Text -> Shell ()
-bumpAny extGrep VersionFile{..} version = do
+bumpAny :: VersionFile -> Text -> Shell ()
+bumpAny VersionFile{..} version = do
   file <- fold (input versionFilePath) Fold.list
-  matched <- fold (grep (extGrep versionFileVersionPattern) (select file)) Fold.list
+  matched <- fold (grep (has (text versionFileVersionPattern)) (select file)) Fold.list
   when (null matched) $
     throw (PatternMatchFail ("ERROR: Cannot bump. Cannot detect version in file " <> encodeString versionFilePath <> ". Check config.\n"))
   changed <- fold (sed (versionExactRegex $> version) (select matched)) Fold.list
@@ -60,12 +60,7 @@ generateVersionedFile file (new:news) (old:olds) = generateVersionedFile (replac
 bumpPart :: Text -> VersionFile -> IO ()
 bumpPart version file@VersionFile{..} = do
   printf ("- Updating version for "%fp%"\n") versionFilePath
-  case extension versionFilePath of
-    Just "hs" -> sh $ bumpAny hsGrep file version
-    Just "json" -> sh $ bumpAny jsonGrep file version
-    Just "yaml" -> sh $ bumpAny yamlGrep file version
-    Just "cabal" -> sh $ bumpAny cabalGrep file version
-    _ -> throw (PatternMatchFail ("ERROR: Cannot bump version. Unsupported extension in file " <> encodeString versionFilePath <> ". Check config."))
+  sh $ bumpAny file version
 
 -- |Get level of changes from changelog.
 getChangelogEntries :: FilePath -> IO (Maybe Level)
