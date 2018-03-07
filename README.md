@@ -3,38 +3,57 @@
 [![Hackage](https://img.shields.io/hackage/v/changelogged.svg)](http://hackage.haskell.org/package/changelogged)
 [![Build Status](https://travis-ci.org/GetShopTV/changelogged.svg?branch=master)](https://travis-ci.org/GetShopTV/changelogged)
 
-## What and how to?
+`changelogged` is a changelog manager for Git projects.
 
-### Quick start
+## Quick start
+
+You're encouraged to use `changelogged` when preparing a new release of your project.
+
+For most projects you can start by simply running `changelogged` with no options or configuration files:
+
 ```
 changelogged
+```
 
-changelogged --format suggest
+That should print out some inferred information about your project
+and also list any recent changes that are not included in you changelog.
 
-changelogged --update-changelog
-git diff ChangeLog.md
-sed -i '1i * Minor changes:'
+You can then prepend missing changelog entries automatically with
 
+```
+changelogged --update-changelog --format suggest
+```
+
+Now you can see new entries in your changelog, make edits and group changes.
+When you're done you can automatically bump project's version with
+
+```
 changelogged --bump-versions
 ```
 
-### Purpose
-This is the tool for tracking project history and release documentation.
-It guides developer through writing changelogs are bump version in project files.
-With proper usage it guarantees that every pull request or commit from git history is mentioned in project changelogs and that versions all over the project are up to date.
-It can also write changelogs based on git history and infer new version from changelog if it contains rubrication by level of changes.
+That's it! Now you have a proper changelog with no forgotten changes.
 
-### Configuration file
-[example](.changelogged.template.yaml)
+### A note for Git Flow projects
 
-Config is optional.
-With no config tool will try to check file named `ChangeLog.md` as far as it's part of Stack project template and bump versions in `package.yaml` file in root.
+With Git Flow your development and feature branches
+will likely not have version tags associated with them.
+This can confuse `changelogged` and result in more suggestions than needed.
 
-Config (named `changelogged.yaml`) is split by changelogs. It's well commented in example. No files are ignored or watched by default.
+To avoid this situation add [`branch: master` line](https://github.com/GetShopTV/changelogged/blob/master/.changelogged.template.yaml#L37-L41)
+in your `.changelogged.yaml`.
 
-### Features reference
+## Configuration file
 
-#### Help message
+For any non-trivial project you're likely to want to configure the way `changelogged`
+treats changes in that project.
+Normally configuration file is located at `.changelogged.yaml` (note the leading dot).
+
+See [.changelogged.template.yaml](.changelogged.template.yaml)
+for a template configuration file with description of all fields.
+
+## Feature reference
+
+### Help message
 
 ```
 changelogged --help
@@ -64,12 +83,14 @@ Available options:
 
 See examples [below](#guiding-examples)
 
-#### Checking changelogs
+### Checking changelogs
+
 This is default feature. Changelogged will output all missing pull requests and commits with their messages.
 
 You can skip it with `--no-check` option or ignore results with `--force` option. Also you can check changelog from the first commit with `--from-bc`.
 
-#### Bumping versions
+### Bumping versions
+
 If changelogs are up to day changelogged will bump versions all over the project with option `--bump-versions`.
 
 You can variously combine changelog checking and bumping versions. For example you may just want to be sure changelogs are up to date. You can just run `changelogged`
@@ -78,138 +99,146 @@ Suggested versioning: `app.major.minor.fix.doc`.
 Otherwise you can specify new version explicitly with `--level` option. It's also the only way to work with `--no-check` option.
 This option is subject to change significantly and is broken now.
 
-#### Multiple changelogs and subversions
+### Multiple changelogs and subversions
+
 If you have a lot of changelog entries in `changelogged.yaml` you get it. There is no option to set explicit subversion for any changelog. `--api-level` is already deprecated.
 Also there will be option to check changelog passed by name in commang line args if it presents in config.
 
-#### Writing changelogs.
+### Writing changelogs.
+
 `--format suggest` provides another format for records you see on the screen.
 It can be used with `--update-changelog` option to write these strings to the top of changelog they are relevant to.
 It's recommended to edit it manually after.
 This option cannot be used with `--format simple` which is default.
 
-### Guiding examples:
+## Guiding examples
 
-#### Common run:
-```
-changelogged (master):$ changelogged
-```
-![image1](images/common_run.png)
+### Default run without options
 
-#### Suggest changelog entries:
-```
-changelogged (master):$ changelogged --format suggest
-```
-![image2](images/suggest.png)
-
-Try to bump with no entries in changelog:
-```
-changelogged (master):$ changelogged --format suggest --bump-versions
-```
-![image3](images/failed_bump.png)
-
-Force with no entries in changelog:
-```
-changelogged (master):$ changelogged --format suggest --bump-versions --force
-```
-![image3](images/no_force.png)
-
-#### Write suggested entries to changelog (works only with `--format suggest`)
-```
-changelogged (master):$ changelogged --format suggest --update-changelog
-```
-![image5](images/suggest.png)
-```
-changelogged (master):$ git diff ChangeLog.md
-```
-![image6](images/chlog_diff.png)
-It requires some manual editing after.
-
-#### Bump version infering it from changelog:
-```
-changelogged (master):$ changelogged --format suggest --bump-versions
-```
-![image7](images/bump.png)
-```
-changelogged (master):$ git diff ChangeLog.md
-```
-![image8](images/release.png)
-
-Try to bump without checking changelogs. Seems that `--force` option is always preferrable. But it waits for use cases.
-```
-chagelogged --no-check
-```
-![image9](images/no_check.png)
-
-### Typical daily workflow to keep project and API changelogs up to date (assuming existing changelogged.yaml):
-See missing entries:
-```
-changelogged --format suggest
-```
-Record these changes.
-```
-changelogged --format suggest --update-changelog
-```
-And then edit changelogs manually.
-
-### Suggested simple workflow on release (for project with no `changelogged.yaml` and API changelog):
-See missing entries:
 ```
 changelogged
 ```
-Record these changes:
+
+![image1](images/common_run.png)
+
+### Suggest changelog entries
+
+```
+changelogged --format suggest
+```
+
+![image2](images/suggest.png)
+
+Try to bump with no entries in changelog:
+
+```
+changelogged --format suggest --bump-versions
+```
+
+![image3](images/failed_bump.png)
+
+Force with no entries in changelog:
+
+```
+changelogged --format suggest --bump-versions --force
+```
+
+![image3](images/no_force.png)
+
+### Write suggested entries to changelog
+
 ```
 changelogged --format suggest --update-changelog
 ```
-Manually edit changelog
 
-Bump versions:
+![image5](images/suggest.png)
+
 ```
-changelogged --bump-versions
+$ git diff ChangeLog.md
 ```
-_Next part is subject to change:_
 
-Commit files with bumped versions.
+![image6](images/chlog_diff.png)
 
-Record commit with version bumps:
+It requires some manual editing after.
+
+### Bump version and infering level of change from changelog
+
 ```
-changelogged --format suggest --update-changelog
+changelogged --format suggest --bump-versions
 ```
-Edit changelog - move new entry under version milestone.
 
-Commit changelog, push and release.
+![image7](images/bump.png)
 
-## Setting up
+```
+git diff ChangeLog.md
+```
+
+![image8](images/release.png)
+
+Try to bump without checking changelogs.
+Seems that `--force` option is always preferrable.
+But it waits for use cases.
+
+```
+changelogged --no-check
+```
+
+![image9](images/no_check.png)
+
+## Development
 
 ### Requirements
-It works with git projects only.
+
+It works with Git projects only.
 It was never tested on Windows. Ideally it will work if you have Git Bash installed.
-As tool was designed for Haskell ecosystem first there are these extensions supported: `.hs`, `.cabal`, `.yaml` and `.json`. You cannot bump version in any other file.
-But new extensions can be easily provided as far as changelogged aims to have the most wide users community. See [Add new extension](#add-new-extension) section.
-It's subject to change - there will not be extension specific code in next version.
 
 ### Getting and building
-First of all you should go to project [Github](https://github.com/GetShopTV/changelogged)
 
-Then you can simply download it from release. After execute something like `cp bin/changelogged ~/.local/bin`.
+For now the only way to get `changelogged` is to build it from source.
 
-Or you can clone repo and build it from source. You need latest [Stack](https://docs.haskellstack.org/en/stable/README/) installed.
-To build run
+#### Installing from Hackage
+
+You can build a version from Hackage using Stack or cabal-install:
+
+```
+stack install changelogged
+```
+
+```
+cabal install changelogged
+```
+
+#### Using latest code from GitHub
+
+Clone this repository:
+
+```
+git clone https://github.com/GetShopTV/changelogged.git
+```
+
+`cd` into cloned repository and build with Stack:
+
+```
+stack build
+```
+
+You can now run `changelogged` via Stack with
+
+```
+stack exec changelogged
+```
+
+or you can install it with
+
 ```
 stack install
 ```
 
 ## Contributing
 
-### Common
-Bug reports and feature requests are welcome on [Github](https://github.com/GetShopTV/changelogged/issues)
+Bug reports and feature requests are welcome on
+[GitHub](https://github.com/GetShopTV/changelogged/issues)
 
-You are free to fork project and make a pull request.
+Pull requests are welcome!
 
-### Add new extension
-You may want to use this tool inside project written not in Haskell. You are very welcome.
-
-Version bumping is restricted with extension of file. There is no euristic rules like "version is placed in `version = `" to have determined behaviour now.
-You may request for extension you want to be supported in [special issue](https://github.com/GetShopTV/changelogged/issues/35). It will be here ASAP.
-Or you may write it yourself.
-You are welcome to ask about how in comments in that issue (or browse comments).
+_GetShop.TV Team_
