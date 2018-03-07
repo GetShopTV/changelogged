@@ -5,6 +5,8 @@
 
 `changelogged` is a changelog manager for Git projects.
 
+![`changelogged` demo.](images/changelogged-v0.2.0-demo.gif)
+
 ## Quick start
 
 You're encouraged to use `changelogged` when preparing a new release of your project.
