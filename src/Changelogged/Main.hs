@@ -16,6 +16,7 @@ import Changelogged.Bump.Common
 import Changelogged.Git
 import Changelogged.Options
 import Changelogged.Utils
+import Changelogged.Types (Level)
 import Changelogged.Pure (showText)
 import Changelogged.Config
 
@@ -34,16 +35,18 @@ defaultMain = do
 
 processChangelogs :: Config -> Options -> GitInfo -> IO ()
 processChangelogs config opts@Options{..} gitInfo = case optTargetChangelog of
-  Nothing -> mapM_ (processChangelog opts gitInfo) (configChangelogs config)
+  Nothing -> do
+    mapM_ (processChangelog opts gitInfo optChangeLevel) (filter (\entry -> changelogDefault entry == True) $ configChangelogs config)
+    mapM_ (processChangelog opts gitInfo Nothing) (filter (\entry -> changelogDefault entry /= True) $ configChangelogs config)
   Just changelogPath -> do
     case lookupChangelog changelogPath of
-      Just changelog -> processChangelog opts gitInfo changelog
-      Nothing -> failure "Given target changelog is missed in config or mistyped."
+      Just changelog -> processChangelog opts gitInfo optChangeLevel changelog
+      Nothing -> failure $ "Given target changelog " <> format fp changelogPath <> " is missed in config or mistyped."
     where
       lookupChangelog path = find (\entry -> changelogChangelog entry == path) (configChangelogs config)
 
-processChangelog :: Options -> GitInfo -> ChangelogConfig -> IO ()
-processChangelog opts@Options{..} gitInfo config@ChangelogConfig{..} = do
+processChangelog :: Options -> GitInfo -> Maybe Level -> ChangelogConfig -> IO ()
+processChangelog opts@Options{..} gitInfo level config@ChangelogConfig{..} = do
   putStrLn ""
   info $ "processing " <> format fp changelogChangelog
   changelogExists <- testfile changelogChangelog
@@ -64,12 +67,12 @@ processChangelog opts@Options{..} gitInfo config@ChangelogConfig{..} = do
     | not upToDate && optForce ->
         warning $ format fp changelogChangelog <> " is out of date. Bumping versions anyway due to --force."
     | otherwise -> (do
-        newVersion <- if optNoCheck
-          then do
+        newVersion <- case (optNoCheck, level) of
+          (_, Just lev) -> generateLocalVersion lev config
+          (True, Nothing) ->  do
             failure "cannot infer new version from changelog because of --no-check.\nUse explicit --level CHANGE_LEVEL."
             return Nothing
-          else do
-            generateLocalVersionByChangelog config
+          (False, Nothing) -> generateLocalVersionByChangelog config
 
         case newVersion of
           Nothing -> return ()

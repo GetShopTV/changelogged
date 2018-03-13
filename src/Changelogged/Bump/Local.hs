@@ -30,8 +30,8 @@ currentLocalVersion VersionFile{..} = do
     Nothing -> throw (PatternMatchFail $ "cannot get local version. Cannot find given variable " <> show versionFileVersionPattern <> " in file " <> encodeString versionFilePath <> ". Check config.\n")
 
 -- |Generate new local version.
-generateLocalVersion :: Level -> VersionFile -> IO Text
-generateLocalVersion lev indicator = do
+generateLocalVersionForFile :: Level -> VersionFile -> IO Text
+generateLocalVersionForFile lev indicator = do
   current <- currentLocalVersion indicator
   -- This print must not be here but I think it's better than throw current vrsion to main.
   printf ("Version: "%s%" -> ") current
@@ -40,17 +40,21 @@ generateLocalVersion lev indicator = do
   where
     new current = bump (delimited current) lev
 
+-- |Set new local version.
+generateLocalVersion :: Level -> ChangelogConfig -> IO (Maybe Text)
+generateLocalVersion lev ChangelogConfig{..} = do
+  case changelogVersionFiles of
+    Nothing -> error "No file version files specified for changelog."
+    Just versionFiles -> do
+      localVersions <- mapM (generateLocalVersionForFile lev) versionFiles
+      return (listToMaybe localVersions) -- FIXME: don't ignore other version files
+
 -- |Infer new local version.
 generateLocalVersionByChangelog :: ChangelogConfig -> IO (Maybe Text)
-generateLocalVersionByChangelog ChangelogConfig{..} = do
+generateLocalVersionByChangelog logConfig@ChangelogConfig{..} = do
   versionedChanges <- getChangelogEntries changelogChangelog
   case versionedChanges of
-    Just lev -> do
-      case changelogVersionFiles of
-        Nothing -> error "No file version files specified for changelog."
-        Just versionFiles -> do
-          localVersions <- mapM (generateLocalVersion lev) versionFiles
-          return (listToMaybe localVersions) -- FIXME: don't ignore other version files
+    Just lev -> generateLocalVersion lev logConfig
     Nothing -> do
       warning $ "keeping current version since " <> showPath changelogChangelog <> " apparently does not contain any new entries"
       return Nothing
