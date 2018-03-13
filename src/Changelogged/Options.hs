@@ -1,11 +1,15 @@
+{-# LANGUAGE FlexibleContexts #-}
 module Changelogged.Options where
 
 import Data.Char (toLower)
 import Data.List (intercalate)
 import Data.Monoid ((<>))
+import Data.String.Conversions (cs)
 
 import Options.Applicative
 import qualified Turtle
+
+import Filesystem.Path.CurrentOS (valid, fromText)
 
 import Changelogged.Types
 
@@ -62,6 +66,13 @@ readLevel = eitherReader (r . map toLower)
          "Unknown level of changes: " <> show lvl <> ".\n"
       <> "Should be " <> availableLevelsStr <> ".\n"
 
+readFilePath :: ReadM Turtle.FilePath
+readFilePath = eitherReader r
+  where
+    r filePathString = if valid $ fromText $ cs filePathString
+      then Right (fromText $ cs filePathString)
+      else Left ("Invalid file path " <> filePathString <> ".\n")
+
 parser :: Parser Options
 parser = Options
   <$> warningFormat
@@ -73,6 +84,7 @@ parser = Options
         "Look for missing changelog entries from the start of the project."
   <*> hiddenSwitch "force" "Bump versions ignoring possibly outdated changelogs."
   <*> hiddenSwitch "no-check" "Do not check if changelogs have any missing entries."
+  <*> optional targetChangelog
   where
     longSwitch name description = switch $
          long name
@@ -87,7 +99,7 @@ parser = Options
          long "level"
       <> metavar "CHANGE_LEVEL"
       <> help (unlines
-           [ "Level of changes (to override one inferred from changelogs)."
+           [ "Level of changes (to override one inferred from changelog)."
            , "CHANGE_LEVEL can be " <> availableLevelsStr <> "."
            ])
       <> hidden
@@ -97,6 +109,9 @@ parser = Options
       <> help ("Format for missing changelog entry warnings. FORMAT can be " <> availableWarningFormatsStr <> ".")
       <> value WarnSimple
       <> showDefault
+    targetChangelog = argument readFilePath $
+         metavar "TARGET_CHANGELOG"
+      <> help ("Path to target changelog.")
 
 welcome :: Turtle.Description
 welcome = Turtle.Description "changelogged - Changelog Manager for Git Projects"
@@ -117,6 +132,8 @@ data Options = Options
   , optForce           :: Bool
     -- | Do not check if changelogs have any missing entries.
   , optNoCheck         :: Bool
+    -- | Check exactly one target changelog.
+  , optTargetChangelog :: Maybe Turtle.FilePath
   }
 
 -- | Parse command line options.

@@ -2,7 +2,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Changelogged.Main where
 
-import Turtle hiding (FilePath)
+import Data.List (find)
+import Turtle hiding (FilePath, find)
 
 import Control.Exception
 import Data.Maybe (fromMaybe)
@@ -32,8 +33,14 @@ defaultMain = do
   processChangelogs config opts gitInfo
 
 processChangelogs :: Config -> Options -> GitInfo -> IO ()
-processChangelogs config opts gitInfo = do
-  mapM_ (processChangelog opts gitInfo) (configChangelogs config)
+processChangelogs config opts@Options{..} gitInfo = case optTargetChangelog of
+  Nothing -> mapM_ (processChangelog opts gitInfo) (configChangelogs config)
+  Just changelogPath -> do
+    case lookupChangelog changelogPath of
+      Just changelog -> processChangelog opts gitInfo changelog
+      Nothing -> failure "Given target changelog is missed in config or mistyped."
+    where
+      lookupChangelog path = find (\entry -> changelogChangelog entry == path) (configChangelogs config)
 
 processChangelog :: Options -> GitInfo -> ChangelogConfig -> IO ()
 processChangelog opts@Options{..} gitInfo config@ChangelogConfig{..} = do
