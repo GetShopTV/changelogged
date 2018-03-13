@@ -46,13 +46,6 @@ versionMatch str = maxByLen $ match (has versionExactRegex) str
 hashRegex :: Pattern Text
 hashRegex = prefix $ between (within 0 chars) spaces1 (plus (digit <|> lower))
 
--- >>> match hashGrepExclude "ee17741 Merge pull request #38 from GetShopTV/redesign-strategies"
--- []
--- >>> match hashGrepExclude "ee17741 Reference pull request #38 from GetShopTV/redesign-strategies"
--- [()]
-hashGrepExclude :: Pattern ()
-hashGrepExclude = invert (hashRegex <> spaces <> text "Merge")
-
 -- >>> hashMatch "f4875f4 Update changelog"
 -- Just "f4875f4"
 -- >>> hashMatch "Update changelog"

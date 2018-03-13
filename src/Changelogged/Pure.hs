@@ -1,8 +1,6 @@
 module Changelogged.Pure where
 
 import Prelude hiding (FilePath)
-import qualified Data.HashMap.Strict as HM
-import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as Text
 
@@ -17,10 +15,6 @@ changeloggedVersion = "0.2.0"
 maxByLen :: [Text] -> Maybe Text
 maxByLen [] = Nothing
 maxByLen hs = Just $ foldl1 (\left right -> if Text.length left > Text.length right then left else right) hs
-
--- 
-defaultedEmpty :: Maybe (HM.HashMap k v) -> HM.HashMap k v
-defaultedEmpty = fromMaybe HM.empty
 
 -- |'@fromJust@' function with custom error message.
 fromJustCustom :: String -> Maybe a -> a

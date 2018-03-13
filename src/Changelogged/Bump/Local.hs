@@ -46,7 +46,6 @@ generateLocalVersion lev ChangelogConfig{..} = do
   case changelogVersionFiles of
     Nothing -> error "No file version files specified for changelog."
     Just versionFiles -> do
-      print versionFiles
       localVersions <- mapM (generateLocalVersionForFile lev) versionFiles
       return (listToMaybe localVersions) -- FIXME: don't ignore other version files
 

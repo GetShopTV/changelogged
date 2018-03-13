@@ -36,7 +36,7 @@ bumpAny VersionFile{..} version = do
   output versionFilePath (select $ generateVersionedFile file changed matched)
 
 -- |Replace given lines in the file.
--- Here is used and called to write new lines wih versions.
+-- Here is used and called to write new lines with versions.
 generateVersionedFile
   -- template file
   :: [Line]
