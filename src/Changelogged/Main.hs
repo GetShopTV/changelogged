@@ -17,21 +17,25 @@ import Changelogged.Git
 import Changelogged.Options
 import Changelogged.Utils
 import Changelogged.Types (Level)
-import Changelogged.Pure (showText)
+import Changelogged.Pure (showText, changeloggedVersion)
 import Changelogged.Config
 
 defaultMain :: IO ()
 defaultMain = do
   -- parse command line options
   opts@Options{..} <- parseOptions
-  -- load config file (or default config)
-  config@Config{..} <- fromMaybe defaultConfig <$> loadConfig ".changelogged.yaml"
-  -- load git info
-  gitInfo <- loadGitInfo optFromBC configBranch
-  coloredPrint Blue (ppConfig  config)
-  coloredPrint Blue (ppGitInfo gitInfo)
-  -- process changelogs
-  processChangelogs config opts gitInfo
+
+  if optVersion
+    then versionP changeloggedVersion
+    else do
+      -- load config file (or default config)
+      config@Config{..} <- fromMaybe defaultConfig <$> loadConfig ".changelogged.yaml"
+      -- load git info
+      gitInfo <- loadGitInfo optFromBC configBranch
+      coloredPrint Blue (ppConfig  config)
+      coloredPrint Blue (ppGitInfo gitInfo)
+      -- process changelogs
+      processChangelogs config opts gitInfo
 
 processChangelogs :: Config -> Options -> GitInfo -> IO ()
 processChangelogs config opts@Options{..} gitInfo = case optTargetChangelog of
@@ -82,4 +86,3 @@ processChangelog opts@Options{..} gitInfo level config@ChangelogConfig{..} = do
               headChangelog version changelogChangelog
             Nothing -> warning "no files specified to bump versions in"
         ) `catch` (\(ex :: PatternMatchFail) -> failure (showText ex))
-

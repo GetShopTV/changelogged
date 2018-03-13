@@ -30,7 +30,7 @@ data ChangelogConfig = ChangelogConfig
 data VersionFile = VersionFile
   { versionFilePath :: Turtle.FilePath
   , versionFileVersionPattern :: Text
-  }
+  } deriving Show
 
 instance FromJSON Config where
   parseJSON = withObject "Config" $ \o -> Config

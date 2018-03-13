@@ -85,6 +85,7 @@ parser = Options
   <*> hiddenSwitch "force" "Bump versions ignoring possibly outdated changelogs."
   <*> hiddenSwitch "no-check" "Do not check if changelogs have any missing entries."
   <*> optional targetChangelog
+  <*> hiddenSwitch "version" "Print version."
   where
     longSwitch name description = switch $
          long name
@@ -134,6 +135,8 @@ data Options = Options
   , optNoCheck         :: Bool
     -- | Check exactly one target changelog.
   , optTargetChangelog :: Maybe Turtle.FilePath
+    -- | Print version
+  , optVersion         :: Bool
   }
 
 -- | Parse command line options.

@@ -27,7 +27,7 @@ currentLocalVersion VersionFile{..} = do
     Just realVer -> fromMaybe
       (throw (PatternMatchFail $ "cannot get local version. Given variable " <> show versionFileVersionPattern <> " doesn't store version. Check config.\n"))
       (versionMatch . lineToText $ realVer)
-    Nothing -> throw (PatternMatchFail $ "cannot get local version. Cannot find given variable " <> show versionFileVersionPattern <> " in file " <> encodeString versionFilePath <> ". Check config.\n")
+    Nothing -> throw (PatternMatchFail $ "cannot get local version. Cannot match given pattern " <> show versionFileVersionPattern <> " in file " <> encodeString versionFilePath <> ". Check config.\n")
 
 -- |Generate new local version.
 generateLocalVersionForFile :: Level -> VersionFile -> IO Text
@@ -46,6 +46,7 @@ generateLocalVersion lev ChangelogConfig{..} = do
   case changelogVersionFiles of
     Nothing -> error "No file version files specified for changelog."
     Just versionFiles -> do
+      print versionFiles
       localVersions <- mapM (generateLocalVersionForFile lev) versionFiles
       return (listToMaybe localVersions) -- FIXME: don't ignore other version files
 
