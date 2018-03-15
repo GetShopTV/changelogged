@@ -85,6 +85,7 @@ parser = Options
   <*> hiddenSwitch "force" "Bump versions ignoring possibly outdated changelogs."
   <*> hiddenSwitch "no-check" "Do not check if changelogs have any missing entries."
   <*> optional targetChangelog
+  <*> optional configPath
   <*> hiddenSwitch "version" "Print version."
   where
     longSwitch name description = switch $
@@ -113,6 +114,10 @@ parser = Options
     targetChangelog = argument readFilePath $
          metavar "TARGET_CHANGELOG"
       <> help ("Path to target changelog.")
+    configPath = option readFilePath $
+         long "config"
+      <> metavar "changelogged.yaml config file location"
+      <> help ("Path to config file.")
 
 welcome :: Turtle.Description
 welcome = Turtle.Description "changelogged - Changelog Manager for Git Projects"
@@ -135,6 +140,8 @@ data Options = Options
   , optNoCheck         :: Bool
     -- | Check exactly one target changelog.
   , optTargetChangelog :: Maybe Turtle.FilePath
+    -- | Use specified config file.
+  , optConfigPath      :: Maybe Turtle.FilePath
     -- | Print version
   , optVersion         :: Bool
   }

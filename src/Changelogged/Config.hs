@@ -16,7 +16,7 @@ data Config = Config
   { configChangelogs    :: [ChangelogConfig]
   , configIgnoreCommits :: Maybe [Text]
   , configBranch        :: Maybe Text
-  }
+  } deriving Eq
 
 data ChangelogConfig = ChangelogConfig
   { changelogChangelog    :: Turtle.FilePath
@@ -25,12 +25,12 @@ data ChangelogConfig = ChangelogConfig
   , changelogVersionFiles :: Maybe [VersionFile]
     -- If changelog is marked as default it's version files will be bumped with explicit level from options.
   , changelogDefault      :: Bool
-  }
+  } deriving Eq
 
 data VersionFile = VersionFile
   { versionFilePath :: Turtle.FilePath
   , versionFileVersionPattern :: Text
-  } deriving Show
+  } deriving (Show, Eq)
 
 instance FromJSON Config where
   parseJSON = withObject "Config" $ \o -> Config

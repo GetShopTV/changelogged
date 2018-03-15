@@ -7,6 +7,7 @@ import Turtle hiding (FilePath, find)
 
 import Control.Exception
 import Data.Maybe (fromMaybe)
+import Data.Text (unpack, pack)
 
 import System.Console.ANSI (Color(..))
 
@@ -17,7 +18,7 @@ import Changelogged.Git
 import Changelogged.Options
 import Changelogged.Utils
 import Changelogged.Types (Level)
-import Changelogged.Pure (showText, changeloggedVersion)
+import Changelogged.Pure (showText, showPath, changeloggedVersion)
 import Changelogged.Config
 
 defaultMain :: IO ()
@@ -29,9 +30,13 @@ defaultMain = do
     then versionP changeloggedVersion
     else do
       -- load config file (or default config)
-      config@Config{..} <- fromMaybe defaultConfig <$> loadConfig ".changelogged.yaml"
+      let configPath = fromMaybe ".changelogged.yaml" (unpack . showPath <$> optConfigPath)
+      config@Config{..} <- fromMaybe defaultConfig <$> loadConfig configPath
       -- load git info
       gitInfo <- loadGitInfo optFromBC configBranch
+      if config == defaultConfig
+        then coloredPrint Blue "Using default config.\n"
+        else coloredPrint Blue ("Configuration file: " <> pack configPath <> "\n")
       coloredPrint Blue (ppConfig  config)
       coloredPrint Blue (ppGitInfo gitInfo)
       -- process changelogs
