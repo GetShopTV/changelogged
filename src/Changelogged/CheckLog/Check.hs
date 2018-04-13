@@ -58,7 +58,7 @@ checkLocalChangelogF fmt writeLog GitInfo{..} ChangelogConfig{..} = do
             message <- commitMessage PR commit
             changelogIsUp fmt writeLog gitRemoteUrl pnum PR message changelogChangelog
 
--- |This is actually part if '@Main@'
+-- |This is actually part of '@Main@'
 -- Check given changelog regarding options.
 checkChangelogWrap :: Options -> GitInfo -> ChangelogConfig -> IO Bool
 checkChangelogWrap Options{..} git config@ChangelogConfig{..} = do

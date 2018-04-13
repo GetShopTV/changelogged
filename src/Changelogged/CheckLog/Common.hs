@@ -28,18 +28,6 @@ changelogIsUp fmt writeSug link item mode message changelog = do
       return False
     _ -> return True
 
--- |Ignore commits which only affect '.md' files
-noMarkdown :: Text -> IO Bool
-noMarkdown commit = do
-  statCommit <- fold (inproc "git" ["show", "--stat", commit] empty) Fold.list
-  chLogUpdated <- fold
-    (grep (has $ text ".md ")
-      (select statCommit)) countLines
-  onlyChLogUpdated <- fold
-    (grep (has $ text "|")
-      (select statCommit)) countLines
-  return $ chLogUpdated /= onlyChLogUpdated
-
 -- |
 warnMissing :: Text -> Mode -> Text -> IO ()
 warnMissing item mode message = do

@@ -25,3 +25,7 @@ failure msg = coloredPrint Red $
 info :: Text -> IO ()
 info msg = coloredPrint Cyan $
   "INFO: " <> msg <> "\n"
+
+versionP :: Text -> IO ()
+versionP ver = coloredPrint Green $
+  "VERSION: " <> ver <> "\n"
