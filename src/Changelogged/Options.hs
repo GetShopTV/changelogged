@@ -1,5 +1,11 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Changelogged.Options where
+
+import Control.Monad.Base
+import Control.Monad.Catch
+import Control.Monad.IO.Class
+import Control.Monad.Reader
 
 import Data.Char (toLower)
 import Data.List (intercalate)
@@ -12,6 +18,12 @@ import qualified Turtle
 import Filesystem.Path.CurrentOS (valid, fromText)
 
 import Changelogged.Types
+
+newtype Appl a = Appl { runAppl :: ReaderT Options IO a }
+  deriving (Functor, Applicative, Monad, MonadReader Options, MonadIO, MonadBase IO, MonadThrow)
+
+runInAppl :: Options -> Appl a -> IO a
+runInAppl opts r = runReaderT (runAppl r) opts
 
 -- |
 -- >>> availableWarningFormats

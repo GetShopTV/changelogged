@@ -38,6 +38,7 @@ library:
     - yaml
     - aeson
     - mtl
+    - transformers-base
     - exceptions
     - system-filepath
     - string-conversions
