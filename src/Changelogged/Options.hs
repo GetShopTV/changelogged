@@ -96,6 +96,7 @@ parser = Options
         "Look for missing changelog entries from the start of the project."
   <*> hiddenSwitch "force" "Bump versions ignoring possibly outdated changelogs."
   <*> hiddenSwitch "no-check" "Do not check if changelogs have any missing entries."
+  <*> hiddenSwitch "no-colors" "Print all messages in standard terminal color."
   <*> optional targetChangelog
   <*> optional configPath
   <*> hiddenSwitch "version" "Print version."
@@ -150,6 +151,8 @@ data Options = Options
   , optForce           :: Bool
     -- | Do not check if changelogs have any missing entries.
   , optNoCheck         :: Bool
+    -- | Print all texts in standard terminal color.
+  , optNoColors        :: Bool
     -- | Check exactly one target changelog.
   , optTargetChangelog :: Maybe Turtle.FilePath
     -- | Use specified config file.
