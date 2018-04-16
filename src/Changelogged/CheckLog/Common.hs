@@ -65,8 +65,10 @@ suggestMissing link item mode message = do
 addMissing :: Text -> Text -> Mode -> Text -> FilePath -> Appl ()
 addMissing link item mode message changelog = do
   currentLogs <- fold (input changelog) Fold.list
-  output changelog (return $ unsafeTextToLine entry)
-  append changelog (select currentLogs)
+  dryRun <- asks optDryRun
+  unless dryRun $ do
+    output changelog (return $ unsafeTextToLine entry)
+    append changelog (select currentLogs)
   where
     entry = prolog <> sense <> epilog
     prolog = "- " <> message <> " (see "

@@ -103,6 +103,7 @@ parser = Options
   <*> hiddenSwitch "force" "Bump versions ignoring possibly outdated changelogs."
   <*> hiddenSwitch "no-check" "Do not check if changelogs have any missing entries."
   <*> hiddenSwitch "no-colors" "Print all messages in standard terminal color."
+  <*> longSwitch "dry-run" "Do not change files while running."
   <*> optional targetChangelog
   <*> optional configPath
   <*> hiddenSwitch "version" "Print version."
@@ -159,6 +160,8 @@ data Options = Options
   , optNoCheck         :: Bool
     -- | Print all texts in standard terminal color.
   , optNoColors        :: Bool
+    -- | Run avoiding changes in files.
+  , optDryRun          :: Bool
     -- | Check exactly one target changelog.
   , optTargetChangelog :: Maybe Turtle.FilePath
     -- | Use specified config file.

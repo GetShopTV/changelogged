@@ -18,12 +18,12 @@ import Changelogged.Pattern
 
 -- |Add version label to changelog.
 headChangelog :: Text -> FilePath -> Appl ()
-headChangelog version changelog = do
+headChangelog version changelog = asks optDryRun >>= (\dry -> unless dry $ do
   currentLogs <- fold (input changelog) Fold.list
   output changelog (return $ unsafeTextToLine version)
   append changelog "---"
   append changelog ""
-  append changelog (select currentLogs)
+  append changelog (select currentLogs))
 
 -- |Bump version in any supported file.
 -- Unlike sed it reads all the file and is less memory efficient.
@@ -61,7 +61,8 @@ generateVersionedFile file (new:news) (old:olds) = generateVersionedFile (replac
 bumpPart :: Text -> VersionFile -> Appl ()
 bumpPart version file@VersionFile{..} = do
   printf ("- Updating version for "%fp%"\n") versionFilePath
-  sh $ bumpAny file version
+  dryRun <- asks optDryRun
+  unless dryRun $ sh $ bumpAny file version
 
 -- |Get level of changes from changelog.
 getChangelogEntries :: FilePath -> Appl (Maybe Level)
