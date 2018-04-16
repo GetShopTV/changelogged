@@ -1,10 +1,16 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-module Changelogged.Options where
+module Changelogged.Options
+  ( module Control.Monad.Reader,
+
+    Appl(..),
+    runInAppl,
+    Options(..),
+    parseOptions
+  ) where
 
 import Control.Monad.Base
 import Control.Monad.Catch
-import Control.Monad.IO.Class
 import Control.Monad.Reader
 
 import Data.Char (toLower)

@@ -1,11 +1,7 @@
 module Changelogged.Utils where
 
-import Control.Monad.IO.Class
-
 import Data.Text (Text)
 import Data.Monoid ((<>))
-
-import Control.Monad.Reader
 
 import System.Console.ANSI
 

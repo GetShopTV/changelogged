@@ -4,7 +4,6 @@ module Changelogged.Git where
 
 import qualified Control.Foldl as Fold
 import Control.Monad.Catch (catch)
-import Control.Monad.Reader
 
 import Data.Char (isDigit)
 import Data.Either.Combinators (fromRight)
@@ -14,7 +13,7 @@ import qualified Data.Text as Text
 
 import Turtle
 
-import Changelogged.Options (Appl, Options(..))
+import Changelogged.Options (Appl, Options(..), asks)
 
 -- | Information about the state of a git repository.
 data GitInfo = GitInfo

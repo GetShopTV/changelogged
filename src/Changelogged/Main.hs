@@ -2,8 +2,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Changelogged.Main where
 
-import Control.Monad.Reader
-
 import Data.List (find)
 import Turtle hiding (FilePath, find)
 

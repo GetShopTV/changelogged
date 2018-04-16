@@ -7,7 +7,6 @@ import Data.Foldable (asum)
 
 import qualified Control.Foldl as Fold
 import Control.Monad (when)
-import Control.Monad.Reader
 
 import System.Console.ANSI (Color(..))
 

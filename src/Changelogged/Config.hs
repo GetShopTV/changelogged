@@ -2,8 +2,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 module Changelogged.Config where
 
-import Control.Monad.IO.Class
-
 import Data.Aeson
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
