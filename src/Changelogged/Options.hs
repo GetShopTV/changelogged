@@ -20,7 +20,7 @@ import Filesystem.Path.CurrentOS (valid, fromText)
 import Changelogged.Types
 
 newtype Appl a = Appl { runAppl :: ReaderT Options IO a }
-  deriving (Functor, Applicative, Monad, MonadReader Options, MonadIO, MonadBase IO, MonadThrow)
+  deriving (Functor, Applicative, Monad, MonadReader Options, MonadIO, MonadBase IO, MonadThrow, MonadCatch)
 
 runInAppl :: Options -> Appl a -> IO a
 runInAppl opts r = runReaderT (runAppl r) opts

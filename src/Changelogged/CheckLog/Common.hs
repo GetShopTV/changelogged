@@ -11,11 +11,12 @@ import qualified Data.Text as Text
 import System.Console.ANSI (Color(..))
 
 import Changelogged.Types
+import Changelogged.Options
 import Changelogged.Utils
 import Changelogged.Pure
 
 -- |Check if commit/pr is present in changelog. Return '@True@' if present.
-changelogIsUp :: WarningFormat -> Bool -> Text -> Text -> Mode -> Text -> FilePath -> IO Bool
+changelogIsUp :: WarningFormat -> Bool -> Text -> Text -> Mode -> Text -> FilePath -> Appl Bool
 changelogIsUp fmt writeSug link item mode message changelog = do
   grepLen <- fold (grep (has (text item)) (input changelog)) countLines
   case grepLen of
@@ -29,7 +30,7 @@ changelogIsUp fmt writeSug link item mode message changelog = do
     _ -> return True
 
 -- |
-warnMissing :: Text -> Mode -> Text -> IO ()
+warnMissing :: Text -> Mode -> Text -> Appl ()
 warnMissing item mode message = do
   printf ("- "%s%" ") (showText mode)
   coloredPrint Cyan item
@@ -48,7 +49,7 @@ commitLink :: Text -> Text -> Text
 commitLink link sha = link <> "/commit/" <> sha
 
 -- |
-suggestMissing :: Text -> Text -> Mode -> Text -> IO ()
+suggestMissing :: Text -> Text -> Mode -> Text -> Appl ()
 suggestMissing link item mode message = do
   printf ("- "%s%" (see ") message
   case mode of
@@ -61,7 +62,7 @@ suggestMissing link item mode message = do
   printf ");\n"
 
 -- |Add generated suggestion directly to changelog.
-addMissing :: Text -> Text -> Mode -> Text -> FilePath -> IO ()
+addMissing :: Text -> Text -> Mode -> Text -> FilePath -> Appl ()
 addMissing link item mode message changelog = do
   currentLogs <- fold (input changelog) Fold.list
   output changelog (return $ unsafeTextToLine entry)
@@ -75,7 +76,7 @@ addMissing link item mode message changelog = do
     epilog = ");"
 
 -- |Get commit message for any entry in history.
-commitMessage :: Mode -> Text -> IO Text
+commitMessage :: Mode -> Text -> Appl Text
 commitMessage _ "" = return ""
 commitMessage mode commit = do
   summary <- fold (inproc "git" ["show", commit] empty) Fold.list

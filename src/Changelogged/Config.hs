@@ -2,6 +2,8 @@
 {-# LANGUAGE DeriveAnyClass #-}
 module Changelogged.Config where
 
+import Control.Monad.IO.Class
+
 import Data.Aeson
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
@@ -11,6 +13,8 @@ import qualified Data.Text as Text
 import qualified Data.Yaml as Yaml
 
 import qualified Turtle
+
+import Changelogged.Options
 
 data Config = Config
   { configChangelogs    :: [ChangelogConfig]
@@ -64,9 +68,9 @@ defaultConfig = Config
   , configBranch = Nothing
   }
 
-loadConfig :: FilePath -> IO (Maybe Config)
+loadConfig :: FilePath -> Appl (Maybe Config)
 loadConfig path = do
-  ms <- Yaml.decodeFileEither path
+  ms <- liftIO $ Yaml.decodeFileEither path
   return $ case ms of
     Left _wrong -> Nothing
     Right paths -> Just paths
