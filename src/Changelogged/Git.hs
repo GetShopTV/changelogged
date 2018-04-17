@@ -13,6 +13,8 @@ import qualified Data.Text as Text
 
 import Turtle
 
+import Changelogged.Options (Appl, Options(..), asks)
+
 -- | Information about the state of a git repository.
 data GitInfo = GitInfo
   { gitHistory   :: [Turtle.Line]
@@ -26,14 +28,14 @@ data GitInfo = GitInfo
 
 -- | Get latest git tag in a given branch (if present).
 -- If no branch is specified then @HEAD^@ is used.
-loadGitLatestTag :: Maybe Text -> IO (Maybe Text)
+loadGitLatestTag :: Maybe Text -> Appl (Maybe Text)
 loadGitLatestTag mbranch = do
   let branch = fromMaybe "HEAD^" mbranch
   ver <- fold ((fromRight "" <$> inprocWithErr "git" ["describe", "--tags", "--abbrev=0", branch] empty) `catch` \ (_ :: ExitCode) -> empty) Fold.head
   return $ fmap lineToText ver
 
 -- | Get link to origin and strip '.git' to get valid url to project page.
-loadGitRemoteUrl :: IO Text
+loadGitRemoteUrl :: Appl Text
 loadGitRemoteUrl = remoteUrlToHttps
   <$> strict (inproc "git" ["remote", "get-url", "origin"] empty)
 
@@ -55,7 +57,7 @@ remoteUrlToHttps
 -- | Load git history from a given commit or from the start of the project.
 loadGitHistory
   :: Maybe Text  -- ^ A commit/tag to mark the start of history.
-  -> IO [Turtle.Line]
+  -> Appl [Turtle.Line]
 loadGitHistory from = do
   fold (grep
     (invert (has (text "Merge branch"))) -- FIXME: why ignore Merge branch commits?
@@ -68,10 +70,10 @@ loadGitHistory from = do
 
 -- | Extract latest history and origin link from git through temporary file and store it in 'GitInfo'.
 loadGitInfo
-  :: Bool       -- ^ Include the whole project history?
-  -> Maybe Text -- ^ Branch with version tags (@HEAD@ is used by default).
-  -> IO GitInfo
-loadGitInfo entireHistory branch = do
+  :: Maybe Text -- ^ Branch with version tags (@HEAD@ is used by default).
+  -> Appl GitInfo
+loadGitInfo branch = do
+  entireHistory <- asks optFromBC
   latestTag    <- loadGitLatestTag branch
   gitHistory   <- loadGitHistory (if entireHistory then Nothing else latestTag)
   gitRemoteUrl <- loadGitRemoteUrl

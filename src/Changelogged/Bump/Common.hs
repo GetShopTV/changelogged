@@ -13,16 +13,17 @@ import Filesystem.Path.CurrentOS (encodeString)
 
 import Changelogged.Config
 import Changelogged.Types
+import Changelogged.Options
 import Changelogged.Pattern
 
 -- |Add version label to changelog.
-headChangelog :: Text -> FilePath -> IO ()
-headChangelog version changelog = do
+headChangelog :: Text -> FilePath -> Appl ()
+headChangelog version changelog = asks optDryRun >>= (\dry -> unless dry $ do
   currentLogs <- fold (input changelog) Fold.list
   output changelog (return $ unsafeTextToLine version)
   append changelog "---"
   append changelog ""
-  append changelog (select currentLogs)
+  append changelog (select currentLogs))
 
 -- |Bump version in any supported file.
 -- Unlike sed it reads all the file and is less memory efficient.
@@ -57,13 +58,14 @@ generateVersionedFile file (new:news) (old:olds) = generateVersionedFile (replac
       | otherwise = xvar : replaceLine xvars newLine oldLine
 
 -- |Bump version in file regarding extension.
-bumpPart :: Text -> VersionFile -> IO ()
+bumpPart :: Text -> VersionFile -> Appl ()
 bumpPart version file@VersionFile{..} = do
   printf ("- Updating version for "%fp%"\n") versionFilePath
-  sh $ bumpAny file version
+  dryRun <- asks optDryRun
+  unless dryRun $ sh $ bumpAny file version
 
 -- |Get level of changes from changelog.
-getChangelogEntries :: FilePath -> IO (Maybe Level)
+getChangelogEntries :: FilePath -> Appl (Maybe Level)
 getChangelogEntries changelogFile = do
   app <- fold (grep (prefix "* App") unreleased) countLines
   major <- fold (grep (prefix "* Major") unreleased) countLines

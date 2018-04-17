@@ -5,7 +5,8 @@ module Changelogged.Main where
 import Data.List (find)
 import Turtle hiding (FilePath, find)
 
-import Control.Exception
+import Control.Monad.Catch
+import Control.Exception hiding (catch, throw)
 import Data.Maybe (fromMaybe)
 import Data.Text (unpack, pack)
 
@@ -26,37 +27,40 @@ defaultMain = do
   -- parse command line options
   opts@Options{..} <- parseOptions
 
-  if optVersion
+  runInAppl opts $ if optVersion
     then versionP changeloggedVersion
     else do
       -- load config file (or default config)
       let configPath = fromMaybe ".changelogged.yaml" (unpack . showPath <$> optConfigPath)
       config@Config{..} <- fromMaybe defaultConfig <$> loadConfig configPath
       -- load git info
-      gitInfo <- loadGitInfo optFromBC configBranch
+      gitInfo <- loadGitInfo configBranch
       if config == defaultConfig
         then coloredPrint Blue "Using default config.\n"
         else coloredPrint Blue ("Configuration file: " <> pack configPath <> "\n")
       coloredPrint Blue (ppConfig  config)
       coloredPrint Blue (ppGitInfo gitInfo)
       -- process changelogs
-      processChangelogs config opts gitInfo
+      processChangelogs config gitInfo
 
-processChangelogs :: Config -> Options -> GitInfo -> IO ()
-processChangelogs config opts@Options{..} gitInfo = case optTargetChangelog of
-  Nothing -> do
-    mapM_ (processChangelog opts gitInfo optChangeLevel) (filter (\entry -> changelogDefault entry == True) $ configChangelogs config)
-    mapM_ (processChangelog opts gitInfo Nothing) (filter (\entry -> changelogDefault entry /= True) $ configChangelogs config)
-  Just changelogPath -> do
-    case lookupChangelog changelogPath of
-      Just changelog -> processChangelog opts gitInfo optChangeLevel changelog
-      Nothing -> failure $ "Given target changelog " <> format fp changelogPath <> " is missed in config or mistyped."
-    where
-      lookupChangelog path = find (\entry -> changelogChangelog entry == path) (configChangelogs config)
+processChangelogs :: Config -> GitInfo -> Appl ()
+processChangelogs config gitInfo = do
+  Options{..} <- ask
+  case optTargetChangelog of
+    Nothing -> do
+      mapM_ (processChangelog gitInfo optChangeLevel) (filter (\entry -> changelogDefault entry == True) $ configChangelogs config)
+      mapM_ (processChangelog gitInfo Nothing) (filter (\entry -> changelogDefault entry /= True) $ configChangelogs config)
+    Just changelogPath -> do
+      case lookupChangelog changelogPath of
+        Just changelog -> processChangelog gitInfo optChangeLevel changelog
+        Nothing -> failure $ "Given target changelog " <> format fp changelogPath <> " is missed in config or mistyped."
+      where
+        lookupChangelog path = find (\entry -> changelogChangelog entry == path) (configChangelogs config)
 
-processChangelog :: Options -> GitInfo -> Maybe Level -> ChangelogConfig -> IO ()
-processChangelog opts@Options{..} gitInfo level config@ChangelogConfig{..} = do
-  putStrLn ""
+processChangelog :: GitInfo -> Maybe Level -> ChangelogConfig -> Appl ()
+processChangelog gitInfo level config@ChangelogConfig{..} = do
+  Options{..} <- ask
+  liftIO $ putStrLn ""
   info $ "processing " <> format fp changelogChangelog
   changelogExists <- testfile changelogChangelog
   when (not changelogExists) $ do
@@ -68,7 +72,7 @@ processChangelog opts@Options{..} gitInfo level config@ChangelogConfig{..} = do
       warning $ "skipping checks for " <> format fp changelogChangelog <> " (due to --no-check)."
       return True
     else do
-      checkChangelogWrap opts gitInfo config
+      checkChangelogWrap gitInfo config
 
   when optBumpVersions $ if
     | not upToDate && not optForce ->

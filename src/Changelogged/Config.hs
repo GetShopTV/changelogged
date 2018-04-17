@@ -12,6 +12,8 @@ import qualified Data.Yaml as Yaml
 
 import qualified Turtle
 
+import Changelogged.Options
+
 data Config = Config
   { configChangelogs    :: [ChangelogConfig]
   , configIgnoreCommits :: Maybe [Text]
@@ -64,9 +66,9 @@ defaultConfig = Config
   , configBranch = Nothing
   }
 
-loadConfig :: FilePath -> IO (Maybe Config)
+loadConfig :: FilePath -> Appl (Maybe Config)
 loadConfig path = do
-  ms <- Yaml.decodeFileEither path
+  ms <- liftIO $ Yaml.decodeFileEither path
   return $ case ms of
     Left _wrong -> Nothing
     Right paths -> Just paths

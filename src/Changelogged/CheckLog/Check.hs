@@ -21,7 +21,7 @@ import Changelogged.Git
 
 -- |This is actually part if '@Main@'
 -- Check local changelog - local means what changelog is specific and has some indicator file. If file is changed changelog must change.
-checkLocalChangelogF :: WarningFormat -> Bool -> GitInfo -> ChangelogConfig -> IO Bool
+checkLocalChangelogF :: WarningFormat -> Bool -> GitInfo -> ChangelogConfig -> Appl Bool
 checkLocalChangelogF fmt writeLog GitInfo{..} ChangelogConfig{..} = do
   info $ "looking for missing entries in " <> format fp changelogChangelog
   
@@ -60,8 +60,9 @@ checkLocalChangelogF fmt writeLog GitInfo{..} ChangelogConfig{..} = do
 
 -- |This is actually part of '@Main@'
 -- Check given changelog regarding options.
-checkChangelogWrap :: Options -> GitInfo -> ChangelogConfig -> IO Bool
-checkChangelogWrap Options{..} git config@ChangelogConfig{..} = do
+checkChangelogWrap :: GitInfo -> ChangelogConfig -> Appl Bool
+checkChangelogWrap git config@ChangelogConfig{..} = do
+  Options{..} <- ask
   if (optUpdateChangelog && optFormat == WarnSimple)
     then do
       failure "--update-changelog does not work with --format=simple (try --format=suggest instead)"

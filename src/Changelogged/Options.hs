@@ -1,5 +1,17 @@
 {-# LANGUAGE FlexibleContexts #-}
-module Changelogged.Options where
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+module Changelogged.Options
+  ( module Control.Monad.Reader,
+
+    Appl(..),
+    runInAppl,
+    Options(..),
+    parseOptions
+  ) where
+
+import Control.Monad.Base
+import Control.Monad.Catch
+import Control.Monad.Reader
 
 import Data.Char (toLower)
 import Data.List (intercalate)
@@ -12,6 +24,12 @@ import qualified Turtle
 import Filesystem.Path.CurrentOS (valid, fromText)
 
 import Changelogged.Types
+
+newtype Appl a = Appl { runAppl :: ReaderT Options IO a }
+  deriving (Functor, Applicative, Monad, MonadReader Options, MonadIO, MonadBase IO, MonadThrow, MonadCatch)
+
+runInAppl :: Options -> Appl a -> IO a
+runInAppl opts r = runReaderT (runAppl r) opts
 
 -- |
 -- >>> availableWarningFormats
@@ -84,6 +102,8 @@ parser = Options
         "Look for missing changelog entries from the start of the project."
   <*> hiddenSwitch "force" "Bump versions ignoring possibly outdated changelogs."
   <*> hiddenSwitch "no-check" "Do not check if changelogs have any missing entries."
+  <*> hiddenSwitch "no-colors" "Print all messages in standard terminal color."
+  <*> longSwitch "dry-run" "Do not change files while running."
   <*> optional targetChangelog
   <*> optional configPath
   <*> hiddenSwitch "version" "Print version."
@@ -138,6 +158,10 @@ data Options = Options
   , optForce           :: Bool
     -- | Do not check if changelogs have any missing entries.
   , optNoCheck         :: Bool
+    -- | Print all texts in standard terminal color.
+  , optNoColors        :: Bool
+    -- | Run avoiding changes in files.
+  , optDryRun          :: Bool
     -- | Check exactly one target changelog.
   , optTargetChangelog :: Maybe Turtle.FilePath
     -- | Use specified config file.
