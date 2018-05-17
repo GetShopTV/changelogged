@@ -1,6 +1,7 @@
 module Changelogged.Utils where
 
 import Data.Text (Text)
+import qualified Data.Text as Text
 import Data.Monoid ((<>))
 
 import System.Console.ANSI
@@ -31,6 +32,13 @@ failure msg = coloredPrint Red $
 info :: Text -> Appl ()
 info msg = coloredPrint Cyan $
   "INFO: " <> msg <> "\n"
+
+debug :: Text -> Appl ()
+debug msg = coloredPrint Magenta $
+  "DEBUG: " <> msg <> "\n"
+
+debugShow :: Show a => a -> Appl ()
+debugShow = debug . Text.pack . show
 
 versionP :: Text -> Appl ()
 versionP ver = coloredPrint Green $
