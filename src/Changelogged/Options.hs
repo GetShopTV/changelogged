@@ -112,6 +112,7 @@ parser = Options
   <*> longSwitch "dry-run" "Do not change files while running."
   <*> optional targetChangelog
   <*> optional configPath
+  <*> hiddenSwitch "verbose" "Turn verbose mode on (useful for developers)."
   <*> hiddenSwitch "version" "Print version."
   where
     longSwitch name description = switch $
@@ -172,7 +173,9 @@ data Options = Options
   , optTargetChangelog :: Maybe Turtle.FilePath
     -- | Use specified config file.
   , optConfigPath      :: Maybe Turtle.FilePath
-    -- | Print version
+    -- | Verbosity level.
+  , optVerbose         :: Bool
+    -- | Print version.
   , optVersion         :: Bool
   } deriving (Generic, Show, ToJSON)
 

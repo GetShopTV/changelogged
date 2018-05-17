@@ -1,5 +1,6 @@
 module Changelogged.Utils where
 
+import Control.Monad (when)
 import Data.Aeson (ToJSON)
 import Data.Text (Text)
 import qualified Data.Text as Text
@@ -37,8 +38,11 @@ info msg = coloredPrint Cyan $
   "INFO: " <> msg <> "\n"
 
 debug :: Text -> Appl ()
-debug msg = coloredPrint Magenta $
-  "DEBUG: " <> msg <> "\n"
+debug msg = do
+  verbose <- asks optVerbose
+  when verbose $ do
+    coloredPrint Magenta $
+      "DEBUG: " <> msg <> "\n"
 
 debugShow :: Show a => Text -> a -> Appl ()
 debugShow title val = debug (title <> "\n" <> Text.pack (show val))
