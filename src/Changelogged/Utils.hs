@@ -1,8 +1,11 @@
 module Changelogged.Utils where
 
+import Data.Aeson (ToJSON)
 import Data.Text (Text)
 import qualified Data.Text as Text
+import qualified Data.Text.Encoding as Text
 import Data.Monoid ((<>))
+import qualified Data.Yaml as Yaml
 
 import System.Console.ANSI
 
@@ -37,8 +40,11 @@ debug :: Text -> Appl ()
 debug msg = coloredPrint Magenta $
   "DEBUG: " <> msg <> "\n"
 
-debugShow :: Show a => a -> Appl ()
-debugShow = debug . Text.pack . show
+debugShow :: Show a => Text -> a -> Appl ()
+debugShow title val = debug (title <> "\n" <> Text.pack (show val))
+
+debugYaml :: ToJSON a => Text -> a -> Appl ()
+debugYaml title val = debug (title <> "\n" <> Text.decodeUtf8 (Yaml.encode val))
 
 versionP :: Text -> Appl ()
 versionP ver = coloredPrint Green $
