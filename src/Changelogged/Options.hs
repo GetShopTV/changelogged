@@ -1,3 +1,7 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Changelogged.Options
@@ -13,10 +17,12 @@ import Control.Monad.Base
 import Control.Monad.Catch
 import Control.Monad.Reader
 
+import Data.Aeson (ToJSON(..))
 import Data.Char (toLower)
 import Data.List (intercalate)
 import Data.Monoid ((<>))
 import Data.String.Conversions (cs)
+import GHC.Generics (Generic)
 
 import Options.Applicative
 import qualified Turtle
@@ -26,7 +32,7 @@ import Filesystem.Path.CurrentOS (valid, fromText)
 import Changelogged.Types
 
 newtype Appl a = Appl { runAppl :: ReaderT Options IO a }
-  deriving (Functor, Applicative, Monad, MonadReader Options, MonadIO, MonadBase IO, MonadThrow, MonadCatch)
+  deriving newtype (Functor, Applicative, Monad, MonadReader Options, MonadIO, MonadBase IO, MonadThrow, MonadCatch)
 
 runInAppl :: Options -> Appl a -> IO a
 runInAppl opts r = runReaderT (runAppl r) opts
@@ -106,6 +112,7 @@ parser = Options
   <*> longSwitch "dry-run" "Do not change files while running."
   <*> optional targetChangelog
   <*> optional configPath
+  <*> hiddenSwitch "verbose" "Turn verbose mode on (useful for developers)."
   <*> hiddenSwitch "version" "Print version."
   where
     longSwitch name description = switch $
@@ -166,9 +173,14 @@ data Options = Options
   , optTargetChangelog :: Maybe Turtle.FilePath
     -- | Use specified config file.
   , optConfigPath      :: Maybe Turtle.FilePath
-    -- | Print version
+    -- | Verbosity level.
+  , optVerbose         :: Bool
+    -- | Print version.
   , optVersion         :: Bool
-  }
+  } deriving (Generic, Show, ToJSON)
+
+instance ToJSON Turtle.FilePath where
+  toJSON = toJSON . Turtle.format Turtle.fp
 
 -- | Parse command line options.
 parseOptions :: IO Options

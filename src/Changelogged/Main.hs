@@ -30,6 +30,8 @@ defaultMain = do
   runInAppl opts $ if optVersion
     then versionP changeloggedVersion
     else do
+      debugYaml "parsed options:" opts
+
       -- load config file (or default config)
       let configPath = fromMaybe ".changelogged.yaml" (unpack . showPath <$> optConfigPath)
       config@Config{..} <- fromMaybe defaultConfig <$> loadConfig configPath
