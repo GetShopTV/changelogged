@@ -1,8 +1,9 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE TemplateHaskell #-}
 module Changelogged.Config where
 
 import Data.Aeson
+import Data.Aeson.TH
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as Text
@@ -13,12 +14,13 @@ import GHC.Generics
 
 import Changelogged.Options
 import Changelogged.Types ()
+import Changelogged.Pure (toSnakeCase)
 
 data Config = Config
   { configChangelogs    :: [ChangelogConfig]
   , configIgnoreCommits :: Maybe [Text]
   , configBranch        :: Maybe Text
-  } deriving (Eq, Show, Generic, FromJSON)
+  } deriving (Eq, Show, Generic)
 
 data LevelHeaders = LevelHeaders
   { levelHeadersApp   :: Maybe Text
@@ -26,7 +28,7 @@ data LevelHeaders = LevelHeaders
   , levelHeadersMinor :: Maybe Text
   , levelHeadersFix   :: Maybe Text
   , levelHeadersDoc   :: Maybe Text
-  } deriving (Eq, Show, Generic, FromJSON)
+  } deriving (Eq, Show, Generic)
 
 data ChangelogConfig = ChangelogConfig
   { changelogChangelog    :: Turtle.FilePath
@@ -34,12 +36,12 @@ data ChangelogConfig = ChangelogConfig
   , changelogWatchFiles   :: Maybe [Turtle.FilePath]
   , changelogIgnoreFiles  :: Maybe [Turtle.FilePath]
   , changelogVersionFiles :: Maybe [VersionFile]
-  } deriving (Eq, Show, Generic, FromJSON)
+  } deriving (Eq, Show, Generic)
 
 data VersionFile = VersionFile
   { versionFilePath :: Turtle.FilePath
   , versionFileVersionPattern :: Text
-  } deriving (Show, Eq, Generic, FromJSON)
+  } deriving (Show, Eq, Generic)
 
 defaultLevelHeaders :: LevelHeaders
 defaultLevelHeaders = LevelHeaders
@@ -87,3 +89,16 @@ ppConfig Config{..} = mconcat
 
     _    ?: Nothing = ""
     name ?: Just val = name !: val
+
+deriveFromJSON (defaultOptions {
+  fieldLabelModifier = toSnakeCase . drop (length ("VersionFile"::String))
+  }) ''VersionFile
+deriveFromJSON (defaultOptions {
+  fieldLabelModifier = toSnakeCase . drop (length ("LevelHeaders"::String))
+  }) ''LevelHeaders
+deriveFromJSON (defaultOptions {
+  fieldLabelModifier = toSnakeCase . drop (length ("Changelog"::String))
+  }) ''ChangelogConfig
+deriveFromJSON (defaultOptions {
+  fieldLabelModifier = toSnakeCase . drop (length ("Config"::String))
+  }) ''Config
