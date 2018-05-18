@@ -75,7 +75,16 @@ processChangelog gitInfo level config@ChangelogConfig{..} = do
       warning $ "skipping checks for " <> format fp changelogChangelog <> " (due to --no-check)."
       return True
     else do
-      checkChangelogWrap gitInfo config
+      when optFromBC $ printf ("Checking "%fp%" from start of project\n") changelogChangelog
+      checkLocalChangelogF gitInfo config
+
+  if upToDate
+    then coloredPrint Green (showPath changelogChangelog <> " is up to date.\n")
+    else do
+      warning $ showPath changelogChangelog <> " is out of date." <>
+        if optUpdateChangelog
+          then ""
+          else "\nUse --update-changelog to add missing changelog entries automatically."
 
   when optBumpVersions $ if
     | not upToDate && not optForce ->

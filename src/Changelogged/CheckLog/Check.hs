@@ -6,9 +6,6 @@ import Prelude hiding (FilePath)
 import Data.Foldable (asum)
 
 import qualified Control.Foldl as Fold
-import Control.Monad (when)
-
-import System.Console.ANSI (Color(..))
 
 import Changelogged.Types
 import Changelogged.Options
@@ -57,19 +54,3 @@ checkLocalChangelogF GitInfo{..} ChangelogConfig{..} = do
           Just pnum -> do
             message <- commitMessage PR commit
             changelogIsUp gitRemoteUrl pnum PR message changelogChangelog
-
--- |This is actually part of '@Main@'
--- Check given changelog regarding options.
-checkChangelogWrap :: GitInfo -> ChangelogConfig -> Appl Bool
-checkChangelogWrap git config@ChangelogConfig{..} = do
-  Options{..} <- ask
-  when optFromBC $ printf ("Checking "%fp%" from start of project\n") changelogChangelog
-  upToDate <- checkLocalChangelogF git config
-  if upToDate
-    then coloredPrint Green (showPath changelogChangelog <> " is up to date.\n")
-    else do
-      warning $ showPath changelogChangelog <> " is out of date." <>
-        if optUpdateChangelog
-          then ""
-          else "\nUse --update-changelog to add missing changelog entries automatically."
-  return upToDate
