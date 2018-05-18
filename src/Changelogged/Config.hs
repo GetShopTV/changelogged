@@ -2,7 +2,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Changelogged.Config where
 
-import Data.Aeson
 import Data.Aeson.TH
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -14,7 +13,7 @@ import GHC.Generics
 
 import Changelogged.Options
 import Changelogged.Types ()
-import Changelogged.Pure (toSnakeCase)
+import Changelogged.Pure
 
 data Config = Config
   { configChangelogs    :: [ChangelogConfig]
@@ -90,15 +89,7 @@ ppConfig Config{..} = mconcat
     _    ?: Nothing = ""
     name ?: Just val = name !: val
 
-deriveFromJSON (defaultOptions {
-  fieldLabelModifier = toSnakeCase . drop (length ("VersionFile"::String))
-  }) ''VersionFile
-deriveFromJSON (defaultOptions {
-  fieldLabelModifier = toSnakeCase . drop (length ("LevelHeaders"::String))
-  }) ''LevelHeaders
-deriveFromJSON (defaultOptions {
-  fieldLabelModifier = toSnakeCase . drop (length ("Changelog"::String))
-  }) ''ChangelogConfig
-deriveFromJSON (defaultOptions {
-  fieldLabelModifier = toSnakeCase . drop (length ("Config"::String))
-  }) ''Config
+deriveFromJSON (jsonDerivingModifier "VersionFile") ''VersionFile
+deriveFromJSON (jsonDerivingModifier "LevelHeaders") ''LevelHeaders
+deriveFromJSON (jsonDerivingModifier"Changelog") ''ChangelogConfig
+deriveFromJSON (jsonDerivingModifier "Config") ''Config

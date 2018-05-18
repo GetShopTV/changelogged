@@ -1,5 +1,6 @@
 module Changelogged.Pure where
 
+import Data.Aeson (Options(..), defaultOptions)
 import Prelude hiding (FilePath)
 import Data.Text (Text)
 import qualified Data.Text as Text
@@ -73,3 +74,8 @@ toSnakeCase = map toLower . intercalate "_" . splitCamelWords
         (ls, lrs) = span (not . isBorder) rs
         (us, urs) = span isBorder rs
         isBorder c = isUpper c || isDigit c
+
+jsonDerivingModifier :: String -> Options
+jsonDerivingModifier prefix = defaultOptions {
+  fieldLabelModifier = toSnakeCase . drop (length prefix)
+  }
