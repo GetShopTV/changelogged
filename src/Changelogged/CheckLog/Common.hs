@@ -16,16 +16,16 @@ import Changelogged.Utils
 import Changelogged.Pure
 
 -- |Check if commit/pr is present in changelog. Return '@True@' if present.
-changelogIsUp :: WarningFormat -> Bool -> Text -> Text -> Mode -> Text -> FilePath -> Appl Bool
-changelogIsUp fmt writeSug link item mode message changelog = do
+changelogIsUp :: Text -> Text -> Mode -> Text -> FilePath -> Appl Bool
+changelogIsUp link item mode message changelog = do
+  Options{..} <- ask
   grepLen <- fold (grep (has (text item)) (input changelog)) countLines
   case grepLen of
     0 -> do
-      case fmt of
+      case optFormat of
         WarnSimple  -> warnMissing item mode message
-        WarnSuggest -> do
-          suggestMissing link item mode message
-          when writeSug $ addMissing link item mode message changelog
+        WarnSuggest -> suggestMissing link item mode message
+      when optUpdateChangelog $ addMissing link item mode message changelog
       return False
     _ -> return True
 
