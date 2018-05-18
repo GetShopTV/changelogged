@@ -64,30 +64,22 @@ bumpPart version file@VersionFile{..} = do
   dryRun <- asks optDryRun
   unless dryRun $ sh $ bumpAny file version
 
---TODO!
 -- |Get level of changes from changelog.
-getChangelogEntries :: FilePath -> LevelHeaders -> Appl (Maybe Level)
-getChangelogEntries changelogFile levelHeaders@LevelHeaders{..} = do
-  app   <- lookupLevel unreleased levelHeadersApp
-  major <- lookupLevel unreleased levelHeadersMajor
-  minor <- lookupLevel unreleased levelHeadersMinor
-  fixes <- lookupLevel unreleased levelHeadersFix
-  docs  <- lookupLevel unreleased levelHeadersDoc
-
-  return $ case app of
-    True -> case major of
-      True -> case minor of
-        True -> case fixes of
-          True -> case docs of
-            True -> Nothing
-            _ -> Just Doc
-          _ -> Just Fix
-        _ -> Just Minor
-      _ -> Just Major
-    _ -> Just App
+getLevelOfChanges :: FilePath -> LevelHeaders -> Appl (Maybe Level)
+getLevelOfChanges changelogFile levelHeaders@LevelHeaders{..} = do
+  levels <- lookupLevels unreleased levelHeaders
+  return $ firstPresent levels
   where
     unreleased = limitWhile (null . match (prefix versionExactRegex) . lineToText) (input changelogFile)
 
     lookupLevel linesList levelHeader = case levelHeader of
-      Just txt -> fold (grep (prefix (text txt)) linesList) countLines >>= return . (== 0)
+      Just txt -> fold (grep (prefix (text txt)) linesList) countLines >>= return . (/= 0)
       Nothing -> return False
+    -- Maybe it's better to resolve it with instance Ord Level
+    lookupLevels linesList (LevelHeaders h1 h2 h3 h4 h5) =
+      mapM (lookupLevel linesList) [h1,h2,h3,h4,h5] >>= return . (zip [App, Major, Minor, Fix, Doc])
+
+    firstPresent [] = Nothing 
+    firstPresent ((level,isPresent):rest) = if isPresent
+      then Just level
+      else firstPresent rest

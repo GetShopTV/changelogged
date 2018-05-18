@@ -53,7 +53,7 @@ generateLocalVersion lev ChangelogConfig{..} = do
 -- |Infer new local version.
 generateLocalVersionByChangelog :: ChangelogConfig -> Appl (Maybe Text)
 generateLocalVersionByChangelog logConfig@ChangelogConfig{..} = do
-  versionedChanges <- getChangelogEntries changelogChangelog changelogLevelHeaders
+  versionedChanges <- getLevelOfChanges changelogChangelog changelogLevelHeaders
   case versionedChanges of
     Just lev -> generateLocalVersion lev logConfig
     Nothing -> do
