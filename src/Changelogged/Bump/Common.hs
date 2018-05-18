@@ -31,11 +31,13 @@ headChangelog version changelog = asks optDryRun >>= (\dry -> unless dry $ do
 bumpAny :: VersionFile -> Text -> Shell ()
 bumpAny VersionFile{..} version = do
   file <- fold (input versionFilePath) Fold.list
-  matched <- fold (grep (has (text versionFileVersionPattern)) (select file)) Fold.list
+  matched <- fold (grep (has pattern) (select file)) Fold.list
   when (null matched) $
     throw (PatternMatchFail ("ERROR: Cannot bump. Cannot detect version in file " <> encodeString versionFilePath <> ". Check config.\n"))
   changed <- fold (sed (versionExactRegex $> version) (select matched)) Fold.list
   output versionFilePath (select $ generateVersionedFile file changed matched)
+  where
+    pattern = text (versionPatternVariable versionFileVersionPattern) <> spaces <> text (versionPatternSeparator versionFileVersionPattern)
 
 -- |Replace given lines in the file.
 -- Here is used and called to write new lines with versions.

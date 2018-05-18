@@ -13,6 +13,7 @@ import GHC.Generics
 
 import Changelogged.Options
 import Changelogged.Types ()
+import Changelogged.Utils
 import Changelogged.Pure
 
 data Config = Config
@@ -37,9 +38,14 @@ data ChangelogConfig = ChangelogConfig
   , changelogVersionFiles :: Maybe [VersionFile]
   } deriving (Eq, Show, Generic)
 
+data VersionPattern = VersionPattern
+  { versionPatternVariable  :: Text
+  , versionPatternSeparator :: Text
+  } deriving (Show, Eq, Generic)
+
 data VersionFile = VersionFile
   { versionFilePath :: Turtle.FilePath
-  , versionFileVersionPattern :: Text
+  , versionFileVersionPattern :: VersionPattern
   } deriving (Show, Eq, Generic)
 
 defaultLevelHeaders :: LevelHeaders
@@ -58,7 +64,7 @@ defaultConfig = Config
       , changelogLevelHeaders = defaultLevelHeaders
       , changelogWatchFiles   = Nothing  -- watch everything
       , changelogIgnoreFiles  = Nothing  -- ignore nothing
-      , changelogVersionFiles = Just [VersionFile "package.yaml" "version:"]
+      , changelogVersionFiles = Just [VersionFile "package.yaml" (VersionPattern "version" ":")]
       }
   , configIgnoreCommits = Nothing
   , configBranch = Nothing
@@ -67,10 +73,9 @@ defaultConfig = Config
 loadConfig :: FilePath -> Appl (Maybe Config)
 loadConfig path = do
   ms <- liftIO $ Yaml.decodeFileEither path
-  liftIO $ print ms
-  return $ case ms of
-    Left _wrong -> Nothing
-    Right paths -> Just paths
+  case ms of
+    Left _wrong -> return Nothing
+    Right paths -> debugYaml "config:" paths >> return (Just paths)
 
 ppConfig :: Config -> Text
 ppConfig Config{..} = mconcat
@@ -89,7 +94,8 @@ ppConfig Config{..} = mconcat
     _    ?: Nothing = ""
     name ?: Just val = name !: val
 
-deriveFromJSON (jsonDerivingModifier "VersionFile") ''VersionFile
-deriveFromJSON (jsonDerivingModifier "LevelHeaders") ''LevelHeaders
-deriveFromJSON (jsonDerivingModifier"Changelog") ''ChangelogConfig
-deriveFromJSON (jsonDerivingModifier "Config") ''Config
+deriveJSON (jsonDerivingModifier "VersionPattern") ''VersionPattern
+deriveJSON (jsonDerivingModifier "VersionFile") ''VersionFile
+deriveJSON (jsonDerivingModifier "LevelHeaders") ''LevelHeaders
+deriveJSON (jsonDerivingModifier "Changelog") ''ChangelogConfig
+deriveJSON (jsonDerivingModifier "Config") ''Config

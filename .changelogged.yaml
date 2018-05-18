@@ -12,6 +12,10 @@ changelogs:
 
     version_files:
       - path: package.yaml
-        version_pattern: "version:"
+        version_pattern:
+          variable: "version"
+          separator: ":"
       - path: src/Changelogged/Pure.hs
-        version_pattern: "changeloggedVersion ="
+        version_pattern:
+          variable: "changeloggedVersion"
+          separator: "="

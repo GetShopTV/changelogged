@@ -21,7 +21,9 @@ changelogs:
       # for hpack-enabled Haskell projects
       # version in package.yaml should be updated
       - path: package.yaml
-        version_pattern: "version:"
+        version_pattern:
+          variable: "version"
+          separator: ":"
 
   # HTTP API changelog
   - changelog: API_ChangeLog.md
@@ -36,11 +38,15 @@ changelogs:
       # version should be changed in Haskell module
       # that specifies version for a generated swagger.json
       - path: 'src/MyProject/API/Version.hs'
-        version_pattern: 'apiVersion ='
+        version_pattern:
+          variable: 'apiVersion'
+          separator: '='
 
       # swagger.json should also be updated
       - path: 'swagger.json'
-        version_pattern: '"version":'
+        version_pattern:
+          variable: '"version"'
+          separator: ':'
         
 # branch with version tags
 # for projects following Git Flow this should be master,
