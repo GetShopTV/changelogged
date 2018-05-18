@@ -4,6 +4,13 @@ changelogs:
   # package changelog (for library and executables)
   - changelog: ChangeLog.md
 
+    level_headers:
+      app: "* App"
+      major: "* Major"
+      minor: "* Minor"
+      fix: "* Fix"
+      doc: "* Doc"
+
     # watch all files except for the changelog itself
     ignore_files:
       - ChangeLog.md

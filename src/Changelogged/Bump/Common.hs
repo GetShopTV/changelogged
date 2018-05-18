@@ -64,9 +64,11 @@ bumpPart version file@VersionFile{..} = do
   dryRun <- asks optDryRun
   unless dryRun $ sh $ bumpAny file version
 
+--TODO!
 -- |Get level of changes from changelog.
-getChangelogEntries :: FilePath -> Appl (Maybe Level)
-getChangelogEntries changelogFile = do
+getChangelogEntries :: FilePath -> LevelHeaders -> Appl (Maybe Level)
+getChangelogEntries changelogFile levelHeaders = do
+  liftIO $ print levelHeaders
   app <- fold (grep (prefix "* App") unreleased) countLines
   major <- fold (grep (prefix "* Major") unreleased) countLines
   minor <- fold (grep (prefix "* Minor") unreleased) countLines

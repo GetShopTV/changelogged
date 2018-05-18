@@ -1,6 +1,12 @@
 changelogs:
   - changelog: ChangeLog.md
 
+    level_headers:
+      major: "* Major"
+      minor: "* Minor"
+      fix: "* Fix"
+      doc: "* Doc"
+
     ignore_files:
       - ChangeLog.md
 

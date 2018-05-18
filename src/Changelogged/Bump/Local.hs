@@ -53,9 +53,9 @@ generateLocalVersion lev ChangelogConfig{..} = do
 -- |Infer new local version.
 generateLocalVersionByChangelog :: ChangelogConfig -> Appl (Maybe Text)
 generateLocalVersionByChangelog logConfig@ChangelogConfig{..} = do
-  versionedChanges <- getChangelogEntries changelogChangelog
+  versionedChanges <- getChangelogEntries changelogChangelog changelogLevelHeaders
   case versionedChanges of
     Just lev -> generateLocalVersion lev logConfig
     Nothing -> do
-      warning $ "keeping current version since " <> showPath changelogChangelog <> " apparently does not contain any new entries"
+      warning $ "keeping current version since " <> showPath changelogChangelog <> " does not contain any new level headers or even entries."
       return Nothing
