@@ -7,6 +7,7 @@ import Control.Exception
 import qualified Control.Foldl as Fold
 
 import Data.Functor (($>))
+import qualified Data.List as List
 import Data.Text (Text)
 
 import Filesystem.Path.CurrentOS (encodeString)
@@ -30,11 +31,13 @@ headChangelog version changelog = asks optDryRun >>= (\dry -> unless dry $ do
 bumpAny :: VersionFile -> Text -> Shell ()
 bumpAny VersionFile{..} version = do
   file <- fold (input versionFilePath) Fold.list
-  matched <- fold (grep (has (text versionFileVersionPattern)) (select file)) Fold.list
+  matched <- fold (grep (has pattern) (select file)) Fold.list
   when (null matched) $
     throw (PatternMatchFail ("ERROR: Cannot bump. Cannot detect version in file " <> encodeString versionFilePath <> ". Check config.\n"))
   changed <- fold (sed (versionExactRegex $> version) (select matched)) Fold.list
   output versionFilePath (select $ generateVersionedFile file changed matched)
+  where
+    pattern = text (versionPatternVariable versionFileVersionPattern) <> spaces <> text (versionPatternSeparator versionFileVersionPattern)
 
 -- |Replace given lines in the file.
 -- Here is used and called to write new lines with versions.
@@ -65,24 +68,15 @@ bumpPart version file@VersionFile{..} = do
   unless dryRun $ sh $ bumpAny file version
 
 -- |Get level of changes from changelog.
-getChangelogEntries :: FilePath -> Appl (Maybe Level)
-getChangelogEntries changelogFile = do
-  app <- fold (grep (prefix "* App") unreleased) countLines
-  major <- fold (grep (prefix "* Major") unreleased) countLines
-  minor <- fold (grep (prefix "* Minor") unreleased) countLines
-  fixes <- fold (grep (prefix "* Fix") unreleased) countLines
-  docs  <- fold (grep (prefix "* Doc") unreleased) countLines
-
-  return $ case app of
-    0 -> case major of
-      0 -> case minor of
-        0 -> case fixes of
-          0 -> case docs of
-            0 -> Nothing
-            _ -> Just Doc
-          _ -> Just Fix
-        _ -> Just Minor
-      _ -> Just Major
-    _ -> Just App
+getLevelOfChanges :: FilePath -> LevelHeaders -> Appl (Maybe Level)
+getLevelOfChanges changelogFile levelHeaders@LevelHeaders{..} = do
+  levels <- lookupLevels unreleased levelHeaders
+  return . fmap toEnum $ List.findIndex id levels
   where
     unreleased = limitWhile (null . match (prefix versionExactRegex) . lineToText) (input changelogFile)
+
+    lookupLevel linesList levelHeader = case levelHeader of
+      Just txt -> fold (grep (prefix (text txt)) linesList) countLines >>= return . (/= 0)
+      Nothing -> return False
+    -- Maybe it's better to resolve it with instance Foldable LevelHeaders
+    lookupLevels linesList (LevelHeaders h1 h2 h3 h4 h5) = mapM (lookupLevel linesList) [h1,h2,h3,h4,h5]

@@ -49,9 +49,10 @@ processChangelogs :: Config -> GitInfo -> Appl ()
 processChangelogs config gitInfo = do
   Options{..} <- ask
   case optTargetChangelog of
-    Nothing -> do
-      mapM_ (processChangelog gitInfo optChangeLevel) (filter (\entry -> changelogDefault entry == True) $ configChangelogs config)
-      mapM_ (processChangelog gitInfo Nothing) (filter (\entry -> changelogDefault entry /= True) $ configChangelogs config)
+    Nothing -> case length . configChangelogs $ config of
+      0 -> failure "You have empty configuration file" 
+      1 -> processChangelog gitInfo optChangeLevel $ head . configChangelogs $ config
+      _ -> failure "You cannot bump versions generally through all changelogs. Correct form: changelogged --bump-versions --level <level> <changelog>"
     Just changelogPath -> do
       case lookupChangelog changelogPath of
         Just changelog -> processChangelog gitInfo optChangeLevel changelog
@@ -74,7 +75,16 @@ processChangelog gitInfo level config@ChangelogConfig{..} = do
       warning $ "skipping checks for " <> format fp changelogChangelog <> " (due to --no-check)."
       return True
     else do
-      checkChangelogWrap gitInfo config
+      when optFromBC $ printf ("Checking "%fp%" from start of project\n") changelogChangelog
+      checkLocalChangelogF gitInfo config
+
+  if upToDate
+    then coloredPrint Green (showPath changelogChangelog <> " is up to date.\n")
+    else do
+      warning $ showPath changelogChangelog <> " is out of date." <>
+        if optUpdateChangelog
+          then ""
+          else "\nUse --update-changelog to add missing changelog entries automatically."
 
   when optBumpVersions $ if
     | not upToDate && not optForce ->

@@ -23,12 +23,19 @@ import Changelogged.Config
 -- |Get current local version.
 currentLocalVersion :: VersionFile -> Appl Text
 currentLocalVersion VersionFile{..} = do
-  ver <- fold (grep (has (text versionFileVersionPattern)) (input versionFilePath)) Fold.head
+  ver <- fold (grep (has pattern) (input versionFilePath)) Fold.head
   return $ case ver of
     Just realVer -> fromMaybe
-      (throw (PatternMatchFail $ "cannot get local version. Given variable " <> show versionFileVersionPattern <> " doesn't store version. Check config.\n"))
+      (throw (PatternMatchFail $ "cannot get local version. Given variable " <>
+                                 show (versionPatternVariable versionFileVersionPattern) <>
+                                 " doesn't store version. Check config.\n"))
       (versionMatch . lineToText $ realVer)
-    Nothing -> throw (PatternMatchFail $ "cannot get local version. Cannot match given pattern " <> show versionFileVersionPattern <> " in file " <> encodeString versionFilePath <> ". Check config.\n")
+    Nothing -> throw (PatternMatchFail $ "cannot get local version. Cannot match given pattern " <>
+                                         show versionFileVersionPattern <>
+                                         " in file " <> encodeString versionFilePath <>
+                                         ". Check config.\n")
+  where
+    pattern = text (versionPatternVariable versionFileVersionPattern) <> spaces <> text (versionPatternSeparator versionFileVersionPattern)
 
 -- |Generate new local version.
 generateLocalVersionForFile :: Level -> VersionFile -> Appl Text
@@ -53,9 +60,9 @@ generateLocalVersion lev ChangelogConfig{..} = do
 -- |Infer new local version.
 generateLocalVersionByChangelog :: ChangelogConfig -> Appl (Maybe Text)
 generateLocalVersionByChangelog logConfig@ChangelogConfig{..} = do
-  versionedChanges <- getChangelogEntries changelogChangelog
+  versionedChanges <- getLevelOfChanges changelogChangelog changelogLevelHeaders
   case versionedChanges of
     Just lev -> generateLocalVersion lev logConfig
     Nothing -> do
-      warning $ "keeping current version since " <> showPath changelogChangelog <> " apparently does not contain any new entries"
+      warning $ "keeping current version since " <> showPath changelogChangelog <> " does not contain any new level headers or even entries."
       return Nothing

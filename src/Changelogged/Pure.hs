@@ -1,8 +1,12 @@
 module Changelogged.Pure where
 
+import Data.Aeson (Options(..), defaultOptions)
 import Prelude hiding (FilePath)
 import Data.Text (Text)
 import qualified Data.Text as Text
+
+import Data.Char
+import Data.List
 
 import Filesystem.Path.CurrentOS (encodeString, FilePath)
 
@@ -47,3 +51,31 @@ showPath = Text.pack . encodeString
 
 showText :: Show a => a -> Text
 showText = Text.pack . show
+
+-- | Convert @CamelCase@ to @snake_case@.
+--
+-- >>> toSnakeCase "VersionFile"
+-- "version_file"
+-- >>> toSnakeCase "Config"
+-- "config"
+toSnakeCase :: String -> String
+toSnakeCase = map toLower . intercalate "_" . splitCamelWords
+  where
+    splitCamelWords = reverse . splitWordsReversed . reverse
+
+    splitWordsReversed :: String -> [String]
+    splitWordsReversed [] = []
+    splitWordsReversed rs
+      | null ls   = reverse us : splitWordsReversed urs
+      | otherwise = case lrs of
+                      []     -> [reverse ls]
+                      (c:cs) -> (c : reverse ls) : splitWordsReversed cs
+      where
+        (ls, lrs) = span (not . isBorder) rs
+        (us, urs) = span isBorder rs
+        isBorder c = isUpper c || isDigit c
+
+jsonDerivingModifier :: String -> Options
+jsonDerivingModifier prefix = defaultOptions {
+  fieldLabelModifier = toSnakeCase . drop (length prefix)
+  }

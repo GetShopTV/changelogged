@@ -6,9 +6,6 @@ import Prelude hiding (FilePath)
 import Data.Foldable (asum)
 
 import qualified Control.Foldl as Fold
-import Control.Monad (when)
-
-import System.Console.ANSI (Color(..))
 
 import Changelogged.Types
 import Changelogged.Options
@@ -21,8 +18,8 @@ import Changelogged.Git
 
 -- |This is actually part if '@Main@'
 -- Check local changelog - local means what changelog is specific and has some indicator file. If file is changed changelog must change.
-checkLocalChangelogF :: WarningFormat -> Bool -> GitInfo -> ChangelogConfig -> Appl Bool
-checkLocalChangelogF fmt writeLog GitInfo{..} ChangelogConfig{..} = do
+checkLocalChangelogF :: GitInfo -> ChangelogConfig -> Appl Bool
+checkLocalChangelogF GitInfo{..} ChangelogConfig{..} = do
   info $ "looking for missing entries in " <> format fp changelogChangelog
   
   commits <- map (fromJustCustom "Cannot find commit hash in git log entry" . hashMatch . lineToText)
@@ -53,27 +50,7 @@ checkLocalChangelogF fmt writeLog GitInfo{..} ChangelogConfig{..} = do
         case pull of
           Nothing -> do
             message <- commitMessage Commit commit
-            changelogIsUp fmt writeLog gitRemoteUrl commit Commit message changelogChangelog
+            changelogIsUp gitRemoteUrl commit Commit message changelogChangelog
           Just pnum -> do
             message <- commitMessage PR commit
-            changelogIsUp fmt writeLog gitRemoteUrl pnum PR message changelogChangelog
-
--- |This is actually part of '@Main@'
--- Check given changelog regarding options.
-checkChangelogWrap :: GitInfo -> ChangelogConfig -> Appl Bool
-checkChangelogWrap git config@ChangelogConfig{..} = do
-  Options{..} <- ask
-  if (optUpdateChangelog && optFormat == WarnSimple)
-    then do
-      failure "--update-changelog does not work with --format=simple (try --format=suggest instead)"
-      return False
-    else do
-      when optFromBC $ printf ("Checking "%fp%" from start of project\n") changelogChangelog
-      upToDate <- checkLocalChangelogF optFormat optUpdateChangelog git config
-      if upToDate
-        then coloredPrint Green (showPath changelogChangelog <> " is up to date.\n")
-        else do
-          warning $ showPath changelogChangelog <> " is out of date." <>
-            if optUpdateChangelog then "" else
-              "\nUse --update-changelog to add missing changelog entries automatically."
-      return upToDate
+            changelogIsUp gitRemoteUrl pnum PR message changelogChangelog
