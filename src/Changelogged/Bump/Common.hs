@@ -7,6 +7,7 @@ import Control.Exception
 import qualified Control.Foldl as Fold
 
 import Data.Functor (($>))
+import qualified Data.List as List
 import Data.Text (Text)
 
 import Filesystem.Path.CurrentOS (encodeString)
@@ -68,18 +69,12 @@ bumpPart version file@VersionFile{..} = do
 getLevelOfChanges :: FilePath -> LevelHeaders -> Appl (Maybe Level)
 getLevelOfChanges changelogFile levelHeaders@LevelHeaders{..} = do
   levels <- lookupLevels unreleased levelHeaders
-  return $ firstPresent levels
+  return . fmap toEnum $ List.findIndex id levels
   where
     unreleased = limitWhile (null . match (prefix versionExactRegex) . lineToText) (input changelogFile)
 
     lookupLevel linesList levelHeader = case levelHeader of
       Just txt -> fold (grep (prefix (text txt)) linesList) countLines >>= return . (/= 0)
       Nothing -> return False
-    -- Maybe it's better to resolve it with instance Ord Level
-    lookupLevels linesList (LevelHeaders h1 h2 h3 h4 h5) =
-      mapM (lookupLevel linesList) [h1,h2,h3,h4,h5] >>= return . (zip [App, Major, Minor, Fix, Doc])
-
-    firstPresent [] = Nothing 
-    firstPresent ((level,isPresent):rest) = if isPresent
-      then Just level
-      else firstPresent rest
+    -- Maybe it's better to resolve it with instance Foldable LevelHeaders
+    lookupLevels linesList (LevelHeaders h1 h2 h3 h4 h5) = mapM (lookupLevel linesList) [h1,h2,h3,h4,h5]
