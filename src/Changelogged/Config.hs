@@ -66,6 +66,7 @@ defaultConfig = Config
 loadConfig :: FilePath -> Appl (Maybe Config)
 loadConfig path = do
   ms <- liftIO $ Yaml.decodeFileEither path
+  liftIO $ print ms
   return $ case ms of
     Left _wrong -> Nothing
     Right paths -> Just paths

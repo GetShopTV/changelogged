@@ -67,20 +67,19 @@ bumpPart version file@VersionFile{..} = do
 --TODO!
 -- |Get level of changes from changelog.
 getChangelogEntries :: FilePath -> LevelHeaders -> Appl (Maybe Level)
-getChangelogEntries changelogFile levelHeaders = do
-  liftIO $ print levelHeaders
-  app <- fold (grep (prefix "* App") unreleased) countLines
-  major <- fold (grep (prefix "* Major") unreleased) countLines
-  minor <- fold (grep (prefix "* Minor") unreleased) countLines
-  fixes <- fold (grep (prefix "* Fix") unreleased) countLines
-  docs  <- fold (grep (prefix "* Doc") unreleased) countLines
+getChangelogEntries changelogFile levelHeaders@LevelHeaders{..} = do
+  app   <- lookupLevel unreleased levelHeadersApp
+  major <- lookupLevel unreleased levelHeadersMajor
+  minor <- lookupLevel unreleased levelHeadersMinor
+  fixes <- lookupLevel unreleased levelHeadersFix
+  docs  <- lookupLevel unreleased levelHeadersDoc
 
   return $ case app of
-    0 -> case major of
-      0 -> case minor of
-        0 -> case fixes of
-          0 -> case docs of
-            0 -> Nothing
+    True -> case major of
+      True -> case minor of
+        True -> case fixes of
+          True -> case docs of
+            True -> Nothing
             _ -> Just Doc
           _ -> Just Fix
         _ -> Just Minor
@@ -88,3 +87,7 @@ getChangelogEntries changelogFile levelHeaders = do
     _ -> Just App
   where
     unreleased = limitWhile (null . match (prefix versionExactRegex) . lineToText) (input changelogFile)
+
+    lookupLevel linesList levelHeader = case levelHeader of
+      Just txt -> fold (grep (prefix (text txt)) linesList) countLines >>= return . (== 0)
+      Nothing -> return False

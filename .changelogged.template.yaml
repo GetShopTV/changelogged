@@ -4,6 +4,7 @@ changelogs:
   # package changelog (for library and executables)
   - changelog: ChangeLog.md
 
+    # Prefixes of headers used to identify level of changes by changelog.
     level_headers:
       app: "* App"
       major: "* Major"
