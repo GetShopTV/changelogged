@@ -14,10 +14,6 @@ changelogs:
       # version in package.yaml should be updated
       - path: package.yaml
         version_pattern: "version:"
-    
-    # Apply common options like --level when is not target changelog or not.
-    # false by default.
-    default: true
 
   # HTTP API changelog
   - changelog: API_ChangeLog.md

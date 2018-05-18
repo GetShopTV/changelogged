@@ -3,7 +3,6 @@
 module Changelogged.Config where
 
 import Data.Aeson
-import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.String (fromString)
 import Data.Text (Text)
@@ -25,8 +24,6 @@ data ChangelogConfig = ChangelogConfig
   , changelogWatchFiles   :: Maybe [Turtle.FilePath]
   , changelogIgnoreFiles  :: Maybe [Turtle.FilePath]
   , changelogVersionFiles :: Maybe [VersionFile]
-    -- If changelog is marked as default it's version files will be bumped with explicit level from options.
-  , changelogDefault      :: Bool
   } deriving Eq
 
 data VersionFile = VersionFile
@@ -46,7 +43,6 @@ instance FromJSON ChangelogConfig where
     <*> (fmap (map fromString) <$> o .:? "watch_files")
     <*> (fmap (map fromString) <$> o .:? "ignore_files")
     <*> o .:? "version_files"
-    <*> (fromMaybe False <$> o .:? "default")
 
 instance FromJSON VersionFile where
   parseJSON = withObject "VersionFile" $ \o -> VersionFile
@@ -60,7 +56,6 @@ defaultConfig = Config
       , changelogWatchFiles   = Nothing  -- watch everything
       , changelogIgnoreFiles  = Nothing  -- ignore nothing
       , changelogVersionFiles = Just [VersionFile "package.yaml" "version:"]
-      , changelogDefault      = True
       }
   , configIgnoreCommits = Nothing
   , configBranch = Nothing

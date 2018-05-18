@@ -9,5 +9,3 @@ changelogs:
         version_pattern: "version:"
       - path: src/Changelogged/Pure.hs
         version_pattern: "changeloggedVersion ="
-    
-    default: true

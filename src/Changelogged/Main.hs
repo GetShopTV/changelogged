@@ -49,9 +49,10 @@ processChangelogs :: Config -> GitInfo -> Appl ()
 processChangelogs config gitInfo = do
   Options{..} <- ask
   case optTargetChangelog of
-    Nothing -> do
-      mapM_ (processChangelog gitInfo optChangeLevel) (filter (\entry -> changelogDefault entry == True) $ configChangelogs config)
-      mapM_ (processChangelog gitInfo Nothing) (filter (\entry -> changelogDefault entry /= True) $ configChangelogs config)
+    Nothing -> case length . configChangelogs $ config of
+      0 -> failure "You have empty configuration file" 
+      1 -> processChangelog gitInfo optChangeLevel $ head . configChangelogs $ config
+      _ -> failure "You cannot bump versions generally through all changelogs. Correct form: changelogged --bump-versions --level <level> <changelog>"
     Just changelogPath -> do
       case lookupChangelog changelogPath of
         Just changelog -> processChangelog gitInfo optChangeLevel changelog
