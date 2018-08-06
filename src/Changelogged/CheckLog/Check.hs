@@ -46,16 +46,15 @@ checkLocalChangelogF GitInfo{..} ChangelogConfig{..} = do
 
 allFilesIgnored :: Maybe [FilePath] -> Text -> Appl Bool
 allFilesIgnored Nothing _ = return False
-allFilesIgnored (Just files) commit = fold
-  (grep (invert (asum (map (has . text . showPath) files)))
-    (inproc "git" ["show", "--stat", commit] empty))
-  Fold.null
+allFilesIgnored (Just files) commit = do
+  affectedFiles <- fold (inproc "git" ["diff-tree", "--name-only", "--no-commit-id", "-m", commit] empty) Fold.list
+  return . and $ map (flip elem files . fromText . lineToText) affectedFiles
 
 commitNotWatched :: Maybe [FilePath] -> Text -> Appl Bool
 commitNotWatched Nothing _ = return False
 commitNotWatched (Just files) commit = fold
-  (grep (asum (map (has . text . showPath) files))
-    (inproc "git" ["show", "--stat", commit] empty))
+  (grep (asum (map (text . showPath) files))
+    (inproc "git" ["diff-tree", "--name-only", "--no-commit-id", "-m", commit] empty))
   Fold.null
 
 commitIgnored :: Maybe [Text] -> Text -> Appl Bool
