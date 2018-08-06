@@ -31,7 +31,7 @@ checkLocalChangelogF GitInfo{..} ChangelogConfig{..} = do
     eval commit = do
       ignoreChangeReasoned <- sequence $
         [ commitNotWatched changelogWatchFiles commit
-        , allFilesIgnored changelogIgnoreFiles commit
+        , allFilesIgnored changelogIgnoreFiles changelogChangelog commit
         , commitIgnored changelogIgnoreCommits commit]
       if or ignoreChangeReasoned then return True else do
         pull <- fmap (fromJustCustom "Cannot find commit hash in git log entry" . githubRefMatch . lineToText) <$>
@@ -44,11 +44,11 @@ checkLocalChangelogF GitInfo{..} ChangelogConfig{..} = do
             message <- commitMessage PR commit
             changelogIsUp gitRemoteUrl pnum PR message changelogChangelog
 
-allFilesIgnored :: Maybe [FilePath] -> Text -> Appl Bool
-allFilesIgnored Nothing _ = return False
-allFilesIgnored (Just files) commit = do
+allFilesIgnored :: Maybe [FilePath] -> FilePath -> Text -> Appl Bool
+allFilesIgnored Nothing _ _ = return False
+allFilesIgnored (Just files) chLog commit = do
   affectedFiles <- fold (inproc "git" ["diff-tree", "--name-only", "--no-commit-id", "-m", commit] empty) Fold.list
-  return . and $ map (flip elem files . fromText . lineToText) affectedFiles
+  return . and $ map (flip elem (chLog:files) . fromText . lineToText) affectedFiles
 
 commitNotWatched :: Maybe [FilePath] -> Text -> Appl Bool
 commitNotWatched Nothing _ = return False
