@@ -9,6 +9,7 @@ changelogs:
 
     ignore_files:
       - ChangeLog.md
+      - .changelogged.yaml
 
     ignore_commits: []
 
