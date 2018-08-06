@@ -15,6 +15,10 @@ changelogs:
     # watch all files except for the changelog itself
     ignore_files:
       - ChangeLog.md
+    
+    # which individual changes to ignore
+    #
+    # ignore_commits: []
 
     # which files to modify when performing a regular version bump
     version_files:
@@ -54,6 +58,3 @@ changelogs:
 #
 # branch: master
 
-# which individual changes to ignore
-#
-# ignore_commits: []

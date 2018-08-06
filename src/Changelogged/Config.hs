@@ -18,7 +18,6 @@ import Changelogged.Pure
 
 data Config = Config
   { configChangelogs    :: [ChangelogConfig]
-  , configIgnoreCommits :: Maybe [Text]
   , configBranch        :: Maybe Text
   } deriving (Eq, Show, Generic)
 
@@ -31,11 +30,12 @@ data LevelHeaders = LevelHeaders
   } deriving (Eq, Show, Generic)
 
 data ChangelogConfig = ChangelogConfig
-  { changelogChangelog    :: Turtle.FilePath
-  , changelogLevelHeaders :: LevelHeaders
-  , changelogWatchFiles   :: Maybe [Turtle.FilePath]
-  , changelogIgnoreFiles  :: Maybe [Turtle.FilePath]
-  , changelogVersionFiles :: Maybe [VersionFile]
+  { changelogChangelog     :: Turtle.FilePath
+  , changelogLevelHeaders  :: LevelHeaders
+  , changelogWatchFiles    :: Maybe [Turtle.FilePath]
+  , changelogIgnoreFiles   :: Maybe [Turtle.FilePath]
+  , changelogIgnoreCommits :: Maybe [Text]
+  , changelogVersionFiles  :: Maybe [VersionFile]
   } deriving (Eq, Show, Generic)
 
 data VersionPattern = VersionPattern
@@ -60,13 +60,13 @@ defaultLevelHeaders = LevelHeaders
 defaultConfig :: Config
 defaultConfig = Config
   { configChangelogs    = pure ChangelogConfig
-      { changelogChangelog    = "ChangeLog.md"
-      , changelogLevelHeaders = defaultLevelHeaders
-      , changelogWatchFiles   = Nothing  -- watch everything
-      , changelogIgnoreFiles  = Nothing  -- ignore nothing
-      , changelogVersionFiles = Just [VersionFile "package.yaml" (VersionPattern "version" ":")]
+      { changelogChangelog     = "ChangeLog.md"
+      , changelogLevelHeaders  = defaultLevelHeaders
+      , changelogWatchFiles    = Nothing  -- watch everything
+      , changelogIgnoreFiles   = Nothing  -- ignore nothing
+      , changelogIgnoreCommits = Nothing
+      , changelogVersionFiles  = Just [VersionFile "package.yaml" (VersionPattern "version" ":")]
       }
-  , configIgnoreCommits = Nothing
   , configBranch = Nothing
   }
 
@@ -80,7 +80,6 @@ loadConfig path = do
 ppConfig :: Config -> Text
 ppConfig Config{..} = mconcat
   [ "Main branch (with version tags)" ?: configBranch
-  , "Ignored commits" ?: (Text.pack . show . length <$> configIgnoreCommits)
   , "Changelogs" !: formatItems Turtle.fp (map changelogChangelog configChangelogs)
   ]
   where
