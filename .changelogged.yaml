@@ -10,6 +10,8 @@ changelogs:
     ignore_files:
       - ChangeLog.md
 
+    ignore_commits: []
+
     version_files:
       - path: package.yaml
         version_pattern:

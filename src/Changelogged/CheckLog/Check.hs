@@ -29,22 +29,11 @@ checkLocalChangelogF GitInfo{..} ChangelogConfig{..} = do
   return $ and flags
   where
     eval commit = do
-      ignoreChange <- case changelogWatchFiles of
-        Nothing -> case changelogIgnoreFiles of
-          Nothing -> return False
-          Just files -> do
-            linePresent <- fold
-              (grep (invert (asum (map (has . text . showPath) files)))
-                (inproc "git" ["show", "--stat", commit] empty))
-              countLines
-            return (linePresent == 0)
-        Just files -> do
-          linePresent <- fold
-            (grep (asum (map (has . text . showPath) files))
-              (inproc "git" ["show", "--stat", commit] empty))
-            countLines
-          return (linePresent == 0)
-      if ignoreChange then return True else do
+      ignoreChangeReasoned <- sequence $
+        [ commitNotWatched changelogWatchFiles commit
+        , allFilesIgnored changelogIgnoreFiles commit
+        , commitIgnored changelogIgnoreCommits commit]
+      if or ignoreChangeReasoned then return True else do
         pull <- fmap (fromJustCustom "Cannot find commit hash in git log entry" . githubRefMatch . lineToText) <$>
             fold (grep githubRefGrep (grep (has (text commit)) (select gitHistory))) Fold.head
         case pull of
@@ -54,3 +43,24 @@ checkLocalChangelogF GitInfo{..} ChangelogConfig{..} = do
           Just pnum -> do
             message <- commitMessage PR commit
             changelogIsUp gitRemoteUrl pnum PR message changelogChangelog
+
+allFilesIgnored :: Maybe [FilePath] -> Text -> Appl Bool
+allFilesIgnored Nothing _ = return False
+allFilesIgnored (Just files) commit = fold
+  (grep (invert (asum (map (has . text . showPath) files)))
+    (inproc "git" ["show", "--stat", commit] empty))
+  Fold.null
+
+commitNotWatched :: Maybe [FilePath] -> Text -> Appl Bool
+commitNotWatched Nothing _ = return False
+commitNotWatched (Just files) commit = fold
+  (grep (asum (map (has . text . showPath) files))
+    (inproc "git" ["show", "--stat", commit] empty))
+  Fold.null
+
+commitIgnored :: Maybe [Text] -> Text -> Appl Bool
+commitIgnored Nothing _ = return False
+commitIgnored (Just names) commit = not <$> fold
+  (grep (asum (map text names))
+    (inproc "git" ["show", "-s", "--format=%B", commit] empty))
+  Fold.null
