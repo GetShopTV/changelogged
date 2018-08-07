@@ -1,7 +1,5 @@
 # changelogged
 
-_Note: Text documentation is actual, demo is not. It looks quite similar but better actually._
-
 [![Hackage](https://img.shields.io/hackage/v/changelogged.svg)](http://hackage.haskell.org/package/changelogged)
 [![Build Status](https://travis-ci.org/GetShopTV/changelogged.svg?branch=master)](https://travis-ci.org/GetShopTV/changelogged)
 
