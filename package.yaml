@@ -12,6 +12,7 @@ category: Development
 extra-source-files:
   - README.md
   - ChangeLog.md
+  - images/*
 
 custom-setup:
   dependencies:
