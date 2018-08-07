@@ -1,5 +1,7 @@
 # changelogged
 
+_Note: Text documentation is actual, images and demo are not. It looks quite similar but better actually._
+
 [![Hackage](https://img.shields.io/hackage/v/changelogged.svg)](http://hackage.haskell.org/package/changelogged)
 [![Build Status](https://travis-ci.org/GetShopTV/changelogged.svg?branch=master)](https://travis-ci.org/GetShopTV/changelogged)
 
@@ -97,17 +99,18 @@ See examples [below](#guiding-examples)
 
 This is default feature. Changelogged will output all missing pull requests and commits with their messages.
 
-You can skip it with `--no-check` option or ignore results with `--force` option. Also you can check changelog from the first commit with `--from-bc`.
+You can skip it with `--no-check` option or ignore results while bumping with `--force` option. Also you can check changelog from the first commit with `--from-bc`.
 
 ### Bumping versions
 
-If changelogs are up to day changelogged will bump versions all over the project with option `--bump-versions`.
+If changelogs are up to date changelogged will bump versions all over the project with command `bump-versions`.
 
 You can variously combine changelog checking and bumping versions. For example you may just want to be sure changelogs are up to date. You can just run `changelogged`
-By default new version is inferred from changelog. It will work if you have some of `* App...` `* Major...`, `* Minor...`, `* Fix...`, and `* Doc...` sections in changelog and name versions correspondingly.
-Suggested versioning: `app.major.minor.fix.doc`.
-Otherwise you can specify new version explicitly with `--level` option. It's also the only way to work with `--no-check` option.
-This option is subject to change significantly and is broken now.
+By default new version is inferred from changelog.
+Default versioning: `app.major.minor.fix.doc`.
+If you use another versioning system or headers in changelog you can change `level_headers` in `.changelogged.yaml`
+
+You can specify new version explicitly with `--level` option. It's also the only way to bump version with `--no-check` option.
 
 ### Multiple changelogs and subversions
 
@@ -116,10 +119,9 @@ Also there will be option to check changelog passed by name in commang line args
 
 ### Writing changelogs.
 
-`--format suggest` provides another format for records you see on the screen.
-It can be used with `--update-changelog` option to write these strings to the top of changelog they are relevant to.
+`--format=suggest` provides another format for records you see on the screen.
+`update-changelog` command will write these records to changelog. With any `format` option new entries will match `--format=suggest`.
 It's recommended to edit it manually after.
-This option cannot be used with `--format simple` which is default.
 
 ## Guiding examples
 
@@ -134,7 +136,7 @@ changelogged
 ### Suggest changelog entries
 
 ```
-changelogged --format suggest
+changelogged --format=suggest
 ```
 
 ![image2](images/suggest.png)
@@ -142,7 +144,7 @@ changelogged --format suggest
 Try to bump with no entries in changelog:
 
 ```
-changelogged --format suggest bump-versions
+changelogged bump-versions --format=suggest
 ```
 
 ![image3](images/failed_bump.png)
@@ -150,7 +152,7 @@ changelogged --format suggest bump-versions
 Force with no entries in changelog:
 
 ```
-changelogged --format suggest --bump-versions --force
+changelogged bump-versions --format=suggest --force
 ```
 
 ![image3](images/no_force.png)
@@ -158,7 +160,7 @@ changelogged --format suggest --bump-versions --force
 ### Write suggested entries to changelog
 
 ```
-changelogged --format suggest update-changelog
+changelogged update-changelog --format=suggest
 ```
 
 ![image5](images/suggest.png)
@@ -174,7 +176,7 @@ It requires some manual editing after.
 ### Bump version and infering level of change from changelog
 
 ```
-changelogged --format suggest bump-versions
+changelogged  bump-versions --format=suggest
 ```
 
 ![image7](images/bump.png)
