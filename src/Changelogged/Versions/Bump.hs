@@ -73,7 +73,7 @@ generateLocalVersionByChangelog logConfig@ChangelogConfig{..} = do
 bumpVersions :: Bool -> ChangelogConfig -> Appl ()
 bumpVersions upToDate config@ChangelogConfig{..} = do
   Options{..} <- ask
-  when optBumpVersions $ if
+  if
     | not upToDate && not optForce ->
         failure $ "cannot bump versions because " <> format fp changelogChangelog <> " is out of date.\nUse --no-check to skip changelog checks.\nUse --force to force bump version."
     | not upToDate && optForce ->

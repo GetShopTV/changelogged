@@ -25,7 +25,7 @@ changelogIsUp link item mode message changelog = do
       case optFormat of
         WarnSimple  -> warnMissing item mode message
         WarnSuggest -> suggestMissing link item mode message
-      when optUpdateChangelog $ addMissing link item mode message changelog
+      when (optAction == Just UpdateChangelogs) $ addMissing link item mode message changelog
       return False
     _ -> return True
 

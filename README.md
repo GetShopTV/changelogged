@@ -23,7 +23,7 @@ and also list any recent changes that are not included in you changelog.
 You can then prepend missing changelog entries automatically with
 
 ```
-changelogged --update-changelog
+changelogged update-changelog
 ```
 
 Now you can see new entries in your changelog, make edits and group changes.
@@ -31,7 +31,7 @@ Even if you see simple messages on a screen, detailed (with links, see demo) are
 When you're done you can automatically bump project's version with
 
 ```
-changelogged --bump-versions
+changelogged bump-versions
 ```
 
 That's it! Now you have a proper changelog with no forgotten changes.
@@ -65,20 +65,22 @@ changelogged --help
 ```
 changelogged - Changelog Manager for Git Projects
 
-Usage: changelogged [--format FORMAT] [--update-changelog] [--bump-versions]
+Usage: changelogged [ACTION] [--format FORMAT] [--dry-run] [TARGET_CHANGELOG]
+                    [--config changelogged.yaml config file location]
+
 Available options:
   -h,--help                Show this help text
+  ACTION                   If present could be update-changelog or
+                           bump-versions.
   --format FORMAT          Format for missing changelog entry warnings. FORMAT
                            can be 'simple' or 'suggest'. (default: simple)
-  --update-changelog       Add missing entries to changelogs (works with
-                           --format=suggest).
-  --bump-versions          Bump versions in version files.
   --level CHANGE_LEVEL     Level of changes (to override one inferred from
                            changelog). CHANGE_LEVEL can be 'app', 'major',
                            'minor', 'fix' or 'doc'.
   --from-bc                Look for missing changelog entries from the start of
                            the project.
   --force                  Bump versions ignoring possibly outdated changelogs.
+                           Usable with bump-versions only
   --no-check               Do not check if changelogs have any missing entries.
   --no-colors              Print all messages in standard terminal color.
   --dry-run                Do not change files while running.
@@ -140,7 +142,7 @@ changelogged --format suggest
 Try to bump with no entries in changelog:
 
 ```
-changelogged --format suggest --bump-versions
+changelogged --format suggest bump-versions
 ```
 
 ![image3](images/failed_bump.png)
@@ -156,7 +158,7 @@ changelogged --format suggest --bump-versions --force
 ### Write suggested entries to changelog
 
 ```
-changelogged --format suggest --update-changelog
+changelogged --format suggest update-changelog
 ```
 
 ![image5](images/suggest.png)
@@ -172,7 +174,7 @@ It requires some manual editing after.
 ### Bump version and infering level of change from changelog
 
 ```
-changelogged --format suggest --bump-versions
+changelogged --format suggest bump-versions
 ```
 
 ![image7](images/bump.png)

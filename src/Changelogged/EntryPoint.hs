@@ -1,6 +1,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Changelogged.EntryPoint where
 
+import System.Console.ANSI (Color(..))
+
 import Turtle hiding (find)
 import Prelude hiding (FilePath)
 import Data.List (find)
@@ -8,6 +10,8 @@ import Data.List (find)
 import Changelogged.Versions.Bump
 import Changelogged.Changelog.Check
 import Changelogged.Options
+import Changelogged.Types
+import Changelogged.Pure (showPath)
 import Changelogged.Utils
 import Changelogged.Config
 import Changelogged.Git
@@ -38,4 +42,7 @@ processChangelog gitInfo config@ChangelogConfig{..} = do
     touch changelogChangelog
 
   upToDate <- checkChangelog gitInfo config
-  bumpVersions upToDate config
+  case optAction of
+    Just BumpVersions -> bumpVersions upToDate config
+    Just UpdateChangelogs -> coloredPrint Green (showPath changelogChangelog <> " is updated.\n" <> "You can edit it manually or run bump-versions.\n")
+    Nothing -> return ()

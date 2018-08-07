@@ -52,6 +52,21 @@ showPath = Text.pack . encodeString
 showText :: Show a => a -> Text
 showText = Text.pack . show
 
+splitCamelWords :: String -> [String]
+splitCamelWords = reverse . splitWordsReversed . reverse
+
+splitWordsReversed :: String -> [String]
+splitWordsReversed [] = []
+splitWordsReversed rs
+  | null ls   = reverse us : splitWordsReversed urs
+  | otherwise = case lrs of
+                  []     -> [reverse ls]
+                  (c:cs) -> (c : reverse ls) : splitWordsReversed cs
+  where
+    (ls, lrs) = span (not . isBorder) rs
+    (us, urs) = span isBorder rs
+    isBorder c = isUpper c || isDigit c
+
 -- | Convert @CamelCase@ to @snake_case@.
 --
 -- >>> toSnakeCase "VersionFile"
@@ -60,20 +75,15 @@ showText = Text.pack . show
 -- "config"
 toSnakeCase :: String -> String
 toSnakeCase = map toLower . intercalate "_" . splitCamelWords
-  where
-    splitCamelWords = reverse . splitWordsReversed . reverse
 
-    splitWordsReversed :: String -> [String]
-    splitWordsReversed [] = []
-    splitWordsReversed rs
-      | null ls   = reverse us : splitWordsReversed urs
-      | otherwise = case lrs of
-                      []     -> [reverse ls]
-                      (c:cs) -> (c : reverse ls) : splitWordsReversed cs
-      where
-        (ls, lrs) = span (not . isBorder) rs
-        (us, urs) = span isBorder rs
-        isBorder c = isUpper c || isDigit c
+-- |
+--
+-- >>> hyphenate "VersionFile"
+-- "version-file"
+-- >>> hyphenate "Config"
+-- "config"
+hyphenate :: String -> String
+hyphenate = map toLower . intercalate "-" . splitCamelWords
 
 jsonDerivingModifier :: String -> Options
 jsonDerivingModifier prefix = defaultOptions {

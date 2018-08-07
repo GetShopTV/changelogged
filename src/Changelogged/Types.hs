@@ -19,6 +19,10 @@ instance FromJSON Path.FilePath where
 data Level = App | Major | Minor | Fix | Doc
   deriving (Generic, Show, Enum, Bounded, ToJSON)
 
+-- |Available altenative actions
+data Action = UpdateChangelogs | BumpVersions
+  deriving (Generic, Eq, Show, Enum, Bounded, ToJSON)
+
 -- |Type of entry in git history.
 data Mode = PR | Commit
 
