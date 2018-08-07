@@ -1,3 +1,31 @@
+0.3.0
+---
+
+* Major changes
+  - Move computations from IO and enhance correspondingly (see [#93]( https://github.com/GetShopTV/changelogged/pull/93 ));
+  - Enhancements (see [#101]( https://github.com/GetShopTV/changelogged/pull/101 ));
+    - Remove default changelogs
+    - Add custom level headers
+    - Split version_pattern
+    - Derive FromJSON instances
+  - Redesign changelog affecting part (see [#106]( https://github.com/GetShopTV/changelogged/pull/106 ));
+* Minor changes
+  - Enhancements (see [#89]( https://github.com/GetShopTV/changelogged/pull/89 ));
+    - Add --version
+    - Redesign --level option
+    - Add option for config file location
+  - Update to LTS-11.7 (see [`43193cc`]( https://github.com/GetShopTV/changelogged/commit/43193cc ));
+  - Add debug info and --verbose flag (see [#97]( https://github.com/GetShopTV/changelogged/pull/97 ));
+* Fixes
+  - Remove accidental file and surround links with spaces in output (see [`da006e1`]( https://github.com/GetShopTV/changelogged/commit/da006e1 ));
+  - Remove images dir from package.yaml (see [`4af996e`]( https://github.com/GetShopTV/changelogged/commit/4af996e ));
+  - Fix adding spaces around links (see [`180e73f`]( https://github.com/GetShopTV/changelogged/commit/180e73f ));
+* Docs
+  - Update demo (see [`b103e6c`]( https://github.com/GetShopTV/changelogged/commit/b103e6c ));
+  - Remove outdated note from README and get back images dir (see [`2c7a03c`]( https://github.com/GetShopTV/changelogged/commit/2c7a03c ));
+  - Update docs for v0.2.0 (see [#84]( https://github.com/GetShopTV/changelogged/pull/84 ));
+  - Update README.md (see [`f59ee55`]( https://github.com/GetShopTV/changelogged/commit/f59ee55 ));
+  - Remove Guiding examples from README. Reason - outdated images are worse than no images (see [`503ecfa`]( https://github.com/GetShopTV/changelogged/commit/503ecfa ));
 0.2.0
 ---
 

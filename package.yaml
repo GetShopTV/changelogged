@@ -1,5 +1,5 @@
 name: changelogged
-version: 0.2.0
+version: 0.3.0
 synopsis: Changelog manager for Git projects.
 description: Please see the README on Github at <https://github.com/GetShopTV/changelogged#readme>
 maintainer: Vitalii Guzeev <vitaliy@getshoptv.com>
