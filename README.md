@@ -23,14 +23,15 @@ and also list any recent changes that are not included in you changelog.
 You can then prepend missing changelog entries automatically with
 
 ```
-changelogged --update-changelog --format suggest
+changelogged update-changelog
 ```
 
 Now you can see new entries in your changelog, make edits and group changes.
+Even if you see simple messages on a screen, detailed (with links, see demo) are written to changelog.
 When you're done you can automatically bump project's version with
 
 ```
-changelogged --bump-versions
+changelogged bump-versions
 ```
 
 That's it! Now you have a proper changelog with no forgotten changes.
@@ -64,23 +65,30 @@ changelogged --help
 ```
 changelogged - Changelog Manager for Git Projects
 
-Usage: changelogged [--format FORMAT] [--update-changelog] [--bump-versions]
+Usage: changelogged [ACTION] [--format FORMAT] [--dry-run] [TARGET_CHANGELOG]
+                    [--config changelogged.yaml config file location]
 
 Available options:
   -h,--help                Show this help text
-  --format FORMAT          Missing entries report format. FORMAT can be 'simple'
-                           or 'suggest'. (default: simple)
-  --update-changelog       Prepend missing entries to changelogs. Available with
-                           --format=suggest.
-  --bump-versions          Bump versions according to change level.
-  --level CHANGE_LEVEL     Level of changes (for packages). CHANGE_LEVEL can be
-                           'app', 'major', 'minor', 'fix' or 'doc'.
-  --api-level CHANGE_LEVEL Level of changes (for API). CHANGE_LEVEL can be
-                           'app', 'major', 'minor', 'fix' or 'doc'.
-  --from-bc                Check changelogs for the entire history of the
-                           project.
-  --force                  Bump versions even when changelogs are outdated.
-  --no-check               Do not check changelogs.
+  ACTION                   If present could be update-changelog or
+                           bump-versions.
+  --format FORMAT          Format for missing changelog entry warnings. FORMAT
+                           can be 'simple' or 'suggest'. (default: simple)
+  --level CHANGE_LEVEL     Level of changes (to override one inferred from
+                           changelog). CHANGE_LEVEL can be 'app', 'major',
+                           'minor', 'fix' or 'doc'.
+  --from-bc                Look for missing changelog entries from the start of
+                           the project.
+  --force                  Bump versions ignoring possibly outdated changelogs.
+                           Usable with bump-versions only
+  --no-check               Do not check if changelogs have any missing entries.
+  --no-colors              Print all messages in standard terminal color.
+  --dry-run                Do not change files while running.
+  TARGET_CHANGELOG         Path to target changelog.
+  --config changelogged.yaml config file location
+                           Path to config file.
+  --verbose                Turn verbose mode on (useful for developers).
+  --version                Print version.
 ```
 
 See examples [below](#guiding-examples)
@@ -134,7 +142,7 @@ changelogged --format suggest
 Try to bump with no entries in changelog:
 
 ```
-changelogged --format suggest --bump-versions
+changelogged --format suggest bump-versions
 ```
 
 ![image3](images/failed_bump.png)
@@ -150,7 +158,7 @@ changelogged --format suggest --bump-versions --force
 ### Write suggested entries to changelog
 
 ```
-changelogged --format suggest --update-changelog
+changelogged --format suggest update-changelog
 ```
 
 ![image5](images/suggest.png)
@@ -166,7 +174,7 @@ It requires some manual editing after.
 ### Bump version and infering level of change from changelog
 
 ```
-changelogged --format suggest --bump-versions
+changelogged --format suggest bump-versions
 ```
 
 ![image7](images/bump.png)
@@ -195,8 +203,6 @@ It works with Git projects only.
 It was never tested on Windows. Ideally it will work if you have Git Bash installed.
 
 ### Getting and building
-
-For now the only way to get `changelogged` is to build it from source.
 
 #### Installing from Hackage
 

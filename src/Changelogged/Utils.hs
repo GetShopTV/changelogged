@@ -25,6 +25,10 @@ coloredPrint color line = do
       printf s line
       liftIO $ setSGR [Reset]
 
+success :: Text -> Appl ()
+success msg = coloredPrint Green $
+  "SUCCESS: " <> msg <> "\n"
+
 warning :: Text -> Appl ()
 warning msg = coloredPrint Yellow $
   "WARNING: " <> msg <> "\n"

@@ -3,6 +3,7 @@
 module Changelogged.Config where
 
 import Data.Aeson.TH
+import Data.Either.Combinators (rightToMaybe)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as Text
@@ -11,14 +12,12 @@ import qualified Data.Yaml as Yaml
 import qualified Turtle
 import GHC.Generics
 
-import Changelogged.Options
 import Changelogged.Types ()
-import Changelogged.Utils
+import Changelogged.Utils ()
 import Changelogged.Pure
 
 data Config = Config
   { configChangelogs    :: [ChangelogConfig]
-  , configIgnoreCommits :: Maybe [Text]
   , configBranch        :: Maybe Text
   } deriving (Eq, Show, Generic)
 
@@ -31,11 +30,12 @@ data LevelHeaders = LevelHeaders
   } deriving (Eq, Show, Generic)
 
 data ChangelogConfig = ChangelogConfig
-  { changelogChangelog    :: Turtle.FilePath
-  , changelogLevelHeaders :: LevelHeaders
-  , changelogWatchFiles   :: Maybe [Turtle.FilePath]
-  , changelogIgnoreFiles  :: Maybe [Turtle.FilePath]
-  , changelogVersionFiles :: Maybe [VersionFile]
+  { changelogChangelog     :: Turtle.FilePath
+  , changelogLevelHeaders  :: LevelHeaders
+  , changelogWatchFiles    :: Maybe [Turtle.FilePath]
+  , changelogIgnoreFiles   :: Maybe [Turtle.FilePath]
+  , changelogIgnoreCommits :: Maybe [Text]
+  , changelogVersionFiles  :: Maybe [VersionFile]
   } deriving (Eq, Show, Generic)
 
 data VersionPattern = VersionPattern
@@ -60,27 +60,22 @@ defaultLevelHeaders = LevelHeaders
 defaultConfig :: Config
 defaultConfig = Config
   { configChangelogs    = pure ChangelogConfig
-      { changelogChangelog    = "ChangeLog.md"
-      , changelogLevelHeaders = defaultLevelHeaders
-      , changelogWatchFiles   = Nothing  -- watch everything
-      , changelogIgnoreFiles  = Nothing  -- ignore nothing
-      , changelogVersionFiles = Just [VersionFile "package.yaml" (VersionPattern "version" ":")]
+      { changelogChangelog     = "ChangeLog.md"
+      , changelogLevelHeaders  = defaultLevelHeaders
+      , changelogWatchFiles    = Nothing  -- watch everything
+      , changelogIgnoreFiles   = Just ["ChangeLog.md"]
+      , changelogIgnoreCommits = Nothing
+      , changelogVersionFiles  = Just [VersionFile "package.yaml" (VersionPattern "version" ":")]
       }
-  , configIgnoreCommits = Nothing
   , configBranch = Nothing
   }
 
-loadConfig :: FilePath -> Appl (Maybe Config)
-loadConfig path = do
-  ms <- liftIO $ Yaml.decodeFileEither path
-  case ms of
-    Left _wrong -> return Nothing
-    Right paths -> debugYaml "config:" paths >> return (Just paths)
+loadConfig :: FilePath -> IO (Maybe Config)
+loadConfig path = Yaml.decodeFileEither path >>= return . rightToMaybe
 
 ppConfig :: Config -> Text
 ppConfig Config{..} = mconcat
   [ "Main branch (with version tags)" ?: configBranch
-  , "Ignored commits" ?: (Text.pack . show . length <$> configIgnoreCommits)
   , "Changelogs" !: formatItems Turtle.fp (map changelogChangelog configChangelogs)
   ]
   where

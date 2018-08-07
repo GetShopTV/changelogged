@@ -1,4 +1,4 @@
-module Changelogged.Bump.Common where
+module Changelogged.Versions.Utils where
 
 import Prelude hiding (FilePath)
 import Turtle

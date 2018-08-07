@@ -23,6 +23,7 @@ custom-setup:
 dependencies:
   - base >= 4.7 && < 5
   - turtle >= 1.5.0
+  - text
   - unordered-containers
   - ansi-terminal
 
@@ -34,7 +35,6 @@ library:
   source-dirs: src
   dependencies:
     - optparse-applicative
-    - text
     - yaml
     - aeson
     - mtl
