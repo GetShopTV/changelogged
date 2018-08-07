@@ -3,6 +3,7 @@
 module Changelogged.Config where
 
 import Data.Aeson.TH
+import Data.Either.Combinators (rightToMaybe)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as Text
@@ -11,9 +12,8 @@ import qualified Data.Yaml as Yaml
 import qualified Turtle
 import GHC.Generics
 
-import Changelogged.Options
 import Changelogged.Types ()
-import Changelogged.Utils
+import Changelogged.Utils ()
 import Changelogged.Pure
 
 data Config = Config
@@ -63,19 +63,15 @@ defaultConfig = Config
       { changelogChangelog     = "ChangeLog.md"
       , changelogLevelHeaders  = defaultLevelHeaders
       , changelogWatchFiles    = Nothing  -- watch everything
-      , changelogIgnoreFiles   = Nothing  -- ignore nothing
+      , changelogIgnoreFiles   = Just ["ChangeLog.md"]
       , changelogIgnoreCommits = Nothing
       , changelogVersionFiles  = Just [VersionFile "package.yaml" (VersionPattern "version" ":")]
       }
   , configBranch = Nothing
   }
 
-loadConfig :: FilePath -> Appl (Maybe Config)
-loadConfig path = do
-  ms <- liftIO $ Yaml.decodeFileEither path
-  case ms of
-    Left _wrong -> return Nothing
-    Right paths -> debugYaml "config:" paths >> return (Just paths)
+loadConfig :: FilePath -> IO (Maybe Config)
+loadConfig path = Yaml.decodeFileEither path >>= return . rightToMaybe
 
 ppConfig :: Config -> Text
 ppConfig Config{..} = mconcat

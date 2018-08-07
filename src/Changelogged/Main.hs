@@ -22,28 +22,34 @@ import Changelogged.Types (Level)
 import Changelogged.Pure (showText, showPath, changeloggedVersion)
 import Changelogged.Config
 
+prepareConfig :: FilePath -> Options -> IO Config
+prepareConfig configPath Options{..} = do
+  -- load config file (or default config)
+  config'@Config{..} <- fromMaybe defaultConfig <$> loadConfig configPath
+  -- ignore all changelogs by default
+  let changelogs = map changelogChangelog configChangelogs
+      config = config' {configChangelogs = map (\cc -> cc {changelogIgnoreFiles = Just changelogs <> changelogIgnoreFiles cc}) configChangelogs}
+  return config
+
 defaultMain :: IO ()
 defaultMain = do
   -- parse command line options
   opts@Options{..} <- parseOptions
 
+  let configPath = fromMaybe ".changelogged.yaml" (unpack . showPath <$> optConfigPath)
+  config@Config{..} <- prepareConfig configPath opts
+
   runInAppl opts $ if optVersion
     then versionP changeloggedVersion
     else do
       debugYaml "parsed options:" opts
+      debugYaml "config:" config
 
-      -- load config file (or default config)
-      let configPath = fromMaybe ".changelogged.yaml" (unpack . showPath <$> optConfigPath)
-      config'@Config{..} <- fromMaybe defaultConfig <$> loadConfig configPath
       -- load git info
       gitInfo <- loadGitInfo configBranch
-      if config' == defaultConfig
+      if config == defaultConfig
         then coloredPrint Blue "Using default config.\n"
         else coloredPrint Blue ("Configuration file: " <> pack configPath <> "\n")
-      
-      -- ignore all changelogs by default.
-      let changelogs = map changelogChangelog configChangelogs
-          config = config' {configChangelogs = map (\cc -> cc {changelogIgnoreFiles = Just changelogs <> changelogIgnoreFiles cc}) configChangelogs}
       
       coloredPrint Blue (ppConfig  config)
       coloredPrint Blue (ppGitInfo gitInfo)
