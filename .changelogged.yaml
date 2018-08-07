@@ -25,3 +25,5 @@ changelogs:
         version_pattern:
           variable: "changeloggedVersion"
           separator: "="
+
+branch: origin/master
