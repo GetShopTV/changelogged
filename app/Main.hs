@@ -7,7 +7,7 @@ import Data.Text (unpack, pack)
 
 import System.Console.ANSI (Color(..))
 
-import Changelogged.CheckLog.Check (processChangelogs)
+import Changelogged.EntryPoint (processChangelogs)
 import Changelogged.Git
 import Changelogged.Options
 import Changelogged.Utils

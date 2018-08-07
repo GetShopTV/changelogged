@@ -1,10 +1,13 @@
-module Changelogged.Bump.Local where
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE MultiWayIf #-}
+module Changelogged.Versions.Bump where
 
 import Turtle
 import Prelude hiding (FilePath)
 
-import Control.Exception
+import Control.Exception hiding (catch)
 import qualified Control.Foldl as Fold
+import Control.Monad.Catch
 
 import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Text (Text)
@@ -12,12 +15,12 @@ import Data.Text (Text)
 import Filesystem.Path.CurrentOS (encodeString)
 import System.Console.ANSI (Color(..))
 
+import Changelogged.Versions.Utils
 import Changelogged.Types
 import Changelogged.Options
 import Changelogged.Utils
 import Changelogged.Pure
 import Changelogged.Pattern
-import Changelogged.Bump.Common
 import Changelogged.Config
 
 -- |Get current local version.
@@ -66,3 +69,28 @@ generateLocalVersionByChangelog logConfig@ChangelogConfig{..} = do
     Nothing -> do
       warning $ "keeping current version since " <> showPath changelogChangelog <> " does not contain any new level headers or even entries."
       return Nothing
+
+bumpVersions :: Bool -> ChangelogConfig -> Appl ()
+bumpVersions upToDate config@ChangelogConfig{..} = do
+  Options{..} <- ask
+  when optBumpVersions $ if
+    | not upToDate && not optForce ->
+        failure $ "cannot bump versions because " <> format fp changelogChangelog <> " is out of date.\nUse --no-check to skip changelog checks.\nUse --force to force bump version."
+    | not upToDate && optForce ->
+        warning $ format fp changelogChangelog <> " is out of date. Bumping versions anyway due to --force."
+    | otherwise -> (do
+        newVersion <- case (optNoCheck, optChangeLevel) of
+          (_, Just lev) -> generateLocalVersion lev config
+          (True, Nothing) ->  do
+            failure "cannot infer new version from changelog because of --no-check.\nUse explicit --level CHANGE_LEVEL."
+            return Nothing
+          (False, Nothing) -> generateLocalVersionByChangelog config
+
+        case newVersion of
+          Nothing -> return ()
+          Just version -> case changelogVersionFiles of
+            Just versionFiles -> do
+              mapM_ (bumpPart version) versionFiles
+              headChangelog version changelogChangelog
+            Nothing -> warning "no files specified to bump versions in"
+        ) `catch` (\(ex :: PatternMatchFail) -> failure (showText ex))
