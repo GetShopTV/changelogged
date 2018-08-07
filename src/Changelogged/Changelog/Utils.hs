@@ -55,10 +55,10 @@ suggestMissing link item mode message = do
   case mode of
     PR -> do
       coloredPrint Cyan $ "[" <> item <> "]"
-      coloredPrint Blue $ "(" <> prLink link item <> ")"
+      coloredPrint Blue $ "( " <> prLink link item <> " )"
     Commit -> do
       coloredPrint Cyan ("[`" <> item <> "`]")
-      coloredPrint Blue $ "(" <> commitLink link item <> ")"
+      coloredPrint Blue $ "( " <> commitLink link item <> " )"
   printf ");\n"
 
 -- |Add generated suggestion directly to changelog.
