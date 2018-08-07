@@ -1,6 +1,6 @@
 # changelogged
 
-_Note: Text documentation is actual, images and demo are not. It looks quite similar but better actually._
+_Note: Text documentation is actual, demo is not. It looks quite similar but better actually._
 
 [![Hackage](https://img.shields.io/hackage/v/changelogged.svg)](http://hackage.haskell.org/package/changelogged)
 [![Build Status](https://travis-ci.org/GetShopTV/changelogged.svg?branch=master)](https://travis-ci.org/GetShopTV/changelogged)
@@ -93,8 +93,6 @@ Available options:
   --version                Print version.
 ```
 
-See examples [below](#guiding-examples)
-
 ### Checking changelogs
 
 This is default feature. Changelogged will output all missing pull requests and commits with their messages.
@@ -122,80 +120,6 @@ Also there will be option to check changelog passed by name in commang line args
 `--format=suggest` provides another format for records you see on the screen.
 `update-changelog` command will write these records to changelog. With any `format` option new entries will match `--format=suggest`.
 It's recommended to edit it manually after.
-
-## Guiding examples
-
-### Default run without options
-
-```
-changelogged
-```
-
-![image1](images/common_run.png)
-
-### Suggest changelog entries
-
-```
-changelogged --format=suggest
-```
-
-![image2](images/suggest.png)
-
-Try to bump with no entries in changelog:
-
-```
-changelogged bump-versions --format=suggest
-```
-
-![image3](images/failed_bump.png)
-
-Force with no entries in changelog:
-
-```
-changelogged bump-versions --format=suggest --force
-```
-
-![image3](images/no_force.png)
-
-### Write suggested entries to changelog
-
-```
-changelogged update-changelog --format=suggest
-```
-
-![image5](images/suggest.png)
-
-```
-$ git diff ChangeLog.md
-```
-
-![image6](images/chlog_diff.png)
-
-It requires some manual editing after.
-
-### Bump version and infering level of change from changelog
-
-```
-changelogged  bump-versions --format=suggest
-```
-
-![image7](images/bump.png)
-
-```
-git diff ChangeLog.md
-```
-
-![image8](images/release.png)
-
-Try to bump without checking changelogs.
-Seems that `--force` option is always preferrable.
-But it waits for use cases.
-
-```
-changelogged --no-check
-```
-
-![image9](images/no_check.png)
 
 ## Development
 
