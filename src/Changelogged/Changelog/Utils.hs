@@ -73,8 +73,8 @@ addMissing link item mode message changelog = do
     entry = prolog <> sense <> epilog
     prolog = "- " <> message <> " (see "
     sense = case mode of
-        PR -> "[" <> item <> "]" <> "(" <> prLink link item <> ")"
-        Commit -> "[`" <> item <> "`]" <> "(" <> commitLink link item <> ")"
+        PR -> "[" <> item <> "]" <> "( " <> prLink link item <> " )"
+        Commit -> "[`" <> item <> "`]" <> "( " <> commitLink link item <> " )"
     epilog = ");"
 
 -- |Get commit message for any entry in history.
