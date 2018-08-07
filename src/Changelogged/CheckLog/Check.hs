@@ -31,48 +31,25 @@ processChangelogs config gitInfo = do
   case optTargetChangelog of
     Nothing -> case length . configChangelogs $ config of
       0 -> failure "You have empty configuration file" 
-      1 -> processChangelog gitInfo optChangeLevel $ head . configChangelogs $ config
+      1 -> processChangelog gitInfo $ head . configChangelogs $ config
       _ -> failure "You cannot bump versions generally through all changelogs. Correct form: changelogged --bump-versions --level <level> <changelog>"
     Just changelogPath -> do
       case lookupChangelog changelogPath of
-        Just changelog -> processChangelog gitInfo optChangeLevel changelog
+        Just changelog -> processChangelog gitInfo changelog
         Nothing -> failure $ "Given target changelog " <> format fp changelogPath <> " is missed in config or mistyped."
       where
         lookupChangelog path = find (\entry -> changelogChangelog entry == path) (configChangelogs config)
 
-processChangelog :: GitInfo -> Maybe Level -> ChangelogConfig -> Appl ()
-processChangelog gitInfo level config@ChangelogConfig{..} = do
+bumpVersions :: Bool -> ChangelogConfig -> Appl ()
+bumpVersions upToDate config@ChangelogConfig{..} = do
   Options{..} <- ask
-  liftIO $ putStrLn ""
-  info $ "processing " <> format fp changelogChangelog
-  changelogExists <- testfile changelogChangelog
-  when (not changelogExists) $ do
-    info (format fp changelogChangelog <> " does not exist. Creating an empty changelog.")
-    touch changelogChangelog
-
-  upToDate <- if optNoCheck
-    then do
-      warning $ "skipping checks for " <> format fp changelogChangelog <> " (due to --no-check)."
-      return True
-    else do
-      when optFromBC $ printf ("Checking "%fp%" from start of project\n") changelogChangelog
-      checkLocalChangelogF gitInfo config
-
-  if upToDate
-    then coloredPrint Green (showPath changelogChangelog <> " is up to date.\n")
-    else do
-      warning $ showPath changelogChangelog <> " is out of date." <>
-        if optUpdateChangelog
-          then ""
-          else "\nUse --update-changelog to add missing changelog entries automatically."
-
   when optBumpVersions $ if
     | not upToDate && not optForce ->
         failure $ "cannot bump versions because " <> format fp changelogChangelog <> " is out of date.\nUse --no-check to skip changelog checks.\nUse --force to force bump version."
     | not upToDate && optForce ->
         warning $ format fp changelogChangelog <> " is out of date. Bumping versions anyway due to --force."
     | otherwise -> (do
-        newVersion <- case (optNoCheck, level) of
+        newVersion <- case (optNoCheck, optChangeLevel) of
           (_, Just lev) -> generateLocalVersion lev config
           (True, Nothing) ->  do
             failure "cannot infer new version from changelog because of --no-check.\nUse explicit --level CHANGE_LEVEL."
@@ -87,35 +64,63 @@ processChangelog gitInfo level config@ChangelogConfig{..} = do
               headChangelog version changelogChangelog
             Nothing -> warning "no files specified to bump versions in"
         ) `catch` (\(ex :: PatternMatchFail) -> failure (showText ex))
-
-
--- |This is actually part if '@Main@'
--- Check local changelog - local means what changelog is specific and has some indicator file. If file is changed changelog must change.
-checkLocalChangelogF :: GitInfo -> ChangelogConfig -> Appl Bool
-checkLocalChangelogF GitInfo{..} ChangelogConfig{..} = do
-  info $ "looking for missing entries in " <> format fp changelogChangelog
   
-  commits <- map (fromJustCustom "Cannot find commit hash in git log entry" . hashMatch . lineToText)
-    <$> fold (select gitHistory) Fold.list
 
-  flags <- mapM eval commits
-  return $ and flags
-  where
-    eval commit = do
-      ignoreChangeReasoned <- sequence $
-        [ commitNotWatched changelogWatchFiles commit
-        , allFilesIgnored changelogIgnoreFiles commit
-        , commitIgnored changelogIgnoreCommits commit]
-      if or ignoreChangeReasoned then return True else do
-        pull <- fmap (fromJustCustom "Cannot find commit hash in git log entry" . githubRefMatch . lineToText) <$>
-            fold (grep githubRefGrep (grep (has (text commit)) (select gitHistory))) Fold.head
-        case pull of
-          Nothing -> do
-            message <- commitMessage Commit commit
-            changelogIsUp gitRemoteUrl commit Commit message changelogChangelog
-          Just pnum -> do
-            message <- commitMessage PR commit
-            changelogIsUp gitRemoteUrl pnum PR message changelogChangelog
+checkChangelog :: GitInfo -> ChangelogConfig -> Appl Bool
+checkChangelog gitInfo@GitInfo{..} config@ChangelogConfig{..} = do
+  Options{..} <- ask
+  upToDate <- if optNoCheck
+    then do
+      warning $ "skipping checks for " <> format fp changelogChangelog <> " (due to --no-check)."
+      return True
+    else do
+      when optFromBC $ printf ("Checking "%fp%" from start of project\n") changelogChangelog
+      info $ "looking for missing entries in " <> format fp changelogChangelog
+  
+      commits <- map (fromJustCustom "Cannot find commit hash in git log entry" . hashMatch . lineToText)
+        <$> fold (select gitHistory) Fold.list
+      flags <- mapM (checkCommits gitInfo config) commits
+      return $ and flags
+
+  if upToDate
+    then coloredPrint Green (showPath changelogChangelog <> " is up to date.\n")
+    else do
+      warning $ showPath changelogChangelog <> " is out of date." <>
+        if optUpdateChangelog
+          then ""
+          else "\nUse --update-changelog to add missing changelog entries automatically."
+  
+  return upToDate
+
+processChangelog :: GitInfo -> ChangelogConfig -> Appl ()
+processChangelog gitInfo config@ChangelogConfig{..} = do
+  Options{..} <- ask
+  liftIO $ putStrLn ""
+  info $ "processing " <> format fp changelogChangelog
+  changelogExists <- testfile changelogChangelog
+  when (not changelogExists) $ do
+    info (format fp changelogChangelog <> " does not exist. Creating an empty changelog.")
+    touch changelogChangelog
+
+  upToDate <- checkChangelog gitInfo config
+  bumpVersions upToDate config
+
+checkCommits :: GitInfo -> ChangelogConfig -> Text -> Appl Bool
+checkCommits GitInfo{..} ChangelogConfig{..} commit = do
+  ignoreChangeReasoned <- sequence $
+    [ commitNotWatched changelogWatchFiles commit
+    , allFilesIgnored changelogIgnoreFiles commit
+    , commitIgnored changelogIgnoreCommits commit]
+  if or ignoreChangeReasoned then return True else do
+    pull <- fmap (fromJustCustom "Cannot find commit hash in git log entry" . githubRefMatch . lineToText) <$>
+        fold (grep githubRefGrep (grep (has (text commit)) (select gitHistory))) Fold.head
+    case pull of
+      Nothing -> do
+        message <- commitMessage Commit commit
+        changelogIsUp gitRemoteUrl commit Commit message changelogChangelog
+      Just pnum -> do
+        message <- commitMessage PR commit
+        changelogIsUp gitRemoteUrl pnum PR message changelogChangelog
 
 allFilesIgnored :: Maybe [FilePath] -> Text -> Appl Bool
 allFilesIgnored Nothing _ = return False
