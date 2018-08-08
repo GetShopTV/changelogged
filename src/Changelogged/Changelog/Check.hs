@@ -43,7 +43,7 @@ checkChangelog gitInfo@GitInfo{..} config@ChangelogConfig{..} = do
   return upToDate
 
 checkCommits :: GitInfo -> ChangelogConfig -> Text -> Appl Bool
-checkCommits GitInfo{..} ChangelogConfig{..} commit = do
+checkCommits gitInfo@GitInfo{..} ChangelogConfig{..} commit = do
   ignoreChangeReasoned <- sequence $
     [ commitNotWatched changelogWatchFiles commit
     , allFilesIgnored changelogIgnoreFiles commit
@@ -54,10 +54,10 @@ checkCommits GitInfo{..} ChangelogConfig{..} commit = do
     case pull of
       Nothing -> do
         message <- commitMessage Commit commit
-        changelogIsUp gitRemoteUrl commit Commit message changelogChangelog
+        changelogIsUp gitInfo commit Commit message changelogChangelog
       Just pnum -> do
         message <- commitMessage PR commit
-        changelogIsUp gitRemoteUrl pnum PR message changelogChangelog
+        changelogIsUp gitInfo pnum PR message changelogChangelog
 
 allFilesIgnored :: Maybe [FilePath] -> Text -> Appl Bool
 allFilesIgnored Nothing _ = return False

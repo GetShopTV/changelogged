@@ -24,7 +24,7 @@ data Action = UpdateChangelogs | BumpVersions
   deriving (Generic, Eq, Show, Enum, Bounded, ToJSON)
 
 -- |Type of entry in git history.
-data Mode = PR | Commit
+data Mode = PR | Commit deriving (Eq)
 
 instance Show Mode where
   show PR = "Pull request"

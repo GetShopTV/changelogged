@@ -10,24 +10,25 @@ import qualified Data.Text as Text
 
 import System.Console.ANSI (Color(..))
 
+import Changelogged.Git (listPRCommits, GitInfo(..))
 import Changelogged.Types
 import Changelogged.Options
 import Changelogged.Utils
 import Changelogged.Pure
 
 -- |Check if commit/pr is present in changelog. Return '@True@' if present.
-changelogIsUp :: Text -> Text -> Mode -> Text -> FilePath -> Appl Bool
-changelogIsUp link item mode message changelog = do
+changelogIsUp :: GitInfo -> Text -> Mode -> Text -> FilePath -> Appl Bool
+changelogIsUp gitInfo item mode message changelog = do
   Options{..} <- ask
-  grepLen <- fold (grep (has (text item)) (input changelog)) countLines
-  case grepLen of
-    0 -> do
+  noEntry <- fold (grep (has (text item)) (input changelog)) Fold.null
+  if noEntry
+    then do
       case optFormat of
         WarnSimple  -> warnMissing item mode message
-        WarnSuggest -> suggestMissing link item mode message
-      when (optAction == Just UpdateChangelogs) $ addMissing link item mode message changelog
+        WarnSuggest -> suggestMissing gitInfo item mode message
+      when (optAction == Just UpdateChangelogs) $ addMissing gitInfo item mode message changelog
       return False
-    _ -> return True
+    else return True
 
 -- |
 warnMissing :: Text -> Mode -> Text -> Appl ()
@@ -48,33 +49,56 @@ prLink link num = link <> "/pull/" <> Text.drop 1 num
 commitLink :: Text -> Text -> Text
 commitLink link sha = link <> "/commit/" <> sha
 
+suggestSubchanges :: GitInfo -> Text -> Appl ()
+suggestSubchanges GitInfo{..} item = do
+  subChanges <- listPRCommits gitHistory item
+  mapM_ suggest subChanges
+  where
+    suggest (sha1, message) = do
+      printf ("  - "%s%" (see ") message
+      coloredPrint Cyan ("[`" <> sha1 <> "`]")
+      coloredPrint Blue $ "( " <> commitLink gitRemoteUrl sha1 <> " );\n"
+
 -- |
-suggestMissing :: Text -> Text -> Mode -> Text -> Appl ()
-suggestMissing link item mode message = do
+suggestMissing :: GitInfo -> Text -> Mode -> Text -> Appl ()
+suggestMissing gitInfo@GitInfo{..} item mode message = do
   printf ("- "%s%" (see ") message
   case mode of
     PR -> do
       coloredPrint Cyan $ "[" <> item <> "]"
-      coloredPrint Blue $ "( " <> prLink link item <> " )"
+      coloredPrint Blue $ "( " <> prLink gitRemoteUrl item <> " )"
+      suggestSubchanges gitInfo item
     Commit -> do
       coloredPrint Cyan ("[`" <> item <> "`]")
-      coloredPrint Blue $ "( " <> commitLink link item <> " )"
+      coloredPrint Blue $ "( " <> commitLink gitRemoteUrl item <> " )"
   printf ");\n"
 
+addSubchanges :: GitInfo -> Text -> FilePath -> Appl ()
+addSubchanges GitInfo{..} item changelog = do
+  subChanges <- listPRCommits gitHistory item
+  add subChanges
+  where
+    add :: [(Text, Text)] -> Appl ()
+    add changes = append changelog (select . (map unsafeTextToLine) $ map buildEntry changes)
+    buildEntry (sha1, message) = prolog message <> sense sha1  <> ");"
+    prolog msg = "  - " <> msg <> " (see "
+    sense sha = "[`" <> sha <> "`]" <> "( " <> commitLink gitRemoteUrl sha <> " )"
+
 -- |Add generated suggestion directly to changelog.
-addMissing :: Text -> Text -> Mode -> Text -> FilePath -> Appl ()
-addMissing link item mode message changelog = do
+addMissing :: GitInfo -> Text -> Mode -> Text -> FilePath -> Appl ()
+addMissing gitInfo@GitInfo{..} item mode message changelog = do
   currentLogs <- fold (input changelog) Fold.list
-  dryRun <- asks optDryRun
-  unless dryRun $ do
+  Options{..} <- ask
+  unless optDryRun $ do
     output changelog (return $ unsafeTextToLine entry)
+    when (mode == PR) $ unless optNoExpandPR $ addSubchanges gitInfo item changelog
     append changelog (select currentLogs)
   where
     entry = prolog <> sense <> epilog
     prolog = "- " <> message <> " (see "
     sense = case mode of
-        PR -> "[" <> item <> "]" <> "( " <> prLink link item <> " )"
-        Commit -> "[`" <> item <> "`]" <> "( " <> commitLink link item <> " )"
+        PR -> "[" <> item <> "]" <> "( " <> prLink gitRemoteUrl item <> " )"
+        Commit -> "[`" <> item <> "`]" <> "( " <> commitLink gitRemoteUrl item <> " )"
     epilog = ");"
 
 -- |Get commit message for any entry in history.

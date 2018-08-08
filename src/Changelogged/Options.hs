@@ -130,6 +130,7 @@ parser = Options
   <*> hiddenSwitch "force" "Bump versions ignoring possibly outdated changelogs. Usable with bump-versions only"
   <*> hiddenSwitch "no-check" "Do not check if changelogs have any missing entries."
   <*> hiddenSwitch "no-colors" "Print all messages in standard terminal color."
+  <*> hiddenSwitch "no-expand-pr" "Do not expand PRs."
   <*> longSwitch "dry-run" "Do not change files while running."
   <*> optional targetChangelog
   <*> optional configPath
@@ -193,6 +194,8 @@ data Options = Options
   , optNoCheck         :: Bool
     -- | Print all texts in standard terminal color.
   , optNoColors        :: Bool
+    -- | Do not expand PRs while suggesting and writing to changelog.
+  , optNoExpandPR      :: Bool
     -- | Run avoiding changes in files.
   , optDryRun          :: Bool
     -- | Check exactly one target changelog.

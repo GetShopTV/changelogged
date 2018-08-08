@@ -13,6 +13,8 @@ import qualified Data.Text as Text
 
 import Turtle
 
+import Changelogged.Pattern
+import Changelogged.Pure (fromJustCustom)
 import Changelogged.Options (Appl, Options(..), asks)
 
 -- | Information about the state of a git repository.
@@ -91,3 +93,11 @@ ppGitInfo GitInfo{..} = Text.unlines
   , "Latest release: " <> fromMaybe "<none>" gitLatestVersion
   , "Changes since last release: " <> Text.pack (show (length gitHistory))
   ]
+
+listPRCommits :: [Turtle.Line] -> Text -> Appl [(Text, Text)]
+listPRCommits history pr = do
+  sha <- fromJustCustom "Cannot find PR in log - internal error" <$>
+          fmap (fromJustCustom "Cannot find commit hash for PR - internal error" . hashMatch . lineToText) <$>
+          fold (grep githubRefGrep (grep (has (text pr)) (select history))) Fold.head
+  messages <- fold (inproc "git" ["log", "--oneline", sha <> "^1..." <> sha <> "^2"] empty) Fold.list
+  return . reverse . map ((\(first,second) -> (first, Text.drop 1 second)) . Text.breakOn " " . lineToText) $ messages

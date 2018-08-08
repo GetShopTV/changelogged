@@ -28,7 +28,8 @@ changelogged update-changelog
 
 Now you can see new entries in your changelog, make edits and group changes.
 Even if you see simple messages on a screen, detailed (with links, see demo) are written to changelog.
-When you're done you can automatically bump project's version with
+Also each PR will be expanded to commits.
+When you're done you can automatically bump project's version with bump-version.
 
 ```
 changelogged bump-versions
