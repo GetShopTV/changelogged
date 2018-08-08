@@ -21,6 +21,7 @@ maxByLen [] = Nothing
 maxByLen hs = Just $ foldl1 (\left right -> if Text.length left > Text.length right then left else right) hs
 
 -- |'@fromJust@' function with custom error message.
+-- should be used in cases where 'Nothing' cannot happen with consistent input data.
 fromJustCustom :: String -> Maybe a -> a
 fromJustCustom msg Nothing = error msg
 fromJustCustom _ (Just a) = a
