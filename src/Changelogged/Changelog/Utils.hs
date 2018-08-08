@@ -118,7 +118,7 @@ addMissing gitUrl Commit{..} changelog = do
 -- |Get commit message for any entry in history.
 retrieveCommitMessage :: Maybe PR -> SHA1 -> Appl Text
 retrieveCommitMessage isPR (SHA1 commit) = do
-  summary <- fold (inproc "git" ["show", commit] empty) Fold.list
+  summary <- fold (inproc "git" ["show", "-s", "--format=%B", commit] empty) Fold.list
   return $ Text.stripStart $ lineToText $ case isPR of
-    Just _ -> summary !! 7
-    Nothing -> summary !! 4
+    Just _ -> summary !! 2
+    Nothing -> summary !! 0
