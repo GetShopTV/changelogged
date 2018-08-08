@@ -10,7 +10,6 @@ import qualified Control.Foldl as Fold
 import Control.Monad.Catch
 
 import Data.Maybe (fromMaybe, listToMaybe)
-import Data.Text (Text)
 
 import Filesystem.Path.CurrentOS (encodeString)
 import System.Console.ANSI (Color(..))
@@ -23,16 +22,16 @@ import Changelogged.Pure
 import Changelogged.Pattern
 import Changelogged.Config
 
--- |Get current local version.
-currentLocalVersion :: VersionFile -> Appl Text
-currentLocalVersion VersionFile{..} = do
+-- |Get current version.
+currentVersion :: VersionFile -> Appl Version
+currentVersion VersionFile{..} = do
   ver <- fold (grep (has pattern) (input versionFilePath)) Fold.head
   return $ case ver of
     Just realVer -> fromMaybe
       (throw (PatternMatchFail $ "cannot get local version. Given variable " <>
                                  show (versionPatternVariable versionFileVersionPattern) <>
                                  " doesn't store version. Check config.\n"))
-      (versionMatch . lineToText $ realVer)
+      $ fmap Version . versionMatch . lineToText $ realVer
     Nothing -> throw (PatternMatchFail $ "cannot get local version. Cannot match given pattern " <>
                                          show versionFileVersionPattern <>
                                          " in file " <> encodeString versionFilePath <>
@@ -41,31 +40,31 @@ currentLocalVersion VersionFile{..} = do
     pattern = text (versionPatternVariable versionFileVersionPattern) <> spaces <> text (versionPatternSeparator versionFileVersionPattern)
 
 -- |Generate new local version.
-generateLocalVersionForFile :: Level -> VersionFile -> Appl Text
-generateLocalVersionForFile lev indicator = do
-  current <- currentLocalVersion indicator
+generateVersionForFile :: Level -> VersionFile -> Appl Version
+generateVersionForFile lev indicator = do
+  (Version current) <- currentVersion indicator
   -- This print must not be here but I think it's better than throw current vrsion to main.
   printf ("Version: "%s%" -> ") current
-  coloredPrint Yellow (new current <> "\n")
+  coloredPrint Yellow (getVersion (new current) <> "\n")
   return (new current)
   where
-    new current = bump (delimited current) lev
+    new current = Version $ bump (delimited current) lev
 
 -- |Set new local version.
-generateLocalVersion :: Level -> ChangelogConfig -> Appl (Maybe Text)
-generateLocalVersion lev ChangelogConfig{..} = do
+generateVersion :: Level -> ChangelogConfig -> Appl (Maybe Version)
+generateVersion lev ChangelogConfig{..} = do
   case changelogVersionFiles of
     Nothing -> error "No file version files specified for changelog."
     Just versionFiles -> do
-      localVersions <- mapM (generateLocalVersionForFile lev) versionFiles
-      return (listToMaybe localVersions) -- FIXME: don't ignore other version files
+      versions <- mapM (generateVersionForFile lev) versionFiles
+      return (listToMaybe versions)
 
 -- |Infer new local version.
-generateLocalVersionByChangelog :: ChangelogConfig -> Appl (Maybe Text)
-generateLocalVersionByChangelog logConfig@ChangelogConfig{..} = do
+generateVersionByChangelog :: ChangelogConfig -> Appl (Maybe Version)
+generateVersionByChangelog logConfig@ChangelogConfig{..} = do
   versionedChanges <- getLevelOfChanges changelogChangelog changelogLevelHeaders
   case versionedChanges of
-    Just lev -> generateLocalVersion lev logConfig
+    Just lev -> generateVersion lev logConfig
     Nothing -> do
       warning $ "keeping current version since " <> showPath changelogChangelog <> " does not contain any new level headers or even entries."
       return Nothing
@@ -80,11 +79,11 @@ bumpVersions upToDate config@ChangelogConfig{..} = do
         warning $ format fp changelogChangelog <> " is out of date. Bumping versions anyway due to --force."
     | otherwise -> (do
         newVersion <- case (optNoCheck, optChangeLevel) of
-          (_, Just lev) -> generateLocalVersion lev config
+          (_, Just lev) -> generateVersion lev config
           (True, Nothing) ->  do
             failure "cannot infer new version from changelog because of --no-check.\nUse explicit --level CHANGE_LEVEL."
             return Nothing
-          (False, Nothing) -> generateLocalVersionByChangelog config
+          (False, Nothing) -> generateVersionByChangelog config
 
         case newVersion of
           Nothing -> return ()

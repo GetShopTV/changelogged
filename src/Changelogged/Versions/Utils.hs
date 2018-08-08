@@ -8,7 +8,6 @@ import qualified Control.Foldl as Fold
 
 import Data.Functor (($>))
 import qualified Data.List as List
-import Data.Text (Text)
 
 import Filesystem.Path.CurrentOS (encodeString)
 
@@ -18,8 +17,8 @@ import Changelogged.Options
 import Changelogged.Pattern
 
 -- |Add version label to changelog.
-headChangelog :: Text -> FilePath -> Appl ()
-headChangelog version changelog = asks optDryRun >>= (\dry -> unless dry $ do
+headChangelog :: Version -> FilePath -> Appl ()
+headChangelog (Version version) changelog = asks optDryRun >>= (\dry -> unless dry $ do
   currentLogs <- fold (input changelog) Fold.list
   output changelog (return $ unsafeTextToLine version)
   append changelog "---"
@@ -28,8 +27,8 @@ headChangelog version changelog = asks optDryRun >>= (\dry -> unless dry $ do
 
 -- |Bump version in any supported file.
 -- Unlike sed it reads all the file and is less memory efficient.
-bumpAny :: VersionFile -> Text -> Shell ()
-bumpAny VersionFile{..} version = do
+bumpAny :: VersionFile -> Version -> Shell ()
+bumpAny VersionFile{..} (Version version) = do
   file <- fold (input versionFilePath) Fold.list
   matched <- fold (grep (has pattern) (select file)) Fold.list
   when (null matched) $
@@ -61,7 +60,7 @@ generateVersionedFile file (new:news) (old:olds) = generateVersionedFile (replac
       | otherwise = xvar : replaceLine xvars newLine oldLine
 
 -- |Bump version in file regarding extension.
-bumpPart :: Text -> VersionFile -> Appl ()
+bumpPart :: Version -> VersionFile -> Appl ()
 bumpPart version file@VersionFile{..} = do
   printf ("- Updating version for "%fp%"\n") versionFilePath
   dryRun <- asks optDryRun

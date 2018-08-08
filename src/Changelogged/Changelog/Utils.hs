@@ -5,83 +5,120 @@ import Turtle
 
 import qualified Control.Foldl as Fold
 
+import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as Text
 
 import System.Console.ANSI (Color(..))
 
+import Changelogged.Git (listPRCommits)
 import Changelogged.Types
 import Changelogged.Options
+import Changelogged.Pattern (isMerge)
 import Changelogged.Utils
-import Changelogged.Pure
 
 -- |Check if commit/pr is present in changelog. Return '@True@' if present.
-changelogIsUp :: Text -> Text -> Mode -> Text -> FilePath -> Appl Bool
-changelogIsUp link item mode message changelog = do
+changelogIsUp :: Link -> Commit -> FilePath -> Appl Bool
+changelogIsUp repoUrl commit@Commit{..} changelog = do
   Options{..} <- ask
-  grepLen <- fold (grep (has (text item)) (input changelog)) countLines
-  case grepLen of
-    0 -> do
+  noEntry <- case commitIsPR of
+    Nothing -> fold (grep (has (text (getSHA1 commitSHA))) (input changelog)) Fold.null
+    Just (PR num) -> fold (grep (has (text num)) (input changelog)) Fold.null
+  if noEntry
+    then do
       case optFormat of
-        WarnSimple  -> warnMissing item mode message
-        WarnSuggest -> suggestMissing link item mode message
-      when (optAction == Just UpdateChangelogs) $ addMissing link item mode message changelog
+        WarnSimple  -> warnMissing commit
+        WarnSuggest -> suggestMissing repoUrl commit
+      when (optAction == Just UpdateChangelogs) $ addMissing repoUrl commit changelog
       return False
-    _ -> return True
+    else return True
 
 -- |
-warnMissing :: Text -> Mode -> Text -> Appl ()
-warnMissing item mode message = do
-  printf ("- "%s%" ") (showText mode)
-  coloredPrint Cyan item
-  printf (" is missing: "%s%".\n") message
+warnMissing :: Commit -> Appl ()
+warnMissing Commit{..} = do
+  case commitIsPR of
+    Nothing -> do
+      printf ("- Commit ")
+      coloredPrint Cyan (getSHA1 commitSHA)
+    Just (PR num) -> do
+      printf ("- Pull request ")
+      coloredPrint Cyan (num)
+  printf (" is missing: "%s%".\n") commitMessage
 
 -- |
--- >>> prLink "https://github.com/GetShopTV/changelogged" "#13"
+-- >>> prLink (Link "https://github.com/GetShopTV/changelogged") (PR "#13")
 -- "https://github.com/GetShopTV/changelogged/pull/13"
-prLink :: Text -> Text -> Text
-prLink link num = link <> "/pull/" <> Text.drop 1 num
+prLink :: Link -> PR -> Text
+prLink (Link link) (PR num) = link <> "/pull/" <> Text.drop 1 num
 
 -- |
--- >>> commitLink "https://github.com/GetShopTV/changelogged" "9e14840"
+-- >>> commitLink (Link "https://github.com/GetShopTV/changelogged") (SHA1 "9e14840")
 -- "https://github.com/GetShopTV/changelogged/commit/9e14840"
-commitLink :: Text -> Text -> Text
-commitLink link sha = link <> "/commit/" <> sha
+commitLink :: Link -> SHA1 -> Text
+commitLink (Link link) (SHA1 sha) = link <> "/commit/" <> sha
+
+suggestSubchanges :: Link -> SHA1 -> Appl ()
+suggestSubchanges gitUrl mergeHash = do
+  subChanges <- listPRCommits mergeHash
+  mapM_ suggest subChanges
+  where
+    suggest (sha1, message) = do
+      printf ("  - "%s%" (see ") message
+      coloredPrint Cyan ("[`" <> getSHA1 sha1 <> "`]")
+      coloredPrint Blue $ "( " <> commitLink gitUrl sha1 <> " )"
+      printf ");\n"
 
 -- |
-suggestMissing :: Text -> Text -> Mode -> Text -> Appl ()
-suggestMissing link item mode message = do
-  printf ("- "%s%" (see ") message
-  case mode of
-    PR -> do
-      coloredPrint Cyan $ "[" <> item <> "]"
-      coloredPrint Blue $ "( " <> prLink link item <> " )"
-    Commit -> do
-      coloredPrint Cyan ("[`" <> item <> "`]")
-      coloredPrint Blue $ "( " <> commitLink link item <> " )"
-  printf ");\n"
+suggestMissing :: Link -> Commit -> Appl ()
+suggestMissing gitUrl Commit{..} = do
+  Options{..} <- ask
+  printf ("- "%s%" (see ") commitMessage
+  case commitIsPR of
+    Just num -> do
+      coloredPrint Cyan $ "[" <> getPR num <> "]"
+      coloredPrint Blue $ "( " <> prLink gitUrl num <> " )"
+      printf ");\n"
+      when optExpandPR $ suggestSubchanges gitUrl commitSHA
+    Nothing -> do
+      coloredPrint Cyan ("[`" <> getSHA1 commitSHA <> "`]")
+      coloredPrint Blue $ "( " <> commitLink gitUrl commitSHA <> " )"
+      printf ");\n"
+      when (isMerge commitMessage && optExpandPR) $ do
+        suggestSubchanges gitUrl commitSHA
+        debug commitMessage
+
+addSubchanges :: Link -> SHA1 -> FilePath -> Appl ()
+addSubchanges gitUrl mergeHash changelog = do
+  subChanges <- listPRCommits mergeHash
+  add subChanges
+  where
+    add :: [(SHA1, Text)] -> Appl ()
+    add changes = append changelog (select . (map unsafeTextToLine) $ map buildEntry changes)
+    buildEntry (sha1, message) = prolog message <> sense sha1  <> ");"
+    prolog msg = "  - " <> msg <> " (see "
+    sense sha = "[`" <> getSHA1 sha <> "`]" <> "( " <> commitLink gitUrl sha <> " )"
 
 -- |Add generated suggestion directly to changelog.
-addMissing :: Text -> Text -> Mode -> Text -> FilePath -> Appl ()
-addMissing link item mode message changelog = do
+addMissing :: Link -> Commit -> FilePath -> Appl ()
+addMissing gitUrl Commit{..} changelog = do
   currentLogs <- fold (input changelog) Fold.list
-  dryRun <- asks optDryRun
-  unless dryRun $ do
+  Options{..} <- ask
+  unless optDryRun $ do
     output changelog (return $ unsafeTextToLine entry)
+    when ((isJust commitIsPR || isMerge commitMessage) && optExpandPR) $ addSubchanges gitUrl commitSHA changelog
     append changelog (select currentLogs)
   where
     entry = prolog <> sense <> epilog
-    prolog = "- " <> message <> " (see "
-    sense = case mode of
-        PR -> "[" <> item <> "]" <> "( " <> prLink link item <> " )"
-        Commit -> "[`" <> item <> "`]" <> "( " <> commitLink link item <> " )"
+    prolog = "- " <> commitMessage <> " (see "
+    sense = case commitIsPR of
+        Just num -> "[" <> getPR num <> "]" <> "( " <> prLink gitUrl num <> " )"
+        Nothing -> "[`" <> getSHA1 commitSHA <> "`]" <> "( " <> commitLink gitUrl commitSHA <> " )"
     epilog = ");"
 
 -- |Get commit message for any entry in history.
-commitMessage :: Mode -> Text -> Appl Text
-commitMessage _ "" = return ""
-commitMessage mode commit = do
+retrieveCommitMessage :: Maybe PR -> SHA1 -> Appl Text
+retrieveCommitMessage isPR (SHA1 commit) = do
   summary <- fold (inproc "git" ["show", commit] empty) Fold.list
-  return $ Text.stripStart $ lineToText $ case mode of
-    PR -> summary !! 7
-    Commit -> summary !! 4
+  return $ Text.stripStart $ lineToText $ case isPR of
+    Just _ -> summary !! 7
+    Nothing -> summary !! 4
