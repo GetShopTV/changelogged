@@ -1,6 +1,7 @@
-module Changelogged.Pure where
+module Changelogged.Common.Utils.Pure where
 
-import Data.Aeson (Options(..), defaultOptions)
+import Data.Aeson
+
 import Prelude hiding (FilePath)
 import Data.Text (Text)
 import qualified Data.Text as Text
@@ -10,7 +11,7 @@ import Data.List
 
 import Filesystem.Path.CurrentOS (encodeString, FilePath)
 
-import Changelogged.Types
+import Changelogged.Common.Types.Common
 
 changeloggedVersion :: Version
 changeloggedVersion = Version "0.3.0"
@@ -21,6 +22,7 @@ maxByLen [] = Nothing
 maxByLen hs = Just $ foldl1 (\left right -> if Text.length left > Text.length right then left else right) hs
 
 -- |'@fromJust@' function with custom error message.
+-- should be used in cases where 'Nothing' cannot happen with consistent input data.
 fromJustCustom :: String -> Maybe a -> a
 fromJustCustom msg Nothing = error msg
 fromJustCustom _ (Just a) = a

@@ -11,9 +11,7 @@ import qualified Data.List as List
 
 import Filesystem.Path.CurrentOS (encodeString)
 
-import Changelogged.Config
-import Changelogged.Types
-import Changelogged.Options
+import Changelogged.Common
 import Changelogged.Pattern
 
 -- |Add version label to changelog.

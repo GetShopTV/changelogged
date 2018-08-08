@@ -7,12 +7,11 @@ import Data.Text (unpack, pack)
 
 import System.Console.ANSI (Color(..))
 
-import Changelogged.EntryPoint (processChangelogs)
-import Changelogged.Git
-import Changelogged.Options
-import Changelogged.Utils
-import Changelogged.Pure (showPath, changeloggedVersion)
+import Changelogged.EntryPoint
+
+import Changelogged.Common
 import Changelogged.Config
+import Changelogged.Options
 
 prepareConfig :: FilePath -> Options -> IO Config
 prepareConfig configPath Options{..} = do

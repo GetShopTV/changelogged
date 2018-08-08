@@ -5,7 +5,7 @@ import Turtle.Pattern
 import Turtle ((<>), (<|>))
 import Data.Text (Text, intercalate)
 
-import Changelogged.Pure
+import Changelogged.Common
 
 -- >>> match versionExactRegex "version:   1.1.1"
 -- []

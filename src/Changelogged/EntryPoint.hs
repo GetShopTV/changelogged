@@ -1,17 +1,21 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module Changelogged.EntryPoint where
+module Changelogged.EntryPoint
+  ( processChangelogs
+  , loadGitInfo
+  , ppGitInfo
+  ) where
 
 import Turtle hiding (find)
 import Prelude hiding (FilePath)
+
+import Data.Char (isDigit)
 import Data.List (find)
+import Data.Maybe (fromMaybe)
+import qualified Data.Text as Text
 
 import Changelogged.Versions.Bump
 import Changelogged.Changelog.Check
-import Changelogged.Options
-import Changelogged.Types
-import Changelogged.Pure (showPath)
-import Changelogged.Utils
-import Changelogged.Config
+import Changelogged.Common
 import Changelogged.Git
 
 processChangelogs :: Config -> GitInfo -> Appl ()
@@ -44,3 +48,27 @@ processChangelog gitInfo config@ChangelogConfig{..} = do
     Just BumpVersions -> bumpVersions upToDate config
     Just UpdateChangelogs -> success (showPath changelogChangelog <> " is updated.\n" <> "You can edit it manually.")
     Nothing -> return ()
+
+-- | Extract latest history and origin link from git through temporary file and store it in 'GitInfo'.
+loadGitInfo
+  :: Maybe Text -- ^ Branch with version tags (@HEAD@ is used by default).
+  -> Appl GitInfo
+loadGitInfo branch = do
+  entireHistory <- asks optFromBC
+  latestTag    <- loadGitLatestTag branch
+  gitHistory   <- loadGitHistory (if entireHistory then Nothing else latestTag)
+  gitRemoteUrl <- loadGitRemoteUrl
+  let gitLatestVersion = extractVersion latestTag
+  return GitInfo {..}
+  where
+    extractVersion tag = case Text.dropWhile (not . isDigit) <$> tag of
+      Just ver | not (Text.null ver) -> Just ver
+      _ -> Nothing
+
+-- | Pretty print known information about a Git project.
+ppGitInfo :: GitInfo -> Text
+ppGitInfo GitInfo{..} = Text.unlines
+  [ "Git remote URL: " <> getLink gitRemoteUrl
+  , "Latest release: " <> fromMaybe "<none>" gitLatestVersion
+  , "Changes since last release: " <> Text.pack (show (length gitHistory))
+  ]

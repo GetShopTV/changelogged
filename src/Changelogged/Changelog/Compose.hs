@@ -1,4 +1,4 @@
-module Changelogged.Changelog.Utils where
+module Changelogged.Changelog.Compose where
 
 import Prelude hiding (FilePath)
 import Turtle
@@ -11,29 +11,9 @@ import qualified Data.Text as Text
 
 import System.Console.ANSI (Color(..))
 
-import Changelogged.Git (listPRCommits)
-import Changelogged.Types
-import Changelogged.Options
+import Changelogged.Common
+import Changelogged.Git (listPRCommits, getCommitTag)
 import Changelogged.Pattern (isMerge)
-import Changelogged.Utils
-
--- |Check if commit/pr is present in changelog. Return '@True@' if present.
-changelogIsUp :: Link -> Commit -> FilePath -> Appl Bool
-changelogIsUp repoUrl commit@Commit{..} changelog = do
-  Options{..} <- ask
-  noEntry <- case commitIsPR of
-    Nothing -> fold (grep (has (text (getSHA1 commitSHA))) (input changelog)) Fold.null
-    Just (PR num) -> fold (grep (has (text num)) (input changelog)) Fold.null
-  if noEntry
-    then do
-      -- If --from-bc option invoked it will prepend list of misses with version tag.
-      printTag commitSHA
-      case optFormat of
-        WarnSimple  -> warnMissing commit
-        WarnSuggest -> suggestMissing repoUrl commit
-      when (optAction == Just UpdateChangelogs) $ addMissing repoUrl commit changelog
-      return False
-    else return True
 
 -- |
 warnMissing :: Commit -> Appl ()
@@ -124,3 +104,8 @@ retrieveCommitMessage isPR (SHA1 commit) = do
   return $ Text.stripStart $ lineToText $ case isPR of
     Just _ -> summary !! 2
     Nothing -> summary !! 0
+
+printCommitTag :: SHA1 -> Appl ()
+printCommitTag sha = getCommitTag sha >>= \tag -> case tag of
+  Nothing -> return ()
+  Just t -> coloredPrint Yellow (t <> "\n")

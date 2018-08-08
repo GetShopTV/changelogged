@@ -1,4 +1,4 @@
-module Changelogged.Utils where
+module Changelogged.Common.Utils.IO where
 
 import Control.Monad (when)
 import Data.Aeson (ToJSON)
@@ -12,9 +12,7 @@ import System.Console.ANSI
 
 import Turtle.Format
 
-import Changelogged.Git (getCommitTag)
-import Changelogged.Types
-import Changelogged.Options
+import Changelogged.Common.Types
 
 -- |Print '@text@' with ansi-terminal color.
 coloredPrint :: Color -> Text -> Appl ()
@@ -59,8 +57,3 @@ debugYaml title val = debug (title <> "\n" <> Text.decodeUtf8 (Yaml.encode val))
 versionP :: Version -> Appl ()
 versionP (Version ver) = coloredPrint Green $
   "VERSION: " <> ver <> "\n"
-
-printTag :: SHA1 -> Appl ()
-printTag sha = getCommitTag sha >>= \tag -> case tag of
-  Nothing -> return ()
-  Just t -> coloredPrint Yellow (t <> "\n")
