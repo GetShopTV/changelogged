@@ -22,9 +22,9 @@ import Changelogged.Pure
 import Changelogged.Pattern
 import Changelogged.Config
 
--- |Get current local version.
-currentLocalVersion :: VersionFile -> Appl Version
-currentLocalVersion VersionFile{..} = do
+-- |Get current version.
+currentVersion :: VersionFile -> Appl Version
+currentVersion VersionFile{..} = do
   ver <- fold (grep (has pattern) (input versionFilePath)) Fold.head
   return $ case ver of
     Just realVer -> fromMaybe
@@ -40,9 +40,9 @@ currentLocalVersion VersionFile{..} = do
     pattern = text (versionPatternVariable versionFileVersionPattern) <> spaces <> text (versionPatternSeparator versionFileVersionPattern)
 
 -- |Generate new local version.
-generateLocalVersionForFile :: Level -> VersionFile -> Appl Version
-generateLocalVersionForFile lev indicator = do
-  (Version current) <- currentLocalVersion indicator
+generateVersionForFile :: Level -> VersionFile -> Appl Version
+generateVersionForFile lev indicator = do
+  (Version current) <- currentVersion indicator
   -- This print must not be here but I think it's better than throw current vrsion to main.
   printf ("Version: "%s%" -> ") current
   coloredPrint Yellow (getVersion (new current) <> "\n")
@@ -51,20 +51,20 @@ generateLocalVersionForFile lev indicator = do
     new current = Version $ bump (delimited current) lev
 
 -- |Set new local version.
-generateLocalVersion :: Level -> ChangelogConfig -> Appl (Maybe Version)
-generateLocalVersion lev ChangelogConfig{..} = do
+generateVersion :: Level -> ChangelogConfig -> Appl (Maybe Version)
+generateVersion lev ChangelogConfig{..} = do
   case changelogVersionFiles of
     Nothing -> error "No file version files specified for changelog."
     Just versionFiles -> do
-      localVersions <- mapM (generateLocalVersionForFile lev) versionFiles
-      return (listToMaybe localVersions) -- FIXME: don't ignore other version files
+      versions <- mapM (generateVersionForFile lev) versionFiles
+      return (listToMaybe versions) -- FIXME: don't ignore other version files
 
 -- |Infer new local version.
-generateLocalVersionByChangelog :: ChangelogConfig -> Appl (Maybe Version)
-generateLocalVersionByChangelog logConfig@ChangelogConfig{..} = do
+generateVersionByChangelog :: ChangelogConfig -> Appl (Maybe Version)
+generateVersionByChangelog logConfig@ChangelogConfig{..} = do
   versionedChanges <- getLevelOfChanges changelogChangelog changelogLevelHeaders
   case versionedChanges of
-    Just lev -> generateLocalVersion lev logConfig
+    Just lev -> generateVersion lev logConfig
     Nothing -> do
       warning $ "keeping current version since " <> showPath changelogChangelog <> " does not contain any new level headers or even entries."
       return Nothing
@@ -79,11 +79,11 @@ bumpVersions upToDate config@ChangelogConfig{..} = do
         warning $ format fp changelogChangelog <> " is out of date. Bumping versions anyway due to --force."
     | otherwise -> (do
         newVersion <- case (optNoCheck, optChangeLevel) of
-          (_, Just lev) -> generateLocalVersion lev config
+          (_, Just lev) -> generateVersion lev config
           (True, Nothing) ->  do
             failure "cannot infer new version from changelog because of --no-check.\nUse explicit --level CHANGE_LEVEL."
             return Nothing
-          (False, Nothing) -> generateLocalVersionByChangelog config
+          (False, Nothing) -> generateVersionByChangelog config
 
         case newVersion of
           Nothing -> return ()
