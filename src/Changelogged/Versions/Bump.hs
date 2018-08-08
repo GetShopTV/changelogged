@@ -57,7 +57,7 @@ generateVersion lev ChangelogConfig{..} = do
     Nothing -> error "No file version files specified for changelog."
     Just versionFiles -> do
       versions <- mapM (generateVersionForFile lev) versionFiles
-      return (listToMaybe versions) -- FIXME: don't ignore other version files
+      return (listToMaybe versions)
 
 -- |Infer new local version.
 generateVersionByChangelog :: ChangelogConfig -> Appl (Maybe Version)
