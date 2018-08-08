@@ -71,18 +71,19 @@ suggestSubchanges gitUrl mergeHash = do
 -- |
 suggestMissing :: Link -> Commit -> Appl ()
 suggestMissing gitUrl Commit{..} = do
+  Options{..} <- ask
   printf ("- "%s%" (see ") commitMessage
   case commitIsPR of
     Just num -> do
       coloredPrint Cyan $ "[" <> getPR num <> "]"
       coloredPrint Blue $ "( " <> prLink gitUrl num <> " )"
       printf ");\n"
-      suggestSubchanges gitUrl commitSHA
+      when optExpandPR $ suggestSubchanges gitUrl commitSHA
     Nothing -> do
       coloredPrint Cyan ("[`" <> getSHA1 commitSHA <> "`]")
       coloredPrint Blue $ "( " <> commitLink gitUrl commitSHA <> " )"
       printf ");\n"
-      when (isMerge commitMessage) $ do
+      when (isMerge commitMessage && optExpandPR) $ do
         suggestSubchanges gitUrl commitSHA
         debug commitMessage
 
@@ -104,7 +105,7 @@ addMissing gitUrl Commit{..} changelog = do
   Options{..} <- ask
   unless optDryRun $ do
     output changelog (return $ unsafeTextToLine entry)
-    when (isJust commitIsPR || isMerge commitMessage) $ unless optNoExpandPR $ addSubchanges gitUrl commitSHA changelog
+    when ((isJust commitIsPR || isMerge commitMessage) && optExpandPR) $ addSubchanges gitUrl commitSHA changelog
     append changelog (select currentLogs)
   where
     entry = prolog <> sense <> epilog
