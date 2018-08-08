@@ -12,8 +12,8 @@ import Filesystem.Path.CurrentOS (encodeString, FilePath)
 
 import Changelogged.Types
 
-changeloggedVersion :: Text
-changeloggedVersion = "0.3.0"
+changeloggedVersion :: Version
+changeloggedVersion = Version "0.3.0"
 
 -- | Maximum in list ordered by length.
 maxByLen :: [Text] -> Maybe Text

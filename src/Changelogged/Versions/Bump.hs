@@ -10,7 +10,6 @@ import qualified Control.Foldl as Fold
 import Control.Monad.Catch
 
 import Data.Maybe (fromMaybe, listToMaybe)
-import Data.Text (Text)
 
 import Filesystem.Path.CurrentOS (encodeString)
 import System.Console.ANSI (Color(..))
@@ -24,7 +23,7 @@ import Changelogged.Pattern
 import Changelogged.Config
 
 -- |Get current local version.
-currentLocalVersion :: VersionFile -> Appl Text
+currentLocalVersion :: VersionFile -> Appl Version
 currentLocalVersion VersionFile{..} = do
   ver <- fold (grep (has pattern) (input versionFilePath)) Fold.head
   return $ case ver of
@@ -32,7 +31,7 @@ currentLocalVersion VersionFile{..} = do
       (throw (PatternMatchFail $ "cannot get local version. Given variable " <>
                                  show (versionPatternVariable versionFileVersionPattern) <>
                                  " doesn't store version. Check config.\n"))
-      (versionMatch . lineToText $ realVer)
+      $ fmap Version . versionMatch . lineToText $ realVer
     Nothing -> throw (PatternMatchFail $ "cannot get local version. Cannot match given pattern " <>
                                          show versionFileVersionPattern <>
                                          " in file " <> encodeString versionFilePath <>
@@ -41,18 +40,18 @@ currentLocalVersion VersionFile{..} = do
     pattern = text (versionPatternVariable versionFileVersionPattern) <> spaces <> text (versionPatternSeparator versionFileVersionPattern)
 
 -- |Generate new local version.
-generateLocalVersionForFile :: Level -> VersionFile -> Appl Text
+generateLocalVersionForFile :: Level -> VersionFile -> Appl Version
 generateLocalVersionForFile lev indicator = do
-  current <- currentLocalVersion indicator
+  (Version current) <- currentLocalVersion indicator
   -- This print must not be here but I think it's better than throw current vrsion to main.
   printf ("Version: "%s%" -> ") current
-  coloredPrint Yellow (new current <> "\n")
+  coloredPrint Yellow (getVersion (new current) <> "\n")
   return (new current)
   where
-    new current = bump (delimited current) lev
+    new current = Version $ bump (delimited current) lev
 
 -- |Set new local version.
-generateLocalVersion :: Level -> ChangelogConfig -> Appl (Maybe Text)
+generateLocalVersion :: Level -> ChangelogConfig -> Appl (Maybe Version)
 generateLocalVersion lev ChangelogConfig{..} = do
   case changelogVersionFiles of
     Nothing -> error "No file version files specified for changelog."
@@ -61,7 +60,7 @@ generateLocalVersion lev ChangelogConfig{..} = do
       return (listToMaybe localVersions) -- FIXME: don't ignore other version files
 
 -- |Infer new local version.
-generateLocalVersionByChangelog :: ChangelogConfig -> Appl (Maybe Text)
+generateLocalVersionByChangelog :: ChangelogConfig -> Appl (Maybe Version)
 generateLocalVersionByChangelog logConfig@ChangelogConfig{..} = do
   versionedChanges <- getLevelOfChanges changelogChangelog changelogLevelHeaders
   case versionedChanges of

@@ -13,19 +13,18 @@ import qualified Data.Text as Text
 
 import Turtle
 
-import Changelogged.Pattern
-import Changelogged.Pure (fromJustCustom)
+import Changelogged.Types
 import Changelogged.Options (Appl, Options(..), asks)
 
 -- | Information about the state of a git repository.
 data GitInfo = GitInfo
   { gitHistory   :: [Turtle.Line]
     -- ^ A list of git commit messages.
-  , gitRemoteUrl :: Text
+  , gitRemoteUrl :: Link
     -- ^ An HTTP(S) link to the repository.
     -- This will be used to construct links to issues, commits and pull requests.
   , gitLatestVersion :: Maybe Text
-    -- ^ Latest version (tag) in the current branch.
+     -- ^ Latest version (tag) in the current branch. This signature avails to use git polymorphism of tags with hashes.
   } deriving (Show)
 
 -- | Get latest git tag in a given branch (if present).
@@ -37,8 +36,8 @@ loadGitLatestTag mbranch = do
   return $ fmap lineToText ver
 
 -- | Get link to origin and strip '.git' to get valid url to project page.
-loadGitRemoteUrl :: Appl Text
-loadGitRemoteUrl = remoteUrlToHttps
+loadGitRemoteUrl :: Appl Link
+loadGitRemoteUrl = Link . remoteUrlToHttps
   <$> strict (inproc "git" ["remote", "get-url", "origin"] empty)
 
 -- | Change git remote URL so that it can be used in the browser.
@@ -89,15 +88,12 @@ loadGitInfo branch = do
 -- | Pretty print known information about a Git project.
 ppGitInfo :: GitInfo -> Text
 ppGitInfo GitInfo{..} = Text.unlines
-  [ "Git remote URL: " <> gitRemoteUrl
+  [ "Git remote URL: " <> getLink gitRemoteUrl
   , "Latest release: " <> fromMaybe "<none>" gitLatestVersion
   , "Changes since last release: " <> Text.pack (show (length gitHistory))
   ]
 
-listPRCommits :: [Turtle.Line] -> Text -> Appl [(Text, Text)]
-listPRCommits history pr = do
-  sha <- fromJustCustom "Cannot find PR in log - internal error" <$>
-          fmap (fromJustCustom "Cannot find commit hash for PR - internal error" . hashMatch . lineToText) <$>
-          fold (grep githubRefGrep (grep (has (text pr)) (select history))) Fold.head
+listPRCommits :: SHA1 -> Appl [(SHA1, Text)]
+listPRCommits (SHA1 sha) = do
   messages <- fold (inproc "git" ["log", "--oneline", sha <> "^1..." <> sha <> "^2"] empty) Fold.list
-  return . reverse . map ((\(first,second) -> (first, Text.drop 1 second)) . Text.breakOn " " . lineToText) $ messages
+  return . reverse . map ((\(first,second) -> (SHA1 first, Text.drop 1 second)) . Text.breakOn " " . lineToText) $ messages

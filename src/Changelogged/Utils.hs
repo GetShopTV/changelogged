@@ -12,6 +12,7 @@ import System.Console.ANSI
 
 import Turtle.Format
 
+import Changelogged.Types
 import Changelogged.Options
 
 -- |Print '@text@' with ansi-terminal color.
@@ -54,6 +55,6 @@ debugShow title val = debug (title <> "\n" <> Text.pack (show val))
 debugYaml :: ToJSON a => Text -> a -> Appl ()
 debugYaml title val = debug (title <> "\n" <> Text.decodeUtf8 (Yaml.encode val))
 
-versionP :: Text -> Appl ()
-versionP ver = coloredPrint Green $
+versionP :: Version -> Appl ()
+versionP (Version ver) = coloredPrint Green $
   "VERSION: " <> ver <> "\n"

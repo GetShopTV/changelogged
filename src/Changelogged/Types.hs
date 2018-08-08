@@ -9,8 +9,16 @@ import GHC.Generics (Generic)
 
 import qualified Filesystem.Path.CurrentOS as Path
 
-type Variable = Text
-type Key = Text
+newtype SHA1 = SHA1 {getSHA1 :: Text} deriving (Eq, Show)
+newtype Link = Link {getLink :: Text} deriving (Eq, Show)
+newtype PR = PR {getPR :: Text} deriving (Eq, Show)
+newtype Version = Version {getVersion :: Text} deriving (Eq, Show)
+
+data Commit = Commit
+  { commitMessage :: Text
+  , commitIsPR    :: Maybe PR
+  , commitSHA     :: SHA1
+  } deriving (Eq, Show)
 
 instance FromJSON Path.FilePath where
   parseJSON = fmap Path.decodeString . parseJSON
@@ -22,13 +30,6 @@ data Level = App | Major | Minor | Fix | Doc
 -- |Available altenative actions
 data Action = UpdateChangelogs | BumpVersions
   deriving (Generic, Eq, Show, Enum, Bounded, ToJSON)
-
--- |Type of entry in git history.
-data Mode = PR | Commit deriving (Eq)
-
-instance Show Mode where
-  show PR = "Pull request"
-  show Commit = "Commit"
 
 data WarningFormat
   = WarnSimple
