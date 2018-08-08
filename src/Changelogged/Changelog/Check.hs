@@ -7,14 +7,9 @@ import Data.Foldable (asum)
 
 import qualified Control.Foldl as Fold
 
-import Changelogged.Changelog.Utils
-import Changelogged.Types
-import Changelogged.Options
-import Changelogged.Utils
-import Changelogged.Pure
+import Changelogged.Changelog.Compose
+import Changelogged.Common
 import Changelogged.Pattern
-import Changelogged.Config
-import Changelogged.Git
 
 checkChangelog :: GitInfo -> ChangelogConfig -> Appl Bool
 checkChangelog gitInfo@GitInfo{..} config@ChangelogConfig{..} = do
@@ -73,3 +68,21 @@ commitIgnored (Just names) (SHA1 commit) = not <$> fold
   (grep (asum (map text names))
     (inproc "git" ["show", "-s", "--format=%B", commit] empty))
   Fold.null
+
+-- |Check if commit/pr is present in changelog. Return '@True@' if present.
+changelogIsUp :: Link -> Commit -> FilePath -> Appl Bool
+changelogIsUp repoUrl commit@Commit{..} changelog = do
+  Options{..} <- ask
+  noEntry <- case commitIsPR of
+    Nothing -> fold (grep (has (text (getSHA1 commitSHA))) (input changelog)) Fold.null
+    Just (PR num) -> fold (grep (has (text num)) (input changelog)) Fold.null
+  if noEntry
+    then do
+      -- If --from-bc option invoked it will prepend list of misses with version tag.
+      printCommitTag commitSHA
+      case optFormat of
+        WarnSimple  -> warnMissing commit
+        WarnSuggest -> suggestMissing repoUrl commit
+      when (optAction == Just UpdateChangelogs) $ addMissing repoUrl commit changelog
+      return False
+    else return True

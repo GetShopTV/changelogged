@@ -1,42 +1,23 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Changelogged.Options
-  ( module Control.Monad.Reader,
-
-    Appl(..),
-    runInAppl,
-    Options(..),
+  ( Options(..),
     parseOptions
   ) where
 
-import Control.Monad.Base
-import Control.Monad.Catch
-import Control.Monad.Reader
-
-import Data.Aeson (ToJSON(..))
 import Data.Char (toLower)
 import Data.List (intercalate)
 import Data.Monoid ((<>))
 import Data.String.Conversions (cs)
-import GHC.Generics (Generic)
 
 import Options.Applicative
 import qualified Turtle
 
 import Filesystem.Path.CurrentOS (valid, fromText)
 
-import Changelogged.Types
-import Changelogged.Pure (hyphenate)
-
-newtype Appl a = Appl { runAppl :: ReaderT Options IO a }
-  deriving newtype (Functor, Applicative, Monad, MonadReader Options, MonadIO, MonadBase IO, MonadThrow, MonadCatch)
-
-runInAppl :: Options -> Appl a -> IO a
-runInAppl opts r = runReaderT (runAppl r) opts
+import Changelogged.Common
 
 -- |
 -- >>> availableWarningFormats
@@ -177,39 +158,6 @@ parser = Options
 
 welcome :: Turtle.Description
 welcome = Turtle.Description "changelogged - Changelog Manager for Git Projects"
-
--- | Command line options for @changelogged@.
-data Options = Options
-  { -- | Command to execute.
-    optAction          :: Maybe Action
-    -- | Format for missing changelog entry warnings.
-  , optFormat          :: WarningFormat
-    -- | Level of changes (to override one inferred from changelogs).
-  , optChangeLevel     :: Maybe Level
-    -- | Look for missing changelog entries from the start of the project.
-  , optFromBC          :: Bool
-    -- | Bump versions ignoring possibly outdated changelogs.
-  , optForce           :: Bool
-    -- | Do not check if changelogs have any missing entries.
-  , optNoCheck         :: Bool
-    -- | Print all texts in standard terminal color.
-  , optNoColors        :: Bool
-    -- | Expand PRs while suggesting and writing to changelog.
-  , optExpandPR        :: Bool
-    -- | Run avoiding changes in files.
-  , optDryRun          :: Bool
-    -- | Check exactly one target changelog.
-  , optTargetChangelog :: Maybe Turtle.FilePath
-    -- | Use specified config file.
-  , optConfigPath      :: Maybe Turtle.FilePath
-    -- | Verbosity level.
-  , optVerbose         :: Bool
-    -- | Print version.
-  , optVersion         :: Bool
-  } deriving (Generic, Show, ToJSON)
-
-instance ToJSON Turtle.FilePath where
-  toJSON = toJSON . Turtle.format Turtle.fp
 
 -- | Parse command line options.
 parseOptions :: IO Options

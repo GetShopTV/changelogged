@@ -1,6 +1,7 @@
-module Changelogged.Pure where
+module Changelogged.Common.Utils.Pure where
 
-import Data.Aeson (Options(..), defaultOptions)
+import Data.Aeson
+
 import Prelude hiding (FilePath)
 import Data.Text (Text)
 import qualified Data.Text as Text
@@ -10,7 +11,7 @@ import Data.List
 
 import Filesystem.Path.CurrentOS (encodeString, FilePath)
 
-import Changelogged.Types
+import Changelogged.Common.Types.Common
 
 changeloggedVersion :: Version
 changeloggedVersion = Version "0.3.0"

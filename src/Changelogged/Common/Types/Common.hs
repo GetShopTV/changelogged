@@ -1,13 +1,10 @@
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
-module Changelogged.Types where
+module Changelogged.Common.Types.Common where
 
 import Data.Aeson
 import Data.Text (Text)
 import GHC.Generics (Generic)
-
-import qualified Filesystem.Path.CurrentOS as Path
 
 newtype SHA1 = SHA1 {getSHA1 :: Text} deriving (Eq, Show)
 newtype Link = Link {getLink :: Text} deriving (Eq, Show)
@@ -19,9 +16,6 @@ data Commit = Commit
   , commitIsPR    :: Maybe PR
   , commitSHA     :: SHA1
   } deriving (Eq, Show)
-
-instance FromJSON Path.FilePath where
-  parseJSON = fmap Path.decodeString . parseJSON
 
 -- |Level of changes to bump to.
 data Level = App | Major | Minor | Fix | Doc

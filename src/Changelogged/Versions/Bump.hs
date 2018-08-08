@@ -15,12 +15,8 @@ import Filesystem.Path.CurrentOS (encodeString)
 import System.Console.ANSI (Color(..))
 
 import Changelogged.Versions.Utils
-import Changelogged.Types
-import Changelogged.Options
-import Changelogged.Utils
-import Changelogged.Pure
+import Changelogged.Common
 import Changelogged.Pattern
-import Changelogged.Config
 
 -- |Get current version.
 currentVersion :: VersionFile -> Appl Version

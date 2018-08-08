@@ -1,3 +1,4 @@
+-- | This module is intended to be pure git interface.
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Changelogged.Git where
@@ -5,7 +6,6 @@ module Changelogged.Git where
 import qualified Control.Foldl as Fold
 import Control.Monad.Catch (catch)
 
-import Data.Char (isDigit)
 import Data.Either.Combinators (fromRight)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
@@ -13,19 +13,7 @@ import qualified Data.Text as Text
 
 import Turtle
 
-import Changelogged.Types
-import Changelogged.Options (Appl, Options(..), asks)
-
--- | Information about the state of a git repository.
-data GitInfo = GitInfo
-  { gitHistory   :: [Turtle.Line]
-    -- ^ A list of git commit messages.
-  , gitRemoteUrl :: Link
-    -- ^ An HTTP(S) link to the repository.
-    -- This will be used to construct links to issues, commits and pull requests.
-  , gitLatestVersion :: Maybe Text
-     -- ^ Latest version (tag) in the current branch. This signature avails to use git polymorphism of tags with hashes.
-  } deriving (Show)
+import Changelogged.Common
 
 -- | Get latest git tag in a given branch (if present).
 -- If no branch is specified then @HEAD^@ is used.
@@ -64,30 +52,6 @@ loadGitHistory from = fold (inproc "git" (["log", "--oneline", "--first-parent"]
     range = case from of
       Nothing     -> []
       Just commit -> [commit <> "..HEAD"]
-
--- | Extract latest history and origin link from git through temporary file and store it in 'GitInfo'.
-loadGitInfo
-  :: Maybe Text -- ^ Branch with version tags (@HEAD@ is used by default).
-  -> Appl GitInfo
-loadGitInfo branch = do
-  entireHistory <- asks optFromBC
-  latestTag    <- loadGitLatestTag branch
-  gitHistory   <- loadGitHistory (if entireHistory then Nothing else latestTag)
-  gitRemoteUrl <- loadGitRemoteUrl
-  let gitLatestVersion = extractVersion latestTag
-  return GitInfo {..}
-  where
-    extractVersion tag = case Text.dropWhile (not . isDigit) <$> tag of
-      Just ver | not (Text.null ver) -> Just ver
-      _ -> Nothing
-
--- | Pretty print known information about a Git project.
-ppGitInfo :: GitInfo -> Text
-ppGitInfo GitInfo{..} = Text.unlines
-  [ "Git remote URL: " <> getLink gitRemoteUrl
-  , "Latest release: " <> fromMaybe "<none>" gitLatestVersion
-  , "Changes since last release: " <> Text.pack (show (length gitHistory))
-  ]
 
 listPRCommits :: SHA1 -> Appl [(SHA1, Text)]
 listPRCommits (SHA1 sha) = do
