@@ -77,3 +77,12 @@ githubRefGrep = has (text "pull request #")
 -- Just "#444"
 githubRefMatch :: Text -> Maybe Text
 githubRefMatch str = maxByLen $ match githubRefRegex str
+
+-- >>> isMerge "Merge branch 'release-v1.0'"
+-- True
+-- >>> isMerge "Merge branch 'release-v1.0' into develop"
+-- True
+-- >>> isMerge "merge branch release into develop"
+-- False
+isMerge :: Text -> Bool
+isMerge = not . null . match (prefix "Merge branch '")

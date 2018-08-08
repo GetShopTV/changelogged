@@ -14,6 +14,7 @@ import System.Console.ANSI (Color(..))
 import Changelogged.Git (listPRCommits)
 import Changelogged.Types
 import Changelogged.Options
+import Changelogged.Pattern (isMerge)
 import Changelogged.Utils
 
 -- |Check if commit/pr is present in changelog. Return '@True@' if present.
@@ -81,6 +82,9 @@ suggestMissing gitUrl Commit{..} = do
       coloredPrint Cyan ("[`" <> getSHA1 commitSHA <> "`]")
       coloredPrint Blue $ "( " <> commitLink gitUrl commitSHA <> " )"
       printf ");\n"
+      when (isMerge commitMessage) $ do
+        suggestSubchanges gitUrl commitSHA
+        debug commitMessage
 
 addSubchanges :: Link -> SHA1 -> FilePath -> Appl ()
 addSubchanges gitUrl mergeHash changelog = do
@@ -100,7 +104,7 @@ addMissing gitUrl Commit{..} changelog = do
   Options{..} <- ask
   unless optDryRun $ do
     output changelog (return $ unsafeTextToLine entry)
-    when (isJust commitIsPR) $ unless optNoExpandPR $ addSubchanges gitUrl commitSHA changelog
+    when (isJust commitIsPR || isMerge commitMessage) $ unless optNoExpandPR $ addSubchanges gitUrl commitSHA changelog
     append changelog (select currentLogs)
   where
     entry = prolog <> sense <> epilog
