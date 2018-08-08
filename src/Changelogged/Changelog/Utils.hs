@@ -46,13 +46,13 @@ warnMissing Commit{..} = do
   printf (" is missing: "%s%".\n") commitMessage
 
 -- |
--- >>> prLink "https://github.com/GetShopTV/changelogged" "#13"
+-- >>> prLink (Link "https://github.com/GetShopTV/changelogged") (PR "#13")
 -- "https://github.com/GetShopTV/changelogged/pull/13"
 prLink :: Link -> PR -> Text
 prLink (Link link) (PR num) = link <> "/pull/" <> Text.drop 1 num
 
 -- |
--- >>> commitLink "https://github.com/GetShopTV/changelogged" "9e14840"
+-- >>> commitLink (Link "https://github.com/GetShopTV/changelogged") (SHA1 "9e14840")
 -- "https://github.com/GetShopTV/changelogged/commit/9e14840"
 commitLink :: Link -> SHA1 -> Text
 commitLink (Link link) (SHA1 sha) = link <> "/commit/" <> sha
