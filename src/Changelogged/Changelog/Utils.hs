@@ -26,6 +26,8 @@ changelogIsUp repoUrl commit@Commit{..} changelog = do
     Just (PR num) -> fold (grep (has (text num)) (input changelog)) Fold.null
   if noEntry
     then do
+      -- If --from-bc option invoked it will prepend list of misses with version tag.
+      printTag commitSHA
       case optFormat of
         WarnSimple  -> warnMissing commit
         WarnSuggest -> suggestMissing repoUrl commit

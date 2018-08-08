@@ -12,6 +12,7 @@ import System.Console.ANSI
 
 import Turtle.Format
 
+import Changelogged.Git (getCommitTag)
 import Changelogged.Types
 import Changelogged.Options
 
@@ -58,3 +59,8 @@ debugYaml title val = debug (title <> "\n" <> Text.decodeUtf8 (Yaml.encode val))
 versionP :: Version -> Appl ()
 versionP (Version ver) = coloredPrint Green $
   "VERSION: " <> ver <> "\n"
+
+printTag :: SHA1 -> Appl ()
+printTag sha = getCommitTag sha >>= \tag -> case tag of
+  Nothing -> return ()
+  Just t -> coloredPrint Yellow (t <> "\n")

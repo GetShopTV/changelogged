@@ -93,3 +93,8 @@ listPRCommits :: SHA1 -> Appl [(SHA1, Text)]
 listPRCommits (SHA1 sha) = do
   messages <- fold (inproc "git" ["log", "--oneline", sha <> "^1..." <> sha <> "^2"] empty) Fold.list
   return . reverse . map ((\(first,second) -> (SHA1 first, Text.drop 1 second)) . Text.breakOn " " . lineToText) $ messages
+
+getCommitTag :: SHA1 -> Appl (Maybe Text)
+getCommitTag (SHA1 sha) = do
+  tag <- fold (inproc "git" ["tag", "--points-at", sha] empty) Fold.head
+  return $ lineToText <$> tag
