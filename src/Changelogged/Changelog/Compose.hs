@@ -29,42 +29,33 @@ warnMissing Commit{..} = do
 
 -- |
 -- >>> prLink (Link "https://github.com/GetShopTV/changelogged") (PR "#13")
--- "https://github.com/GetShopTV/changelogged/pull/13"
-prLink :: Link -> PR -> Text
-prLink (Link link) (PR num) = link <> "/pull/" <> Text.drop 1 num
+-- Link {getLink = " https://github.com/GetShopTV/changelogged/pull/13 "}
+prLink :: Link -> PR -> Link
+prLink (Link link) (PR num) = Link $ " " <> link <> "/pull/" <> Text.drop 1 num <> " "
 
 -- |
 -- >>> commitLink (Link "https://github.com/GetShopTV/changelogged") (SHA1 "9e14840")
--- "https://github.com/GetShopTV/changelogged/commit/9e14840"
-commitLink :: Link -> SHA1 -> Text
-commitLink (Link link) (SHA1 sha) = link <> "/commit/" <> sha
+-- Link {getLink = " https://github.com/GetShopTV/changelogged/commit/9e14840 "}
+commitLink :: Link -> SHA1 -> Link
+commitLink (Link link) (SHA1 sha) = Link $ " " <> link <> "/commit/" <> sha <> " "
 
 suggestSubchanges :: Link -> SHA1 -> Appl ()
 suggestSubchanges gitUrl mergeHash = do
   subChanges <- listPRCommits mergeHash
   mapM_ suggest subChanges
   where
-    suggest (sha1, message) = do
-      printf ("  - "%s%" (see ") message
-      coloredPrint Cyan ("[`" <> getSHA1 sha1 <> "`]")
-      coloredPrint Blue $ "( " <> commitLink gitUrl sha1 <> " )"
-      printf ");\n"
+    suggest (sha1, message) = printEntry defaultEntryFormat message (commitLink gitUrl sha1) (getSHA1 sha1)
 
 -- |
 suggestMissing :: Link -> Commit -> Appl ()
 suggestMissing gitUrl Commit{..} = do
   Options{..} <- ask
-  printf ("- "%s%" (see ") commitMessage
   case commitIsPR of
     Just num -> do
-      coloredPrint Cyan $ "[" <> getPR num <> "]"
-      coloredPrint Blue $ "( " <> prLink gitUrl num <> " )"
-      printf ");\n"
+      printEntry defaultEntryFormat commitMessage (prLink gitUrl num) (getPR num)
       when optExpandPR $ suggestSubchanges gitUrl commitSHA
     Nothing -> do
-      coloredPrint Cyan ("[`" <> getSHA1 commitSHA <> "`]")
-      coloredPrint Blue $ "( " <> commitLink gitUrl commitSHA <> " )"
-      printf ");\n"
+      printEntry defaultEntryFormat commitMessage (commitLink gitUrl commitSHA) (getSHA1 commitSHA)
       when (isMerge commitMessage && optExpandPR) $ do
         suggestSubchanges gitUrl commitSHA
         debug commitMessage
@@ -75,10 +66,8 @@ addSubchanges gitUrl mergeHash changelog = do
   add subChanges
   where
     add :: [(SHA1, Text)] -> Appl ()
-    add changes = append changelog (select . (map unsafeTextToLine) $ map buildEntry changes)
-    buildEntry (sha1, message) = prolog message <> sense sha1  <> ");"
-    prolog msg = "  - " <> msg <> " (see "
-    sense sha = "[`" <> getSHA1 sha <> "`]" <> "( " <> commitLink gitUrl sha <> " )"
+    add changes = append changelog (select . (map unsafeTextToLine) $ map buildSubEntry changes)
+    buildSubEntry (sha1, message) = buildEntry defaultEntryFormat message (commitLink gitUrl sha1) (getSHA1 sha1)
 
 -- |Add generated suggestion directly to changelog.
 addMissing :: Link -> Commit -> FilePath -> Appl ()
@@ -90,12 +79,9 @@ addMissing gitUrl Commit{..} changelog = do
     when ((isJust commitIsPR || isMerge commitMessage) && optExpandPR) $ addSubchanges gitUrl commitSHA changelog
     append changelog (select currentLogs)
   where
-    entry = prolog <> sense <> epilog
-    prolog = "- " <> commitMessage <> " (see "
-    sense = case commitIsPR of
-        Just num -> "[" <> getPR num <> "]" <> "( " <> prLink gitUrl num <> " )"
-        Nothing -> "[`" <> getSHA1 commitSHA <> "`]" <> "( " <> commitLink gitUrl commitSHA <> " )"
-    epilog = ");"
+    entry = case commitIsPR of
+      Just num -> buildEntry defaultEntryFormat commitMessage (prLink gitUrl num) (getPR num)
+      Nothing -> buildEntry defaultEntryFormat commitMessage (commitLink gitUrl commitSHA) (getSHA1 commitSHA)
 
 -- |Get commit message for any entry in history.
 retrieveCommitMessage :: Maybe PR -> SHA1 -> Appl Text
@@ -109,3 +95,20 @@ printCommitTag :: SHA1 -> Appl ()
 printCommitTag sha = getCommitTag sha >>= \tag -> case tag of
   Nothing -> return ()
   Just t -> coloredPrint Yellow (t <> "\n")
+
+buildEntry ::  EntryFormat -> Text -> Link -> Text -> Text
+buildEntry (EntryFormat formattingString) message link identifier =
+  Text.replace "%message%" message . Text.replace "%link%" (getLink link) . Text.replace "%id%" identifier $ formattingString
+
+printEntry :: EntryFormat -> Text -> Link -> Text -> Appl ()
+printEntry (EntryFormat formattingString) message link identifier = do
+  let parts = Text.split (=='%') formattingString
+      printParts ("message":xs) = printf (""%s%"") message >> printParts xs
+      printParts ("link":xs) = coloredPrint Blue (getLink link) >> printParts xs
+      printParts ("id":xs) = coloredPrint Cyan identifier >> printParts xs
+      printParts (part:xs) = printf (""%s%"") part >> printParts xs
+      printParts [] = printf "\n"
+    in printParts parts
+
+defaultEntryFormat :: EntryFormat
+defaultEntryFormat = EntryFormat "- %message% (see [%link%](%id%));"
