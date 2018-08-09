@@ -39,8 +39,7 @@ currentVersion VersionFile{..} = do
 generateVersionForFile :: Level -> VersionFile -> Appl Version
 generateVersionForFile lev indicator = do
   (Version current) <- currentVersion indicator
-  -- This print must not be here but I think it's better than throw current vrsion to main.
-  printf ("Version: "%s%" -> ") current
+  printf ("Version in " %fp% " : " %s%" -> ") (versionFilePath indicator) current
   coloredPrint Yellow (getVersion (new current) <> "\n")
   return (new current)
   where
