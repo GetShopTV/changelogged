@@ -13,11 +13,12 @@ import Data.Monoid ((<>))
 import Data.String.Conversions (cs)
 
 import Options.Applicative
-import qualified Turtle
 
-import Filesystem.Path.CurrentOS (valid, fromText)
+import Prelude hiding (FilePath)
+import Filesystem.Path.CurrentOS
 
-import Changelogged.Common
+import Changelogged.Common.Types
+import Changelogged.Common.Utils.Pure
 
 -- |
 -- >>> availableWarningFormats
@@ -94,7 +95,7 @@ readAction = eitherReader (r . map toLower)
          "Unknown command: " <> show cmd <> ".\n"
       <> "Should be " <> availableActionsStr <> ".\n"
 
-readFilePath :: ReadM Turtle.FilePath
+readFilePath :: ReadM FilePath
 readFilePath = eitherReader r
   where
     r filePathString = if valid $ fromText $ cs filePathString
@@ -129,6 +130,7 @@ parser = Options
 
     changeloggedAction = argument readAction $
          metavar "ACTION"
+      <> completeWith ["update-changelog","bump-versions"]
       <> help ("If present could be update-changelog or bump-versions.")
 
     changesLevel = option readLevel $
@@ -156,9 +158,9 @@ parser = Options
       <> metavar "changelogged.yaml config file location"
       <> help ("Path to config file.")
 
-welcome :: Turtle.Description
-welcome = Turtle.Description "changelogged - Changelog Manager for Git Projects"
-
 -- | Parse command line options.
 parseOptions :: IO Options
-parseOptions = Turtle.options welcome parser
+parseOptions = execParser $ info (helper <*> parser)
+    ( fullDesc
+   <> progDesc "Changelogged"
+   <> header "Changelog Manager for Git Projects")
