@@ -13,32 +13,12 @@ import Data.Monoid ((<>))
 import Data.String.Conversions (cs)
 
 import Options.Applicative
-import qualified Turtle
 
-import Filesystem.Path.CurrentOS (valid, fromText)
+import Prelude hiding (FilePath)
+import Filesystem.Path.CurrentOS
 
-import Changelogged.Common
-
--- |
--- >>> availableWarningFormats
--- [simple,suggest]
-availableWarningFormats :: [WarningFormat]
-availableWarningFormats = [minBound..maxBound]
-
--- |
--- >>> availableWarningFormatsStr
--- "'simple' or 'suggest'"
-availableWarningFormatsStr :: String
-availableWarningFormatsStr = prettyPossibleValues availableWarningFormats
-
-readWarningFormat :: ReadM WarningFormat
-readWarningFormat = eitherReader (r . map toLower)
-  where
-    r "simple"  = Right WarnSimple
-    r "suggest" = Right WarnSuggest
-    r fmt = Left $
-         "Unknown warning format: " <> show fmt <> ".\n"
-      <> "Use one of " <> availableWarningFormatsStr <> ".\n"
+import Changelogged.Common.Types
+import Changelogged.Common.Utils.Pure
 
 -- |
 -- >>> availableLevels
@@ -94,7 +74,7 @@ readAction = eitherReader (r . map toLower)
          "Unknown command: " <> show cmd <> ".\n"
       <> "Should be " <> availableActionsStr <> ".\n"
 
-readFilePath :: ReadM Turtle.FilePath
+readFilePath :: ReadM FilePath
 readFilePath = eitherReader r
   where
     r filePathString = if valid $ fromText $ cs filePathString
@@ -104,10 +84,9 @@ readFilePath = eitherReader r
 parser :: Parser Options
 parser = Options
   <$> optional changeloggedAction
-  <*> warningFormat
   <*> optional changesLevel
-  <*> hiddenSwitch "from-bc"
-        "Look for missing changelog entries from the start of the project."
+  <*> hiddenSwitch "suggest" "Format printed missing entries as writtable suggestions for ChangeLog"
+  <*> hiddenSwitch "from-bc" "Look for missing changelog entries from the start of the project."
   <*> hiddenSwitch "force" "Bump versions ignoring possibly outdated changelogs. Usable with bump-versions only"
   <*> hiddenSwitch "no-check" "Do not check if changelogs have any missing entries."
   <*> hiddenSwitch "no-colors" "Print all messages in standard terminal color."
@@ -129,6 +108,7 @@ parser = Options
 
     changeloggedAction = argument readAction $
          metavar "ACTION"
+      <> completeWith ["update-changelog","bump-versions"]
       <> help ("If present could be update-changelog or bump-versions.")
 
     changesLevel = option readLevel $
@@ -140,13 +120,6 @@ parser = Options
            ])
       <> hidden
     
-    warningFormat = option readWarningFormat $
-         long "format"
-      <> metavar "FORMAT"
-      <> help ("Format for missing changelog entry warnings. FORMAT can be " <> availableWarningFormatsStr <> ".")
-      <> value WarnSimple
-      <> showDefault
-    
     targetChangelog = argument readFilePath $
          metavar "TARGET_CHANGELOG"
       <> help ("Path to target changelog.")
@@ -156,9 +129,9 @@ parser = Options
       <> metavar "changelogged.yaml config file location"
       <> help ("Path to config file.")
 
-welcome :: Turtle.Description
-welcome = Turtle.Description "changelogged - Changelog Manager for Git Projects"
-
 -- | Parse command line options.
 parseOptions :: IO Options
-parseOptions = Turtle.options welcome parser
+parseOptions = execParser $ info (helper <*> parser)
+    ( fullDesc
+   <> progDesc "Changelogged"
+   <> header "Changelog Manager for Git Projects")

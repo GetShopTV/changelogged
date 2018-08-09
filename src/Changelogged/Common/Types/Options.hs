@@ -11,11 +11,11 @@ import qualified Filesystem.Path.CurrentOS as Path
 data Options = Options
   { -- | Command to execute.
     optAction          :: Maybe Action
-    -- | Format for missing changelog entry warnings.
-  , optFormat          :: WarningFormat
-    -- | Level of changes (to override one inferred from changelogs).
+    -- | Format missing changelog entry warnings as suggestion writtable to changelog.
   , optChangeLevel     :: Maybe Level
     -- | Look for missing changelog entries from the start of the project.
+  , optSuggest         :: Bool
+    -- | Level of changes (to override one inferred from changelogs).
   , optFromBC          :: Bool
     -- | Bump versions ignoring possibly outdated changelogs.
   , optForce           :: Bool

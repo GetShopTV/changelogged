@@ -24,12 +24,3 @@ data Level = App | Major | Minor | Fix | Doc
 -- |Available altenative actions
 data Action = UpdateChangelogs | BumpVersions
   deriving (Generic, Eq, Show, Enum, Bounded, ToJSON)
-
-data WarningFormat
-  = WarnSimple
-  | WarnSuggest
-  deriving (Generic, Eq, Enum, Bounded, ToJSON)
-
-instance Show WarningFormat where
-  show WarnSimple  = "simple"
-  show WarnSuggest = "suggest"
