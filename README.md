@@ -11,6 +11,13 @@
 
 You're encouraged to use `changelogged` when preparing a new release of your project.
 
+If you're using bash you probably want to enable autocompletion. You can do it with the following or equivalent:
+```
+changelogged --bash-completion-script `which changelogged` > changelogged
+sudo mv changelogged > /etc/bash_completion.d/
+```
+In new terminal sessions you will have it.
+
 For most projects you can start by simply running `changelogged` with no options or configuration files:
 
 ```
