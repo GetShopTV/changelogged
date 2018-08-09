@@ -5,7 +5,7 @@ import Turtle
 
 import qualified Control.Foldl as Fold
 
-import Data.Maybe (isJust)
+import Data.Maybe (isJust, fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as Text
 
@@ -41,21 +41,22 @@ commitLink (Link link) (SHA1 sha) = Link $ " " <> link <> "/commit/" <> sha <> "
 
 suggestSubchanges :: Link -> SHA1 -> Appl ()
 suggestSubchanges gitUrl mergeHash = do
+  entryFormat <- asks (configEntryFormat . snd)
   subChanges <- listPRCommits mergeHash
-  mapM_ suggest subChanges
+  mapM_ (suggest entryFormat) subChanges
   where
-    suggest (sha1, message) = printEntry defaultEntryFormat message (commitLink gitUrl sha1) (getSHA1 sha1)
+    suggest formatting (sha1, message) = printEntry (fromMaybe defaultEntryFormat formatting) message (commitLink gitUrl sha1) (getSHA1 sha1)
 
 -- |
 suggestMissing :: Link -> Commit -> Appl ()
 suggestMissing gitUrl Commit{..} = do
-  Options{..} <- ask
+  (Options{..}, Config{..}) <- ask
   case commitIsPR of
     Just num -> do
-      printEntry defaultEntryFormat commitMessage (prLink gitUrl num) (getPR num)
+      printEntry (fromMaybe defaultEntryFormat configEntryFormat) commitMessage (prLink gitUrl num) (getPR num)
       when optExpandPR $ suggestSubchanges gitUrl commitSHA
     Nothing -> do
-      printEntry defaultEntryFormat commitMessage (commitLink gitUrl commitSHA) (getSHA1 commitSHA)
+      printEntry (fromMaybe defaultEntryFormat configEntryFormat) commitMessage (commitLink gitUrl commitSHA) (getSHA1 commitSHA)
       when (isMerge commitMessage && optExpandPR) $ do
         suggestSubchanges gitUrl commitSHA
         debug commitMessage
@@ -66,22 +67,24 @@ addSubchanges gitUrl mergeHash changelog = do
   add subChanges
   where
     add :: [(SHA1, Text)] -> Appl ()
-    add changes = append changelog (select . (map unsafeTextToLine) $ map buildSubEntry changes)
-    buildSubEntry (sha1, message) = buildEntry defaultEntryFormat message (commitLink gitUrl sha1) (getSHA1 sha1)
+    add changes = do
+      entryFormat <- asks (configEntryFormat . snd)
+      append changelog (select . (map unsafeTextToLine) $ map (buildSubEntry entryFormat) changes)
+    buildSubEntry formatting (sha1, message) = buildEntry (fromMaybe defaultEntryFormat formatting) message (commitLink gitUrl sha1) (getSHA1 sha1)
 
 -- |Add generated suggestion directly to changelog.
 addMissing :: Link -> Commit -> FilePath -> Appl ()
 addMissing gitUrl Commit{..} changelog = do
   currentLogs <- fold (input changelog) Fold.list
-  Options{..} <- ask
+  (Options{..}, Config{..}) <- ask
   unless optDryRun $ do
-    output changelog (return $ unsafeTextToLine entry)
+    output changelog (return $ unsafeTextToLine (entry configEntryFormat))
     when ((isJust commitIsPR || isMerge commitMessage) && optExpandPR) $ addSubchanges gitUrl commitSHA changelog
     append changelog (select currentLogs)
   where
-    entry = case commitIsPR of
-      Just num -> buildEntry defaultEntryFormat commitMessage (prLink gitUrl num) (getPR num)
-      Nothing -> buildEntry defaultEntryFormat commitMessage (commitLink gitUrl commitSHA) (getSHA1 commitSHA)
+    entry formatting = case commitIsPR of
+      Just num -> buildEntry (fromMaybe defaultEntryFormat formatting) commitMessage (prLink gitUrl num) (getPR num)
+      Nothing -> buildEntry (fromMaybe defaultEntryFormat formatting) commitMessage (commitLink gitUrl commitSHA) (getSHA1 commitSHA)
 
 -- |Get commit message for any entry in history.
 retrieveCommitMessage :: Maybe PR -> SHA1 -> Appl Text

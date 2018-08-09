@@ -16,7 +16,7 @@ import Changelogged.Pattern
 
 -- |Add version label to changelog.
 headChangelog :: Version -> FilePath -> Appl ()
-headChangelog (Version version) changelog = asks optDryRun >>= (\dry -> unless dry $ do
+headChangelog (Version version) changelog = asks (optDryRun . fst) >>= (\dry -> unless dry $ do
   currentLogs <- fold (input changelog) Fold.list
   output changelog (return $ unsafeTextToLine version)
   append changelog "---"
@@ -61,7 +61,7 @@ generateVersionedFile file (new:news) (old:olds) = generateVersionedFile (replac
 bumpPart :: Version -> VersionFile -> Appl ()
 bumpPart version file@VersionFile{..} = do
   printf ("- Updating version for "%fp%"\n") versionFilePath
-  dryRun <- asks optDryRun
+  dryRun <- asks (optDryRun . fst)
   unless dryRun $ sh $ bumpAny file version
 
 -- |Get level of changes from changelog.

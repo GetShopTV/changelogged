@@ -9,7 +9,7 @@ import GHC.Generics (Generic)
 newtype SHA1 = SHA1 {getSHA1 :: Text} deriving (Eq, Show)
 newtype Link = Link {getLink :: Text} deriving (Eq, Show)
 newtype PR = PR {getPR :: Text} deriving (Eq, Show)
-newtype EntryFormat = EntryFormat {getEntryFormat :: Text} deriving (Eq, Show)
+newtype EntryFormat = EntryFormat {getEntryFormat :: Text} deriving (Eq, Show, Generic, ToJSON, FromJSON)
 newtype Version = Version {getVersion :: Text} deriving (Eq, Show)
 
 data Commit = Commit

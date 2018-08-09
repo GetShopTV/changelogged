@@ -19,8 +19,8 @@ import Changelogged.Common.Types.Options
 import Changelogged.Common.Types.Config
 import Changelogged.Common.Types.Git
 
-newtype Appl a = Appl { runAppl :: ReaderT Options IO a }
-  deriving newtype (Functor, Applicative, Monad, MonadReader Options, MonadIO, MonadBase IO, MonadThrow, MonadCatch)
+newtype Appl a = Appl { runAppl :: ReaderT (Options, Config) IO a }
+  deriving newtype (Functor, Applicative, Monad, MonadReader (Options, Config), MonadIO, MonadBase IO, MonadThrow, MonadCatch)
 
-runInAppl :: Options -> Appl a -> IO a
-runInAppl opts r = runReaderT (runAppl r) opts
+runInAppl :: Options -> Config -> Appl a -> IO a
+runInAppl opts cfg r = runReaderT (runAppl r) (opts, cfg)

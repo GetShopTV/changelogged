@@ -30,7 +30,7 @@ main = do
   let configPath = fromMaybe ".changelogged.yaml" (unpack . showPath <$> optConfigPath)
   config@Config{..} <- prepareConfig configPath opts
 
-  runInAppl opts $ if optVersion
+  runInAppl opts config $ if optVersion
     then versionP changeloggedVersion
     else do
       debugYaml "parsed options:" opts
@@ -45,4 +45,4 @@ main = do
       coloredPrint Blue (ppConfig  config)
       coloredPrint Blue (ppGitInfo gitInfo)
       -- process changelogs
-      processChangelogs config gitInfo
+      processChangelogs gitInfo
