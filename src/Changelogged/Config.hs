@@ -40,7 +40,7 @@ loadConfig path = Yaml.decodeFileEither path >>= return . rightToMaybe
 ppConfig :: Config -> Text
 ppConfig Config{..} = mconcat
   [ "Main branch (with version tags)" ?: configBranch
-  , "Format of inferred changelog entries: " ?: (getEntryFormat <$> configEntryFormat)
+  , "Format of inferred changelog entries" ?: (getEntryFormat <$> configEntryFormat)
   , "Changelogs" !: formatItems Turtle.fp (map changelogChangelog configChangelogs)
   ]
   where
