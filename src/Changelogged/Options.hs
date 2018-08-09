@@ -21,27 +21,6 @@ import Changelogged.Common.Types
 import Changelogged.Common.Utils.Pure
 
 -- |
--- >>> availableWarningFormats
--- [simple,suggest]
-availableWarningFormats :: [WarningFormat]
-availableWarningFormats = [minBound..maxBound]
-
--- |
--- >>> availableWarningFormatsStr
--- "'simple' or 'suggest'"
-availableWarningFormatsStr :: String
-availableWarningFormatsStr = prettyPossibleValues availableWarningFormats
-
-readWarningFormat :: ReadM WarningFormat
-readWarningFormat = eitherReader (r . map toLower)
-  where
-    r "simple"  = Right WarnSimple
-    r "suggest" = Right WarnSuggest
-    r fmt = Left $
-         "Unknown warning format: " <> show fmt <> ".\n"
-      <> "Use one of " <> availableWarningFormatsStr <> ".\n"
-
--- |
 -- >>> availableLevels
 -- [App,Major,Minor,Fix,Doc]
 availableLevels :: [Level]
@@ -105,10 +84,9 @@ readFilePath = eitherReader r
 parser :: Parser Options
 parser = Options
   <$> optional changeloggedAction
-  <*> warningFormat
   <*> optional changesLevel
-  <*> hiddenSwitch "from-bc"
-        "Look for missing changelog entries from the start of the project."
+  <*> hiddenSwitch "suggest" "Format printed missing entries as writtable suggestions for ChangeLog"
+  <*> hiddenSwitch "from-bc" "Look for missing changelog entries from the start of the project."
   <*> hiddenSwitch "force" "Bump versions ignoring possibly outdated changelogs. Usable with bump-versions only"
   <*> hiddenSwitch "no-check" "Do not check if changelogs have any missing entries."
   <*> hiddenSwitch "no-colors" "Print all messages in standard terminal color."
@@ -141,13 +119,6 @@ parser = Options
            , "CHANGE_LEVEL can be " <> availableLevelsStr <> "."
            ])
       <> hidden
-    
-    warningFormat = option readWarningFormat $
-         long "format"
-      <> metavar "FORMAT"
-      <> help ("Format for missing changelog entry warnings. FORMAT can be " <> availableWarningFormatsStr <> ".")
-      <> value WarnSimple
-      <> showDefault
     
     targetChangelog = argument readFilePath $
          metavar "TARGET_CHANGELOG"

@@ -80,9 +80,9 @@ changelogIsUp repoUrl commit@Commit{..} changelog = do
     then do
       -- If --from-bc option invoked it will prepend list of misses with version tag.
       printCommitTag commitSHA
-      case optFormat of
-        WarnSimple  -> warnMissing commit
-        WarnSuggest -> suggestMissing repoUrl commit
+      if optSuggest
+        then suggestMissing repoUrl commit
+        else warnMissing commit
       when (optAction == Just UpdateChangelogs) $ addMissing repoUrl commit changelog
       return False
     else return True
