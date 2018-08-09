@@ -31,6 +31,7 @@ defaultConfig = Config
       , changelogVersionFiles  = Just [VersionFile "package.yaml" (VersionPattern "version" ":")]
       }
   , configBranch = Nothing
+  , configEntryFormat = Nothing
   }
 
 loadConfig :: FilePath -> IO (Maybe Config)
@@ -39,6 +40,7 @@ loadConfig path = Yaml.decodeFileEither path >>= return . rightToMaybe
 ppConfig :: Config -> Text
 ppConfig Config{..} = mconcat
   [ "Main branch (with version tags)" ?: configBranch
+  , "Format of inferred changelog entries: " ?: (getEntryFormat <$> configEntryFormat)
   , "Changelogs" !: formatItems Turtle.fp (map changelogChangelog configChangelogs)
   ]
   where

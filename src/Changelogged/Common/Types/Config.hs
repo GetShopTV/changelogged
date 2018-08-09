@@ -6,9 +6,12 @@ import GHC.Generics (Generic)
 
 import qualified Filesystem.Path.CurrentOS as Path
 
+import Changelogged.Common.Types.Common
+
 data Config = Config
   { configChangelogs    :: [ChangelogConfig]
   , configBranch        :: Maybe Text
+  , configEntryFormat   :: Maybe EntryFormat
   } deriving (Eq, Show, Generic)
 
 data LevelHeaders = LevelHeaders
