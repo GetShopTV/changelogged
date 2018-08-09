@@ -21,7 +21,7 @@ changelogs:
         version_pattern:
           variable: "version"
           separator: ":"
-      - path: src/Changelogged/Pure.hs
+      - path: src/Changelogged/Common/Utils/Pure.hs
         version_pattern:
           variable: "changeloggedVersion"
           separator: "="
