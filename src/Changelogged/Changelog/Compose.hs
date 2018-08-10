@@ -45,7 +45,7 @@ suggestSubchanges gitUrl mergeHash = do
   subChanges <- listPRCommits mergeHash
   mapM_ (suggest entryFormat) subChanges
   where
-    suggest formatting (sha1, message) = printEntry (fromMaybe defaultEntryFormat formatting) message (commitLink gitUrl sha1) (getSHA1 sha1)
+    suggest formatting (sha1, message) = printf "  " >> printEntry (fromMaybe defaultEntryFormat formatting) message (commitLink gitUrl sha1) (getSHA1 sha1)
 
 -- |
 suggestMissing :: Link -> Commit -> Appl ()
@@ -70,7 +70,7 @@ addSubchanges gitUrl mergeHash changelog = do
     add changes = do
       entryFormat <- asks (configEntryFormat . envConfig)
       append changelog (select . (map unsafeTextToLine) $ map (buildSubEntry entryFormat) changes)
-    buildSubEntry formatting (sha1, message) = buildEntry (fromMaybe defaultEntryFormat formatting) message (commitLink gitUrl sha1) (getSHA1 sha1)
+    buildSubEntry formatting (sha1, message) = "  " <> buildEntry (fromMaybe defaultEntryFormat formatting) message (commitLink gitUrl sha1) (getSHA1 sha1)
 
 -- |Add generated suggestion directly to changelog.
 addMissing :: Link -> Commit -> FilePath -> Appl ()
