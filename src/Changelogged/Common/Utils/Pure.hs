@@ -3,6 +3,7 @@ module Changelogged.Common.Utils.Pure where
 import Data.Aeson
 
 import Prelude hiding (FilePath)
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as Text
 
@@ -91,3 +92,6 @@ jsonDerivingModifier :: String -> Options
 jsonDerivingModifier prefix = defaultOptions {
   fieldLabelModifier = toSnakeCase . drop (length prefix)
   }
+
+extractProjectNameFromUrl :: Link -> Text
+extractProjectNameFromUrl (Link url) = Text.takeWhileEnd (/= '/') . fromMaybe url $ Text.stripSuffix ".git" url

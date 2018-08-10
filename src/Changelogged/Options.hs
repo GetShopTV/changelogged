@@ -88,7 +88,6 @@ parser = Options
   <*> hiddenSwitch "suggest" "Format printed missing entries as writtable suggestions for ChangeLog"
   <*> hiddenSwitch "from-bc" "Look for missing changelog entries from the start of the project."
   <*> hiddenSwitch "force" "Bump versions ignoring possibly outdated changelogs. Usable with bump-versions only"
-  <*> hiddenSwitch "no-check" "Do not check if changelogs have any missing entries."
   <*> hiddenSwitch "no-colors" "Print all messages in standard terminal color."
   <*> hiddenSwitch "expand-pr" "Do not expand PRs."
   <*> longSwitch "dry-run" "Do not change files while running."

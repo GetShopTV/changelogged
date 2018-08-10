@@ -6,6 +6,7 @@ module Changelogged.Common.Types
   , module Changelogged.Common.Types.Config
   , module Changelogged.Common.Types.Git
   , module Control.Monad.Reader
+  , ChangeloggedEnv(..)
   , Appl(..)
   , runInAppl
   ) where
@@ -19,8 +20,13 @@ import Changelogged.Common.Types.Options
 import Changelogged.Common.Types.Config
 import Changelogged.Common.Types.Git
 
-newtype Appl a = Appl { runAppl :: ReaderT (Options, Config) IO a }
-  deriving newtype (Functor, Applicative, Monad, MonadReader (Options, Config), MonadIO, MonadBase IO, MonadThrow, MonadCatch)
+data ChangeloggedEnv = ChangeloggedEnv
+  { envOptions :: Options
+  , envConfig  :: Config
+  } deriving Show
+
+newtype Appl a = Appl { runAppl :: ReaderT ChangeloggedEnv IO a }
+  deriving newtype (Functor, Applicative, Monad, MonadReader ChangeloggedEnv, MonadIO, MonadBase IO, MonadThrow, MonadCatch)
 
 runInAppl :: Options -> Config -> Appl a -> IO a
-runInAppl opts cfg r = runReaderT (runAppl r) (opts, cfg)
+runInAppl opts cfg r = runReaderT (runAppl r) (ChangeloggedEnv opts cfg)

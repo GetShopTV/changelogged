@@ -45,4 +45,7 @@ main = do
       coloredPrint Blue (ppConfig  config)
       coloredPrint Blue (ppGitInfo gitInfo)
       -- process changelogs
-      processChangelogs gitInfo
+      projectRoot <- liftIO $ splitPwdBy . extractProjectNameFromUrl $ gitRemoteUrl gitInfo
+      case projectRoot of
+        Just dir -> withDir dir $ processChangelogs gitInfo
+        Nothing -> processChangelogs gitInfo

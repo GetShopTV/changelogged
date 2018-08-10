@@ -13,12 +13,8 @@ import Changelogged.Pattern
 
 checkChangelog :: GitInfo -> ChangelogConfig -> Appl Bool
 checkChangelog gitInfo@GitInfo{..} config@ChangelogConfig{..} = do
-  Options{..} <- asks fst
-  upToDate <- if optNoCheck
-    then do
-      warning $ "skipping checks for " <> format fp changelogChangelog <> " (due to --no-check)."
-      return True
-    else do
+  Options{..} <- asks envOptions
+  upToDate <- do
       when optFromBC $ printf ("Checking "%fp%" from start of project\n") changelogChangelog
       info $ "looking for missing entries in " <> format fp changelogChangelog
   
@@ -72,7 +68,7 @@ commitIgnored (Just names) (SHA1 commit) = not <$> fold
 -- |Check if commit/pr is present in changelog. Return '@True@' if present.
 changelogIsUp :: Link -> Commit -> FilePath -> Appl Bool
 changelogIsUp repoUrl commit@Commit{..} changelog = do
-  Options{..} <- asks fst
+  Options{..} <- asks envOptions
   noEntry <- case commitIsPR of
     Nothing -> fold (grep (has (text (getSHA1 commitSHA))) (input changelog)) Fold.null
     Just (PR num) -> fold (grep (has (text num)) (input changelog)) Fold.null
