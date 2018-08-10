@@ -19,6 +19,12 @@ instance FromJSON Path.FilePath where
 instance ToJSON Path.FilePath where
   toJSON = toJSON . Path.encodeString
 
+instance FromJSON EntryFormat where
+  parseJSON = fmap EntryFormat . parseJSON
+
+instance ToJSON EntryFormat where
+  toJSON = toJSON . getEntryFormat
+
 deriving instance ToJSON Options
 
 deriveJSON (jsonDerivingModifier "VersionPattern") ''VersionPattern

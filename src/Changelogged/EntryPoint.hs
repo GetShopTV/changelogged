@@ -18,24 +18,24 @@ import Changelogged.Changelog.Check
 import Changelogged.Common
 import Changelogged.Git
 
-processChangelogs :: Config -> GitInfo -> Appl ()
-processChangelogs config gitInfo = do
-  Options{..} <- ask
+processChangelogs :: GitInfo -> Appl ()
+processChangelogs gitInfo = do
+  (Options{..}, Config{..}) <- ask
   case optTargetChangelog of
-    Nothing -> case length . configChangelogs $ config of
+    Nothing -> case length configChangelogs of
       0 -> failure "You have empty configuration file" 
-      1 -> processChangelog gitInfo $ head . configChangelogs $ config
+      1 -> processChangelog gitInfo $ head configChangelogs
       _ -> failure "You cannot bump versions generally through all changelogs. Correct form: changelogged --bump-versions --level <level> <changelog>"
     Just changelogPath -> do
-      case lookupChangelog changelogPath of
+      case lookupChangelog changelogPath configChangelogs of
         Just changelog -> processChangelog gitInfo changelog
         Nothing -> failure $ "Given target changelog " <> format fp changelogPath <> " is missed in config or mistyped."
       where
-        lookupChangelog path = find (\entry -> changelogChangelog entry == path) (configChangelogs config)
+        lookupChangelog path changelogs = find (\entry -> changelogChangelog entry == path) changelogs
 
 processChangelog :: GitInfo -> ChangelogConfig -> Appl ()
 processChangelog gitInfo config@ChangelogConfig{..} = do
-  Options{..} <- ask
+  Options{..} <- asks fst
   liftIO $ putStrLn ""
   info $ "processing " <> format fp changelogChangelog
   changelogExists <- testfile changelogChangelog
@@ -54,7 +54,7 @@ loadGitInfo
   :: Maybe Text -- ^ Branch with version tags (@HEAD@ is used by default).
   -> Appl GitInfo
 loadGitInfo branch = do
-  entireHistory <- asks optFromBC
+  entireHistory <- asks (optFromBC . fst)
   latestTag    <- loadGitLatestTag branch
   gitHistory   <- loadGitHistory (if entireHistory then Nothing else latestTag)
   gitRemoteUrl <- loadGitRemoteUrl

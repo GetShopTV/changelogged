@@ -58,3 +58,5 @@ changelogs:
 #
 # branch: master
 
+# format of entries going to added to changelogs
+# entry_format: "  - %message% (see [%link%](%id%));"

@@ -27,3 +27,5 @@ changelogs:
           separator: "="
 
 branch: origin/master
+
+entry_format: "  - %message% (see [%link%](%id%));"
