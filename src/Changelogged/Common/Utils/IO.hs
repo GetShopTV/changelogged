@@ -20,7 +20,7 @@ import Changelogged.Common.Types
 -- |Print '@text@' with ansi-terminal color.
 coloredPrint :: Color -> Text -> Appl ()
 coloredPrint color line = do
-  noColor <- asks (optNoColors . fst)
+  noColor <- asks (optNoColors . envOptions)
   if noColor
     then printf s line
     else do
@@ -46,7 +46,7 @@ info msg = coloredPrint Cyan $
 
 debug :: Text -> Appl ()
 debug msg = do
-  verbose <- asks (optVerbose . fst)
+  verbose <- asks (optVerbose . envOptions)
   when verbose $ do
     coloredPrint Magenta $
       "DEBUG: " <> msg <> "\n"

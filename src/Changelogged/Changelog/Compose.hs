@@ -41,7 +41,7 @@ commitLink (Link link) (SHA1 sha) = Link $ " " <> link <> "/commit/" <> sha <> "
 
 suggestSubchanges :: Link -> SHA1 -> Appl ()
 suggestSubchanges gitUrl mergeHash = do
-  entryFormat <- asks (configEntryFormat . snd)
+  entryFormat <- asks (configEntryFormat . envConfig)
   subChanges <- listPRCommits mergeHash
   mapM_ (suggest entryFormat) subChanges
   where
@@ -50,7 +50,7 @@ suggestSubchanges gitUrl mergeHash = do
 -- |
 suggestMissing :: Link -> Commit -> Appl ()
 suggestMissing gitUrl Commit{..} = do
-  (Options{..}, Config{..}) <- ask
+  (ChangeloggedEnv Options{..} Config{..}) <- ask
   case commitIsPR of
     Just num -> do
       printEntry (fromMaybe defaultEntryFormat configEntryFormat) commitMessage (prLink gitUrl num) (getPR num)
@@ -68,7 +68,7 @@ addSubchanges gitUrl mergeHash changelog = do
   where
     add :: [(SHA1, Text)] -> Appl ()
     add changes = do
-      entryFormat <- asks (configEntryFormat . snd)
+      entryFormat <- asks (configEntryFormat . envConfig)
       append changelog (select . (map unsafeTextToLine) $ map (buildSubEntry entryFormat) changes)
     buildSubEntry formatting (sha1, message) = buildEntry (fromMaybe defaultEntryFormat formatting) message (commitLink gitUrl sha1) (getSHA1 sha1)
 
@@ -76,7 +76,7 @@ addSubchanges gitUrl mergeHash changelog = do
 addMissing :: Link -> Commit -> FilePath -> Appl ()
 addMissing gitUrl Commit{..} changelog = do
   currentLogs <- fold (input changelog) Fold.list
-  (Options{..}, Config{..}) <- ask
+  (ChangeloggedEnv Options{..} Config{..}) <- ask
   unless optDryRun $ do
     output changelog (return $ unsafeTextToLine (entry configEntryFormat))
     when ((isJust commitIsPR || isMerge commitMessage) && optExpandPR) $ addSubchanges gitUrl commitSHA changelog
