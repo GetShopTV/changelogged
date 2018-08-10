@@ -37,7 +37,20 @@ defaultConfig = Config
   }
 
 loadConfig :: FilePath -> IO (Maybe Config)
-loadConfig path = Yaml.decodeFileEither path >>= return . rightToMaybe
+loadConfig path = Yaml.decodeFileEither path >>= mapM decodeCfgPathWildcards >>= return . rightToMaybe
+
+decodeCfgPathWildcards :: Config -> IO Config
+decodeCfgPathWildcards cfg@Config{..} = do
+  expandedConfigChangelogs <- mapM expandWildcards configChangelogs
+  return $ cfg { configChangelogs = expandedConfigChangelogs }
+  where
+    expandWildcards cc@ChangelogConfig{..} = do
+      expandedIgnoreFiles <- mapM decodePathWildcards changelogIgnoreFiles
+      expandedWatchFiles <- mapM decodePathWildcards changelogWatchFiles
+      return cc
+        { changelogIgnoreFiles = expandedIgnoreFiles
+        , changelogWatchFiles = expandedWatchFiles
+        }
 
 ppConfig :: Config -> Text
 ppConfig Config{..} = mconcat

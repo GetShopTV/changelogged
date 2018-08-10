@@ -1,22 +1,26 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Changelogged.Common.Utils.IO where
 
-import           Control.Monad             (when)
-import           Data.Aeson                (ToJSON)
-import           Data.Monoid               ((<>))
-import           Data.String.Conversions
-import           Data.Text                 (Text)
-import qualified Data.Text                 as Text
-import qualified Data.Text.Encoding        as Text
-import qualified Data.Yaml                 as Yaml
+import qualified Control.Foldl as Fold
+import Control.Monad (when)
+
+import Data.Aeson (ToJSON)
+import Data.Text (Text)
+import Data.String.Conversions
+import qualified Data.Text as Text
+import qualified Data.Text.Encoding as Text
+import Data.Monoid ((<>))
+import qualified Data.Yaml as Yaml
 
 import qualified Filesystem.Path.CurrentOS as Path
 import           System.Console.ANSI
 
-import           Turtle                    (cd, pwd)
-import           Turtle.Format
+import Turtle.Format
+import Turtle.Pattern
+import Turtle (pwd, cd, lstree, grepText, fold)
 
-import           Changelogged.Common.Types
+import Changelogged.Common.Types
+import Changelogged.Common.Utils.Pure
 
 -- |Print '@text@' with ansi-terminal color.
 coloredPrint :: Color -> Text -> Appl ()
@@ -76,3 +80,10 @@ withDir dir action = do
   res <- action
   liftIO $ cd prev
   return res
+
+decodePathWildcards :: [Path.FilePath] -> IO [Path.FilePath]
+decodePathWildcards paths = fold ((fmap Path.fromText <$> matchAnyPath) $ showText <$> lstree ".") Fold.list
+  where
+    matchAnyPath = grepText (choice (map makePattern (map showPath paths)))
+    -- FIXME
+    makePattern wildPath = text wildPath
