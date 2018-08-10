@@ -73,12 +73,9 @@ bumpVersions upToDate config@ChangelogConfig{..} = do
     | not upToDate && optForce ->
         warning $ format fp changelogChangelog <> " is out of date. Bumping versions anyway due to --force."
     | otherwise -> (do
-        newVersion <- case (optNoCheck, optChangeLevel) of
-          (_, Just lev) -> generateVersion lev config
-          (True, Nothing) ->  do
-            failure "cannot infer new version from changelog because of --no-check.\nUse explicit --level CHANGE_LEVEL."
-            return Nothing
-          (False, Nothing) -> generateVersionByChangelog config
+        newVersion <- case optChangeLevel of
+          Just lev -> generateVersion lev config
+          Nothing -> generateVersionByChangelog config
 
         case newVersion of
           Nothing -> return ()

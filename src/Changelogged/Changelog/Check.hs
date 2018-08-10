@@ -14,11 +14,7 @@ import Changelogged.Pattern
 checkChangelog :: GitInfo -> ChangelogConfig -> Appl Bool
 checkChangelog gitInfo@GitInfo{..} config@ChangelogConfig{..} = do
   Options{..} <- asks envOptions
-  upToDate <- if optNoCheck
-    then do
-      warning $ "skipping checks for " <> format fp changelogChangelog <> " (due to --no-check)."
-      return True
-    else do
+  upToDate <- do
       when optFromBC $ printf ("Checking "%fp%" from start of project\n") changelogChangelog
       info $ "looking for missing entries in " <> format fp changelogChangelog
   

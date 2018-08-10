@@ -19,8 +19,6 @@ data Options = Options
   , optFromBC          :: Bool
     -- | Bump versions ignoring possibly outdated changelogs.
   , optForce           :: Bool
-    -- | Do not check if changelogs have any missing entries.
-  , optNoCheck         :: Bool
     -- | Print all texts in standard terminal color.
   , optNoColors        :: Bool
     -- | Expand PRs while suggesting and writing to changelog.
