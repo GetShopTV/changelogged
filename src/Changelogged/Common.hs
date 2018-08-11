@@ -3,5 +3,5 @@ module Changelogged.Common
   , module Changelogged.Common.Types
   ) where
 
-import Changelogged.Common.Utils
-import Changelogged.Common.Types
+import           Changelogged.Common.Types
+import           Changelogged.Common.Utils

@@ -1,17 +1,19 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
 module Main where
 
-import Turtle hiding (FilePath)
+import           Turtle                  hiding (FilePath)
 
-import Data.Maybe (fromMaybe)
-import Data.Text (unpack, pack)
+import           Data.Maybe              (fromMaybe)
+import           Data.Text               (pack, unpack)
 
-import System.Console.ANSI (Color(..))
+import           System.Console.ANSI     (Color (..))
 
-import Changelogged.EntryPoint
+import           Changelogged.EntryPoint
 
-import Changelogged.Common
-import Changelogged.Config
-import Changelogged.Options
+import           Changelogged.Common
+import           Changelogged.Config
+import           Changelogged.Options
 
 prepareConfig :: FilePath -> Options -> IO Config
 prepareConfig configPath Options{..} = do
@@ -41,11 +43,11 @@ main = do
       if config == defaultConfig
         then coloredPrint Blue "Using default config.\n"
         else coloredPrint Blue ("Configuration file: " <> pack configPath <> "\n")
-      
+
       coloredPrint Blue (ppConfig  config)
       coloredPrint Blue (ppGitInfo gitInfo)
       -- process changelogs
       projectRoot <- liftIO $ splitPwdBy . extractProjectNameFromUrl $ gitRemoteUrl gitInfo
       case projectRoot of
         Just dir -> withDir dir $ processChangelogs gitInfo
-        Nothing -> processChangelogs gitInfo
+        Nothing  -> processChangelogs gitInfo

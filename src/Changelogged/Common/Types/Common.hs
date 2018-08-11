@@ -1,10 +1,10 @@
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric  #-}
 module Changelogged.Common.Types.Common where
 
-import Data.Aeson
-import Data.Text (Text)
-import GHC.Generics (Generic)
+import           Data.Aeson
+import           Data.Text    (Text)
+import           GHC.Generics (Generic)
 
 newtype SHA1 = SHA1 {getSHA1 :: Text} deriving (Eq, Show)
 newtype Link = Link {getLink :: Text} deriving (Eq, Show)

@@ -1,11 +1,12 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- |Common regexps in Turtle syntax.
 module Changelogged.Pattern where
 
-import Turtle.Pattern
-import Turtle ((<>), (<|>))
-import Data.Text (Text, intercalate)
+import           Data.Text           (Text, intercalate)
+import           Turtle              ((<>), (<|>))
+import           Turtle.Pattern
 
-import Changelogged.Common
+import           Changelogged.Common
 
 -- >>> match versionExactRegex "version:   1.1.1"
 -- []

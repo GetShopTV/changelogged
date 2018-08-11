@@ -1,17 +1,17 @@
 {-# LANGUAGE DeriveGeneric #-}
 module Changelogged.Common.Types.Config where
 
-import Data.Text (Text)
-import GHC.Generics (Generic)
+import           Data.Text                        (Text)
+import           GHC.Generics                     (Generic)
 
-import qualified Filesystem.Path.CurrentOS as Path
+import qualified Filesystem.Path.CurrentOS        as Path
 
-import Changelogged.Common.Types.Common
+import           Changelogged.Common.Types.Common
 
 data Config = Config
-  { configChangelogs    :: [ChangelogConfig]
-  , configBranch        :: Maybe Text
-  , configEntryFormat   :: Maybe EntryFormat
+  { configChangelogs  :: [ChangelogConfig]
+  , configBranch      :: Maybe Text
+  , configEntryFormat :: Maybe EntryFormat
   } deriving (Eq, Show, Generic)
 
 data LevelHeaders = LevelHeaders
@@ -37,6 +37,6 @@ data VersionPattern = VersionPattern
   } deriving (Show, Eq, Generic)
 
 data VersionFile = VersionFile
-  { versionFilePath :: Path.FilePath
+  { versionFilePath           :: Path.FilePath
   , versionFileVersionPattern :: VersionPattern
   } deriving (Show, Eq, Generic)
