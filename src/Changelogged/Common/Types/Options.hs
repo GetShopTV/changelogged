@@ -1,11 +1,11 @@
 {-# LANGUAGE DeriveGeneric #-}
 module Changelogged.Common.Types.Options where
 
-import GHC.Generics (Generic)
+import           GHC.Generics                     (Generic)
 
-import Changelogged.Common.Types.Common
+import           Changelogged.Common.Types.Common
 
-import qualified Filesystem.Path.CurrentOS as Path
+import qualified Filesystem.Path.CurrentOS        as Path
 
 -- | Command line options for @changelogged@.
 data Options = Options

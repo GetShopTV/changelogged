@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Changelogged.EntryPoint
   ( processChangelogs
@@ -5,25 +7,25 @@ module Changelogged.EntryPoint
   , ppGitInfo
   ) where
 
-import Turtle hiding (find)
-import Prelude hiding (FilePath)
+import           Prelude                      hiding (FilePath)
+import           Turtle                       hiding (find)
 
-import Data.Char (isDigit)
-import Data.List (find)
-import Data.Maybe (fromMaybe)
-import qualified Data.Text as Text
+import           Data.Char                    (isDigit)
+import           Data.List                    (find)
+import           Data.Maybe                   (fromMaybe)
+import qualified Data.Text                    as Text
 
-import Changelogged.Versions.Bump
-import Changelogged.Changelog.Check
-import Changelogged.Common
-import Changelogged.Git
+import           Changelogged.Changelog.Check
+import           Changelogged.Common
+import           Changelogged.Git
+import           Changelogged.Versions.Bump
 
 processChangelogs :: GitInfo -> Appl ()
 processChangelogs gitInfo = do
   (ChangeloggedEnv Options{..} Config{..}) <- ask
   case optTargetChangelog of
     Nothing -> if null configChangelogs
-      then failure "You have empty configuration file" 
+      then failure "You have empty configuration file"
       else mapM_ (processChangelog gitInfo) configChangelogs
     Just changelogPath -> do
       case lookupChangelog changelogPath configChangelogs of
@@ -62,7 +64,7 @@ loadGitInfo branch = do
   where
     extractVersion tag = case Text.dropWhile (not . isDigit) <$> tag of
       Just ver | not (Text.null ver) -> Just ver
-      _ -> Nothing
+      _                              -> Nothing
 
 -- | Pretty print known information about a Git project.
 ppGitInfo :: GitInfo -> Text

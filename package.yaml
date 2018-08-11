@@ -27,10 +27,6 @@ dependencies:
   - unordered-containers
   - ansi-terminal
 
-default-extensions:
-  - OverloadedStrings
-  - RecordWildCards
-
 library:
   source-dirs: src
   dependencies:

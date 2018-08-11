@@ -1,18 +1,20 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
 module Changelogged.Versions.Utils where
 
-import Prelude hiding (FilePath)
-import Turtle
+import           Prelude                   hiding (FilePath)
+import           Turtle
 
-import Control.Exception
-import qualified Control.Foldl as Fold
+import           Control.Exception
+import qualified Control.Foldl             as Fold
 
-import Data.Functor (($>))
-import qualified Data.List as List
+import           Data.Functor              (($>))
+import qualified Data.List                 as List
 
-import Filesystem.Path.CurrentOS (encodeString)
+import           Filesystem.Path.CurrentOS (encodeString)
 
-import Changelogged.Common
-import Changelogged.Pattern
+import           Changelogged.Common
+import           Changelogged.Pattern
 
 -- |Add version label to changelog.
 headChangelog :: Version -> FilePath -> Appl ()
@@ -53,7 +55,7 @@ generateVersionedFile _ _ [] = error "internal sed error"
 generateVersionedFile file (new:news) (old:olds) = generateVersionedFile (replaceLine file new old) news olds
   where
     replaceLine [] _ _ = []
-    replaceLine (xvar:xvars) newLine oldLine 
+    replaceLine (xvar:xvars) newLine oldLine
       | xvar == oldLine = newLine:xvars
       | otherwise = xvar : replaceLine xvars newLine oldLine
 

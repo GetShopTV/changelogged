@@ -1,19 +1,24 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
 module Changelogged.Changelog.Compose where
 
-import Prelude hiding (FilePath)
-import Turtle
+import           Prelude              hiding (FilePath)
+import           Turtle
 
-import qualified Control.Foldl as Fold
+import qualified Control.Foldl        as Fold
 
-import Data.Maybe (isJust, fromMaybe)
-import Data.Text (Text)
-import qualified Data.Text as Text
+import           Data.Maybe           (fromMaybe, isJust)
+import           Data.Text            (Text)
+import qualified Data.Text            as Text
 
-import System.Console.ANSI (Color(..))
+import           System.Console.ANSI  (Color (..))
 
-import Changelogged.Common
-import Changelogged.Git (listPRCommits, getCommitTag)
-import Changelogged.Pattern (isMerge)
+import           Changelogged.Common
+import           Changelogged.Git     (getCommitTag, listPRCommits)
+import           Changelogged.Pattern (isMerge)
+
+-- $setup
+-- >>> :set -XOverloadedStrings
 
 -- |
 warnMissing :: Commit -> Appl ()
@@ -91,13 +96,13 @@ retrieveCommitMessage :: Maybe PR -> SHA1 -> Appl Text
 retrieveCommitMessage isPR (SHA1 commit) = do
   summary <- fold (inproc "git" ["show", "-s", "--format=%B", commit] empty) Fold.list
   return $ Text.stripStart $ lineToText $ case isPR of
-    Just _ -> summary !! 2
+    Just _  -> summary !! 2
     Nothing -> summary !! 0
 
 printCommitTag :: SHA1 -> Appl ()
 printCommitTag sha = getCommitTag sha >>= \tag -> case tag of
   Nothing -> return ()
-  Just t -> coloredPrint Yellow (t <> "\n")
+  Just t  -> coloredPrint Yellow (t <> "\n")
 
 buildEntry ::  EntryFormat -> Text -> Link -> Text -> Text
 buildEntry (EntryFormat formattingString) message link identifier =
