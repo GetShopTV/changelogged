@@ -24,7 +24,7 @@ checkChangelog gitInfo@GitInfo{..} config@ChangelogConfig{..} = do
       return $ and flags
 
   if upToDate
-    then success (showPath changelogChangelog <> " is up to date.\n" <> "You can run bump-versions to bump versions.")
+    then success (showPath changelogChangelog <> " is up to date.\n" <> "You can run bump-versions to bump versions for it.")
     else do
       warning $ showPath changelogChangelog <> " is out of date." <>
         if optAction == Just UpdateChangelogs

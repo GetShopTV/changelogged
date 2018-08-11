@@ -22,10 +22,9 @@ processChangelogs :: GitInfo -> Appl ()
 processChangelogs gitInfo = do
   (ChangeloggedEnv Options{..} Config{..}) <- ask
   case optTargetChangelog of
-    Nothing -> case length configChangelogs of
-      0 -> failure "You have empty configuration file" 
-      1 -> processChangelog gitInfo $ head configChangelogs
-      _ -> failure "You cannot bump versions generally through all changelogs. Correct form: changelogged --bump-versions --level <level> <changelog>"
+    Nothing -> if null configChangelogs
+      then failure "You have empty configuration file" 
+      else mapM_ (processChangelog gitInfo) configChangelogs
     Just changelogPath -> do
       case lookupChangelog changelogPath configChangelogs of
         Just changelog -> processChangelog gitInfo changelog
