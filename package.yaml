@@ -22,10 +22,12 @@ custom-setup:
 
 dependencies:
   - base >= 4.7 && < 5
+  - bytestring
   - turtle >= 1.5.0
   - text
   - unordered-containers
   - ansi-terminal
+  - template-haskell
 
 library:
   source-dirs: src
