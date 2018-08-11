@@ -1,17 +1,17 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveAnyClass     #-}
+{-# LANGUAGE DeriveGeneric      #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell    #-}
 module Changelogged.Aeson () where
 
-import Data.Aeson (ToJSON(..), FromJSON(..))
-import Data.Aeson.TH (deriveJSON)
+import           Data.Aeson                     (FromJSON (..), ToJSON (..))
+import           Data.Aeson.TH                  (deriveJSON)
 
-import qualified Filesystem.Path.CurrentOS as Path
+import qualified Filesystem.Path.CurrentOS      as Path
 
-import Changelogged.Common.Types
-import Changelogged.Common.Utils.Pure
+import           Changelogged.Common.Types
+import           Changelogged.Common.Utils.Pure
 
 instance FromJSON Path.FilePath where
   parseJSON = fmap Path.decodeString . parseJSON

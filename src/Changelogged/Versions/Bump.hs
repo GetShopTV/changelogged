@@ -1,21 +1,23 @@
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Changelogged.Versions.Bump where
 
-import Turtle
-import Prelude hiding (FilePath)
+import           Prelude                     hiding (FilePath)
+import           Turtle
 
-import Control.Exception hiding (catch)
-import qualified Control.Foldl as Fold
-import Control.Monad.Catch
+import           Control.Exception           hiding (catch)
+import qualified Control.Foldl               as Fold
+import           Control.Monad.Catch
 
-import Data.Maybe (fromMaybe, listToMaybe)
+import           Data.Maybe                  (fromMaybe, listToMaybe)
 
-import Filesystem.Path.CurrentOS (encodeString)
-import System.Console.ANSI (Color(..))
+import           Filesystem.Path.CurrentOS   (encodeString)
+import           System.Console.ANSI         (Color (..))
 
-import Changelogged.Versions.Utils
-import Changelogged.Common
-import Changelogged.Pattern
+import           Changelogged.Common
+import           Changelogged.Pattern
+import           Changelogged.Versions.Utils
 
 -- |Get current version.
 currentVersion :: VersionFile -> Appl Version
@@ -71,7 +73,7 @@ bumpVersions upToDate config@ChangelogConfig{..} = do
       when optForce $ warning $ format fp changelogChangelog <> " is out of date. Bumping versions anyway due to --force."
       newVersion <- case optChangeLevel of
         Just lev -> generateVersion lev config
-        Nothing -> generateVersionByChangelog config
+        Nothing  -> generateVersionByChangelog config
 
       case newVersion of
         Nothing -> return ()

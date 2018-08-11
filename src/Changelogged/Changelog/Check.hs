@@ -1,15 +1,17 @@
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Changelogged.Changelog.Check where
 
-import Turtle hiding (stdout, stderr, find)
-import Prelude hiding (FilePath)
-import Data.Foldable (asum)
+import           Data.Foldable                  (asum)
+import           Prelude                        hiding (FilePath)
+import           Turtle                         hiding (find, stderr, stdout)
 
-import qualified Control.Foldl as Fold
+import qualified Control.Foldl                  as Fold
 
-import Changelogged.Changelog.Compose
-import Changelogged.Common
-import Changelogged.Pattern
+import           Changelogged.Changelog.Compose
+import           Changelogged.Common
+import           Changelogged.Pattern
 
 checkChangelog :: GitInfo -> ChangelogConfig -> Appl Bool
 checkChangelog gitInfo@GitInfo{..} config@ChangelogConfig{..} = do
@@ -17,7 +19,7 @@ checkChangelog gitInfo@GitInfo{..} config@ChangelogConfig{..} = do
   upToDate <- do
       when optFromBC $ printf ("Checking "%fp%" from start of project\n") changelogChangelog
       info $ "looking for missing entries in " <> format fp changelogChangelog
-  
+
       commitHashes <- map (fromJustCustom "Cannot find commit hash in git log entry" . hashMatch . lineToText)
         <$> fold (select gitHistory) Fold.list
       flags <- mapM (checkCommits gitInfo config) (map SHA1 commitHashes)
@@ -30,7 +32,7 @@ checkChangelog gitInfo@GitInfo{..} config@ChangelogConfig{..} = do
         if optAction == Just UpdateChangelogs
           then ""
           else "\nUse update-changelog to add missing changelog entries automatically."
-  
+
   return upToDate
 
 checkCommits :: GitInfo -> ChangelogConfig -> SHA1 -> Appl Bool

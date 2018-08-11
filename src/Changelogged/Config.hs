@@ -1,23 +1,25 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
 module Changelogged.Config where
 
-import Data.Either.Combinators (rightToMaybe)
-import Data.Monoid ((<>))
-import Data.Text (Text)
-import qualified Data.Text as Text
-import qualified Data.Yaml as Yaml
+import           Data.Either.Combinators (rightToMaybe)
+import           Data.Monoid             ((<>))
+import           Data.Text               (Text)
+import qualified Data.Text               as Text
+import qualified Data.Yaml               as Yaml
 
 import qualified Turtle
 
-import Changelogged.Common
-import Changelogged.Aeson ()
+import           Changelogged.Aeson      ()
+import           Changelogged.Common
 
 defaultLevelHeaders :: LevelHeaders
 defaultLevelHeaders = LevelHeaders
-  { levelHeadersApp = Just "* App"
+  { levelHeadersApp   = Just "* App"
   , levelHeadersMajor = Just "* Major"
   , levelHeadersMinor = Just "* Minor"
-  , levelHeadersFix = Just "* Fix"
-  , levelHeadersDoc = Just "* Doc"
+  , levelHeadersFix   = Just "* Fix"
+  , levelHeadersDoc   = Just "* Doc"
   }
 
 defaultConfig :: Config

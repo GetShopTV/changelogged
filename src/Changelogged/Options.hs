@@ -1,24 +1,24 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveAnyClass   #-}
+{-# LANGUAGE DeriveGeneric    #-}
 {-# LANGUAGE FlexibleContexts #-}
 module Changelogged.Options
   ( Options(..),
     parseOptions
   ) where
 
-import Data.Char (toLower)
-import Data.List (intercalate)
-import Data.Monoid ((<>))
-import Data.String.Conversions (cs)
+import           Data.Char                      (toLower)
+import           Data.List                      (intercalate)
+import           Data.Monoid                    ((<>))
+import           Data.String.Conversions        (cs)
 
-import Options.Applicative
+import           Options.Applicative
 
-import Prelude hiding (FilePath)
-import Filesystem.Path.CurrentOS
+import           Filesystem.Path.CurrentOS
+import           Prelude                        hiding (FilePath)
 
-import Changelogged.Common.Types
-import Changelogged.Common.Utils.Pure
+import           Changelogged.Common.Types
+import           Changelogged.Common.Utils.Pure
 
 -- |
 -- >>> availableLevels
@@ -118,11 +118,11 @@ parser = Options
            , "CHANGE_LEVEL can be " <> availableLevelsStr <> "."
            ])
       <> hidden
-    
+
     targetChangelog = argument readFilePath $
          metavar "TARGET_CHANGELOG"
       <> help ("Path to target changelog.")
-    
+
     configPath = option readFilePath $
          long "config"
       <> metavar "changelogged.yaml config file location"

@@ -1,19 +1,20 @@
 -- | This module is intended to be pure git interface.
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Changelogged.Git where
 
-import qualified Control.Foldl as Fold
-import Control.Monad.Catch (catch)
+import qualified Control.Foldl           as Fold
+import           Control.Monad.Catch     (catch)
 
-import Data.Either.Combinators (fromRight)
-import Data.Maybe (fromMaybe)
-import Data.Text (Text)
-import qualified Data.Text as Text
+import           Data.Either.Combinators (fromRight)
+import           Data.Maybe              (fromMaybe)
+import           Data.Text               (Text)
+import qualified Data.Text               as Text
 
-import Turtle
+import           Turtle
 
-import Changelogged.Common
+import           Changelogged.Common
 
 -- | Get latest git tag in a given branch (if present).
 -- If no branch is specified then @HEAD^@ is used.

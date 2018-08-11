@@ -1,4 +1,4 @@
-{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DerivingStrategies         #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Changelogged.Common.Types
   ( module Changelogged.Common.Types.Common
@@ -11,14 +11,14 @@ module Changelogged.Common.Types
   , runInAppl
   ) where
 
-import Control.Monad.Base
-import Control.Monad.Catch
-import Control.Monad.Reader
+import           Control.Monad.Base
+import           Control.Monad.Catch
+import           Control.Monad.Reader
 
-import Changelogged.Common.Types.Common
-import Changelogged.Common.Types.Options
-import Changelogged.Common.Types.Config
-import Changelogged.Common.Types.Git
+import           Changelogged.Common.Types.Common
+import           Changelogged.Common.Types.Config
+import           Changelogged.Common.Types.Git
+import           Changelogged.Common.Types.Options
 
 data ChangeloggedEnv = ChangeloggedEnv
   { envOptions :: Options
