@@ -22,16 +22,19 @@ import Turtle (pwd, cd, lstree, grepText, fold)
 import Changelogged.Common.Types
 import Changelogged.Common.Utils.Pure
 
+coloredPrintIO :: Bool -> Color -> Text -> IO ()
+coloredPrintIO noColor color line = if noColor
+    then printf s line
+    else do
+      setSGR [SetColor Foreground Vivid color]
+      printf s line
+      setSGR [Reset]
+
 -- |Print '@text@' with ansi-terminal color.
 coloredPrint :: Color -> Text -> Appl ()
 coloredPrint color line = do
   noColor <- asks (optNoColors . envOptions)
-  if noColor
-    then printf s line
-    else do
-      liftIO $ setSGR [SetColor Foreground Vivid color]
-      printf s line
-      liftIO $ setSGR [Reset]
+  liftIO $ coloredPrintIO noColor color line
 
 success :: Text -> Appl ()
 success msg = coloredPrint Green $

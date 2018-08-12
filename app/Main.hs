@@ -17,12 +17,18 @@ import           Changelogged.Options
 
 prepareConfig :: FilePath -> Options -> IO Config
 prepareConfig configPath Options{..} = do
+  configExists <- testfile (decodeString configPath)
   -- load config file (or default config)
-  config'@Config{..} <- fromMaybe defaultConfig <$> loadConfig configPath
-  -- ignore all changelogs by default
-  let changelogs = map changelogChangelog configChangelogs
-      config = config' {configChangelogs = map (\cc -> cc {changelogIgnoreFiles = Just changelogs <> changelogIgnoreFiles cc}) configChangelogs}
-  return config
+  if configExists
+    then do
+    coloredPrintIO optNoColors Magenta ("Using config file at "<> pack configPath <>"\n")
+    eitherConf <- loadConfig configPath
+    case eitherConf of
+      Left parseError -> (die . showText) parseError
+      Right conf -> return conf
+    else do
+      coloredPrintIO optNoColors Magenta ("Config file at "<> pack configPath <>" not found. Using default config.\n")
+      return defaultConfig
 
 main :: IO ()
 main = do
@@ -40,9 +46,6 @@ main = do
 
       -- load git info
       gitInfo <- loadGitInfo configBranch
-      if config == defaultConfig
-        then coloredPrint Blue "Using default config.\n"
-        else coloredPrint Blue ("Configuration file: " <> pack configPath <> "\n")
 
       coloredPrint Blue (ppConfig  config)
       coloredPrint Blue (ppGitInfo gitInfo)

@@ -2,11 +2,10 @@
 {-# LANGUAGE RecordWildCards   #-}
 module Changelogged.Config where
 
-import           Data.Either.Combinators (rightToMaybe)
-import           Data.Monoid             ((<>))
-import           Data.Text               (Text)
-import qualified Data.Text               as Text
-import qualified Data.Yaml               as Yaml
+import Data.Monoid ((<>))
+import Data.Text (Text)
+import qualified Data.Text as Text
+import qualified Data.Yaml as Yaml
 
 import qualified Turtle
 
@@ -36,12 +35,15 @@ defaultConfig = Config
   , configEntryFormat = Nothing
   }
 
-loadConfig :: FilePath -> IO (Maybe Config)
-loadConfig path = Yaml.decodeFileEither path >>= mapM decodeCfgPathWildcards >>= return . rightToMaybe
+loadConfig :: FilePath -> IO (Either Yaml.ParseException Config)
+loadConfig path = Yaml.decodeFileEither path >>= mapM decodeCfgPathWildcards
 
 decodeCfgPathWildcards :: Config -> IO Config
-decodeCfgPathWildcards cfg@Config{..} = do
+decodeCfgPathWildcards cfg'@Config{..} = do
   expandedConfigChangelogs <- mapM expandWildcards configChangelogs
+  let changelogs = map changelogChangelog configChangelogs
+      -- Ignore all changelogs by default.
+      cfg = cfg' {configChangelogs = map (\cc -> cc {changelogIgnoreFiles = Just changelogs <> changelogIgnoreFiles cc}) configChangelogs}
   return $ cfg { configChangelogs = expandedConfigChangelogs }
   where
     expandWildcards cc@ChangelogConfig{..} = do
