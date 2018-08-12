@@ -67,8 +67,9 @@ bumpPart version file@VersionFile{..} = do
   unless dryRun $ sh $ bumpAny file version
 
 -- |Get level of changes from changelog.
-getLevelOfChanges :: FilePath -> LevelHeaders -> Appl (Maybe Level)
-getLevelOfChanges changelogFile levelHeaders@LevelHeaders{..} = do
+getLevelOfChanges :: FilePath -> Maybe LevelHeaders -> Appl (Maybe Level)
+getLevelOfChanges changelogFile Nothing = getLevelOfChanges changelogFile (Just defaultLevelHeaders)
+getLevelOfChanges changelogFile (Just levelHeaders@LevelHeaders{..}) = do
   levels <- lookupLevels unreleased levelHeaders
   return . fmap toEnum $ List.findIndex id levels
   where

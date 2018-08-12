@@ -12,20 +12,11 @@ import qualified Turtle
 import           Changelogged.Aeson      ()
 import           Changelogged.Common
 
-defaultLevelHeaders :: LevelHeaders
-defaultLevelHeaders = LevelHeaders
-  { levelHeadersApp   = Just "* App"
-  , levelHeadersMajor = Just "* Major"
-  , levelHeadersMinor = Just "* Minor"
-  , levelHeadersFix   = Just "* Fix"
-  , levelHeadersDoc   = Just "* Doc"
-  }
-
 defaultConfig :: Config
 defaultConfig = Config
   { configChangelogs    = pure ChangelogConfig
       { changelogChangelog     = "ChangeLog.md"
-      , changelogLevelHeaders  = defaultLevelHeaders
+      , changelogLevelHeaders  = Just defaultLevelHeaders
       , changelogWatchFiles    = Nothing  -- watch everything
       , changelogIgnoreFiles   = Just ["ChangeLog.md"]
       , changelogIgnoreCommits = Nothing

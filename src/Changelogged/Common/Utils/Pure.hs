@@ -13,7 +13,8 @@ import           Data.List
 
 import           Filesystem.Path.CurrentOS        (FilePath, encodeString)
 
-import           Changelogged.Common.Types.Common
+import Changelogged.Common.Types.Common
+import Changelogged.Common.Types.Config
 
 changeloggedVersion :: Version
 changeloggedVersion = Version "0.3.0"
@@ -96,3 +97,12 @@ jsonDerivingModifier prefix = defaultOptions {
 
 extractProjectNameFromUrl :: Link -> Text
 extractProjectNameFromUrl (Link url) = Text.takeWhileEnd (/= '/') . fromMaybe url $ Text.stripSuffix ".git" url
+
+defaultLevelHeaders :: LevelHeaders
+defaultLevelHeaders = LevelHeaders
+  { levelHeadersApp = Just "* App"
+  , levelHeadersMajor = Just "* Major"
+  , levelHeadersMinor = Just "* Minor"
+  , levelHeadersFix = Just "* Fix"
+  , levelHeadersDoc = Just "* Doc"
+  }

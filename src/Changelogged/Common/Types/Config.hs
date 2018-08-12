@@ -24,7 +24,7 @@ data LevelHeaders = LevelHeaders
 
 data ChangelogConfig = ChangelogConfig
   { changelogChangelog     :: Path.FilePath
-  , changelogLevelHeaders  :: LevelHeaders
+  , changelogLevelHeaders  :: Maybe LevelHeaders
   , changelogWatchFiles    :: Maybe [Path.FilePath]
   , changelogIgnoreFiles   :: Maybe [Path.FilePath]
   , changelogIgnoreCommits :: Maybe [Text]
