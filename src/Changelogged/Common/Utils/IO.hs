@@ -9,7 +9,6 @@ import Data.Text (Text)
 import Data.String.Conversions
 import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text
-import Data.Monoid ((<>))
 import qualified Data.Yaml as Yaml
 
 import qualified Filesystem.Path.CurrentOS as Path
@@ -84,9 +83,13 @@ withDir dir action = do
   liftIO $ cd prev
   return res
 
+makePattern :: String -> Pattern Text
+makePattern [] = mempty
+makePattern ('*':'*':xs) = star dot <> suffix (makePattern xs)
+makePattern ('*':xs) = star (noneOf "/") <> makePattern xs
+makePattern (sym:xs) = text (Text.singleton sym) <> makePattern xs
+
 decodePathWildcards :: [Path.FilePath] -> IO [Path.FilePath]
-decodePathWildcards paths = fold ((fmap Path.fromText <$> matchAnyPath) $ showText <$> lstree ".") Fold.list
+decodePathWildcards paths = fold ((fmap Path.fromText <$> matchAnyPath) $ Text.drop (Text.length "./") . showPath <$> lstree ".") Fold.list
   where
-    matchAnyPath = grepText (choice (map makePattern (map showPath paths)))
-    -- FIXME
-    makePattern wildPath = text wildPath
+    matchAnyPath = grepText (choice (map makePattern (map Path.encodeString paths)))
