@@ -57,10 +57,12 @@ in your `.changelogged.yaml`.
 
 For any non-trivial project you're likely to want to configure the way `changelogged`
 treats changes in that project.
-Normally configuration file is located at `.changelogged.yaml` (note the leading dot).
+Normally configuration file is located at `.changelogged.yaml` in the root of the project. (note the leading dot).
+You can define your own location with option `--config`.
 
 See [.changelogged.template.yaml](.changelogged.template.yaml)
 for a template configuration file with description of all fields.
+All paths inside can be relative against project root directory.
 
 ## Feature reference
 

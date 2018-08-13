@@ -12,9 +12,15 @@ changelogs:
       fix: "* Fix"
       doc: "* Doc"
 
-    # watch all files except for the changelog itself
     ignore_files:
+      # Ignore ChangeLog itself.
       - ChangeLog.md
+      # Ignore package.yaml files in root and any subdirectory.
+      - "**package.yaml"
+      # Ignore LICENSE files on the first tier of file tree and deeper.
+      - "*/**LICENSE"
+      # Ignore all .md files on the first tier and deeper.
+      - "*/**md"
     
     # which individual changes to ignore
     #
@@ -52,11 +58,11 @@ changelogs:
           variable: '"version"'
           separator: ':'
         
-# branch with version tags
+# Branch with version tags
 # for projects following Git Flow this should be master,
 # since development and feature branches might not have version tags
 #
 # branch: master
 
-# format of entries going to added to changelogs
+# Format of entries going to be added to changelogs
 # entry_format: "  - %message% (see [%link%](%id%));"

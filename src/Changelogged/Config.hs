@@ -2,31 +2,21 @@
 {-# LANGUAGE RecordWildCards   #-}
 module Changelogged.Config where
 
-import           Data.Either.Combinators (rightToMaybe)
-import           Data.Monoid             ((<>))
-import           Data.Text               (Text)
-import qualified Data.Text               as Text
-import qualified Data.Yaml               as Yaml
+import Data.Monoid ((<>))
+import Data.Text (Text)
+import qualified Data.Text as Text
+import qualified Data.Yaml as Yaml
 
 import qualified Turtle
 
 import           Changelogged.Aeson      ()
 import           Changelogged.Common
 
-defaultLevelHeaders :: LevelHeaders
-defaultLevelHeaders = LevelHeaders
-  { levelHeadersApp   = Just "* App"
-  , levelHeadersMajor = Just "* Major"
-  , levelHeadersMinor = Just "* Minor"
-  , levelHeadersFix   = Just "* Fix"
-  , levelHeadersDoc   = Just "* Doc"
-  }
-
 defaultConfig :: Config
 defaultConfig = Config
   { configChangelogs    = pure ChangelogConfig
       { changelogChangelog     = "ChangeLog.md"
-      , changelogLevelHeaders  = defaultLevelHeaders
+      , changelogLevelHeaders  = Just defaultLevelHeaders
       , changelogWatchFiles    = Nothing  -- watch everything
       , changelogIgnoreFiles   = Just ["ChangeLog.md"]
       , changelogIgnoreCommits = Nothing
@@ -36,8 +26,15 @@ defaultConfig = Config
   , configEntryFormat = Nothing
   }
 
-loadConfig :: FilePath -> IO (Maybe Config)
-loadConfig path = Yaml.decodeFileEither path >>= return . rightToMaybe
+loadConfig :: FilePath -> IO (Either Yaml.ParseException Config)
+loadConfig path = Yaml.decodeFileEither path >>= mapM adjustConfig
+
+adjustConfig :: Config -> IO Config
+adjustConfig cfg'@Config{..} = do
+  let changelogs = map changelogChangelog configChangelogs
+      -- Ignore all changelogs by default.
+      cfg = cfg' {configChangelogs = map (\cc -> cc {changelogIgnoreFiles = Just changelogs <> changelogIgnoreFiles cc}) configChangelogs}
+  return cfg
 
 ppConfig :: Config -> Text
 ppConfig Config{..} = mconcat

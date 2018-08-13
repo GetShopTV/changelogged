@@ -1,33 +1,37 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Changelogged.Common.Utils.IO where
 
-import           Control.Monad             (when)
-import           Data.Aeson                (ToJSON)
-import           Data.Monoid               ((<>))
-import           Data.String.Conversions
-import           Data.Text                 (Text)
-import qualified Data.Text                 as Text
-import qualified Data.Text.Encoding        as Text
-import qualified Data.Yaml                 as Yaml
+import Control.Monad (when)
+
+import Data.Aeson (ToJSON)
+import Data.Text (Text)
+import Data.String.Conversions
+import qualified Data.Text as Text
+import qualified Data.Text.Encoding as Text
+import qualified Data.Yaml as Yaml
 
 import qualified Filesystem.Path.CurrentOS as Path
 import           System.Console.ANSI
 
-import           Turtle                    (cd, pwd)
-import           Turtle.Format
+import Turtle.Format
+import Turtle.Pattern
+import Turtle (pwd, cd)
 
-import           Changelogged.Common.Types
+import Changelogged.Common.Types
+
+coloredPrintIO :: Bool -> Color -> Text -> IO ()
+coloredPrintIO noColor color line = if noColor
+    then printf s line
+    else do
+      setSGR [SetColor Foreground Vivid color]
+      printf s line
+      setSGR [Reset]
 
 -- |Print '@text@' with ansi-terminal color.
 coloredPrint :: Color -> Text -> Appl ()
 coloredPrint color line = do
   noColor <- asks (optNoColors . envOptions)
-  if noColor
-    then printf s line
-    else do
-      liftIO $ setSGR [SetColor Foreground Vivid color]
-      printf s line
-      liftIO $ setSGR [Reset]
+  liftIO $ coloredPrintIO noColor color line
 
 success :: Text -> Appl ()
 success msg = coloredPrint Green $
@@ -76,3 +80,9 @@ withDir dir action = do
   res <- action
   liftIO $ cd prev
   return res
+
+makeWildcardPattern :: String -> Pattern Text
+makeWildcardPattern [] = mempty
+makeWildcardPattern ('*':'*':xs) = star dot <> suffix (makeWildcardPattern xs)
+makeWildcardPattern ('*':xs) = star (noneOf "/") <> makeWildcardPattern xs
+makeWildcardPattern (sym:xs) = text (Text.singleton sym) <> makeWildcardPattern xs
