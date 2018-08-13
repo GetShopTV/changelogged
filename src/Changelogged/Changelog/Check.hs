@@ -50,14 +50,16 @@ checkCommits GitInfo{..} ChangelogConfig{..} commitSHA = do
 allFilesIgnored :: Maybe [FilePath] -> SHA1 -> Appl Bool
 allFilesIgnored Nothing _ = return False
 allFilesIgnored (Just files) (SHA1 commit) = do
-  affectedFiles <- fold (inproc "git" ["diff-tree", "--name-only", "--no-commit-id", "-m", commit] empty) Fold.list
+  liftIO $ print files
+  affectedFiles <- fold (inproc "git" ["diff-tree", "--name-only", "--no-commit-id", "-m", "-r", commit] empty) Fold.list
+  liftIO $ print affectedFiles
   return . and $ map (flip elem files . fromText . lineToText) affectedFiles
 
 commitNotWatched :: Maybe [FilePath] -> SHA1 -> Appl Bool
 commitNotWatched Nothing _ = return False
 commitNotWatched (Just files) (SHA1 commit) = fold
   (grep (asum (map (text . showPath) files))
-    (inproc "git" ["diff-tree", "--name-only", "--no-commit-id", "-m", commit] empty))
+    (inproc "git" ["diff-tree", "--name-only", "--no-commit-id", "-m", "-r", commit] empty))
   Fold.null
 
 commitIgnored :: Maybe [Text] -> SHA1 -> Appl Bool
