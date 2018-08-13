@@ -1,7 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Changelogged.Common.Utils.IO where
 
-import qualified Control.Foldl as Fold
 import Control.Monad (when)
 
 import Data.Aeson (ToJSON)
@@ -16,10 +15,9 @@ import           System.Console.ANSI
 
 import Turtle.Format
 import Turtle.Pattern
-import Turtle (pwd, cd, lstree, grepText, fold)
+import Turtle (pwd, cd)
 
 import Changelogged.Common.Types
-import Changelogged.Common.Utils.Pure
 
 coloredPrintIO :: Bool -> Color -> Text -> IO ()
 coloredPrintIO noColor color line = if noColor
@@ -83,13 +81,8 @@ withDir dir action = do
   liftIO $ cd prev
   return res
 
-makePattern :: String -> Pattern Text
-makePattern [] = mempty
-makePattern ('*':'*':xs) = star dot <> suffix (makePattern xs)
-makePattern ('*':xs) = star (noneOf "/") <> makePattern xs
-makePattern (sym:xs) = text (Text.singleton sym) <> makePattern xs
-
-decodePathWildcards :: [Path.FilePath] -> IO [Path.FilePath]
-decodePathWildcards paths = fold ((fmap Path.fromText <$> matchAnyPath) $ Text.drop (Text.length "./") . showPath <$> lstree ".") Fold.list
-  where
-    matchAnyPath = grepText (choice (map makePattern (map Path.encodeString paths)))
+makeWildcardPattern :: String -> Pattern Text
+makeWildcardPattern [] = mempty
+makeWildcardPattern ('*':'*':xs) = star dot <> suffix (makeWildcardPattern xs)
+makeWildcardPattern ('*':xs) = star (noneOf "/") <> makeWildcardPattern xs
+makeWildcardPattern (sym:xs) = text (Text.singleton sym) <> makeWildcardPattern xs

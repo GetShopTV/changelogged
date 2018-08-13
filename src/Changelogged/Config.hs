@@ -27,23 +27,14 @@ defaultConfig = Config
   }
 
 loadConfig :: FilePath -> IO (Either Yaml.ParseException Config)
-loadConfig path = Yaml.decodeFileEither path >>= mapM decodeCfgPathWildcards
+loadConfig path = Yaml.decodeFileEither path >>= mapM adjustConfig
 
-decodeCfgPathWildcards :: Config -> IO Config
-decodeCfgPathWildcards cfg'@Config{..} = do
-  expandedConfigChangelogs <- mapM expandWildcards configChangelogs
+adjustConfig :: Config -> IO Config
+adjustConfig cfg'@Config{..} = do
   let changelogs = map changelogChangelog configChangelogs
       -- Ignore all changelogs by default.
       cfg = cfg' {configChangelogs = map (\cc -> cc {changelogIgnoreFiles = Just changelogs <> changelogIgnoreFiles cc}) configChangelogs}
-  return $ cfg { configChangelogs = expandedConfigChangelogs }
-  where
-    expandWildcards cc@ChangelogConfig{..} = do
-      expandedIgnoreFiles <- mapM decodePathWildcards changelogIgnoreFiles
-      expandedWatchFiles <- mapM decodePathWildcards changelogWatchFiles
-      return cc
-        { changelogIgnoreFiles = expandedIgnoreFiles
-        , changelogWatchFiles = expandedWatchFiles
-        }
+  return cfg
 
 ppConfig :: Config -> Text
 ppConfig Config{..} = mconcat
