@@ -16,11 +16,11 @@ changelogs:
       # Ignore ChangeLog itself.
       - ChangeLog.md
       # Ignore package.yaml files in root and any subdirectory.
-      - "**/package.yaml"
+      - "**package.yaml"
       # Ignore LICENSE files on the first tier of file tree and deeper.
-      - "*/**/LICENSE"
+      - "*/**LICENSE"
       # Ignore all .md files on the first tier and deeper.
-      - "*/**/*/md"
+      - "*/**md"
     
     # which individual changes to ignore
     #
