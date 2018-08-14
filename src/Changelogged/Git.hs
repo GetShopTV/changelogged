@@ -83,4 +83,12 @@ getCommitTag (SHA1 sha) = do
   return $ lineToText <$> tag
 
 showDiff :: SHA1 -> Appl ()
-showDiff (SHA1 sha) = stdout $ inproc "git" ["show", sha] empty
+showDiff (SHA1 sha) = do
+  args <- buildArgs
+  stdout $ inproc "git" args empty
+  where
+    buildArgs = do
+      noColor <- gets (optNoColors . envOptions)
+      return $ if noColor
+        then ["show", "--minimal", "--color=never", sha]
+        else ["show", "--minimal", "--color=always", sha]
