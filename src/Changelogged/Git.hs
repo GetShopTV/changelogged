@@ -4,11 +4,15 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Changelogged.Git where
 
+import qualified System.Process as Proc
+
 import qualified Control.Foldl           as Fold
+import           Control.Monad           (void)
 import           Control.Monad.Catch     (catch)
 
 import           Data.Either.Combinators (fromRight)
 import           Data.Maybe              (fromMaybe)
+import           Data.String.Conversions
 import           Data.Text               (Text)
 import qualified Data.Text               as Text
 
@@ -85,10 +89,31 @@ getCommitTag (SHA1 sha) = do
 showDiff :: SHA1 -> Appl ()
 showDiff (SHA1 sha) = do
   args <- buildArgs
-  stdout $ inproc "git" args empty
+  (lessHandle, gitHandle) <- liftIO Proc.createPipe
+  (_,_,_,lessWaiter) <- liftIO $ Proc.createProcess Proc.CreateProcess
+    { Proc.cmdspec = (Proc.RawCommand "less" ["-r"])
+    , Proc.cwd = Nothing
+    , Proc.env = Nothing
+    , Proc.std_in = (Proc.UseHandle lessHandle)
+    , Proc.std_out = Proc.Inherit
+    , Proc.std_err = Proc.Inherit
+    , Proc.close_fds = True
+    , Proc.create_group = False
+    , Proc.delegate_ctlc = True
+    , Proc.detach_console = True
+    , Proc.create_new_console = True
+    , Proc.new_session = True
+    , Proc.child_group = Nothing
+    , Proc.child_user = Nothing
+    , Proc.use_process_jobs = False
+    }
+  void . liftIO $ Proc.runProcess "git" args Nothing Nothing Nothing (Just gitHandle) Nothing
+  void . liftIO . Proc.waitForProcess $ lessWaiter
+  
+  --stdout $ inproc "git" args empty
   where
     buildArgs = do
       noColor <- gets (optNoColors . envOptions)
-      return $ if noColor
+      return . map cs $ if noColor
         then ["show", "--minimal", "--color=never", sha]
         else ["show", "--minimal", "--color=always", sha]
