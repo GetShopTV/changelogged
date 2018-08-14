@@ -22,17 +22,14 @@ checkChangelog gitInfo@GitInfo{..} config@ChangelogConfig{..} = do
 
   commitHashes <- map (fromJustCustom "Cannot find commit hash in git log entry" . hashMatch . lineToText)
     <$> fold (select gitHistory) Fold.list
-  if (optListMisses || optAction == Just BumpVersions)
-    then do
-      flags <- mapM (dealWithCommit gitInfo config) (map SHA1 commitHashes)
-      if and flags
-        then success $ showPath changelogChangelog <> " is up to date.\n"
-                       <> "You can edit it manually now and arrange levels of changes if not yet.\n"
-                       <> "To bump versions run changelogged bump-versions."
-        else warning $ showPath changelogChangelog <> " does not mention all git history entries.\n"
-                       <> "You can run changelogged to update it interactively.\n"
-                       <> "Or you are still allowed to keep them missing and bump versions."
-    else mapM_ (dealWithCommit gitInfo config) (map SHA1 commitHashes)
+  flags <- mapM (dealWithCommit gitInfo config) (map SHA1 commitHashes)
+  if and flags
+    then success $ showPath changelogChangelog <> " is up to date.\n"
+                   <> "You can edit it manually now and arrange levels of changes if not yet.\n"
+                   <> "To bump versions run changelogged bump-versions."
+    else warning $ showPath changelogChangelog <> " does not mention all git history entries.\n"
+                   <> "You can run changelogged to update it interactively.\n"
+                   <> "Or you are still allowed to keep them missing and bump versions."
 
 dealWithCommit :: GitInfo -> ChangelogConfig -> SHA1 -> Appl Bool
 dealWithCommit GitInfo{..} ChangelogConfig{..} commitSHA = do
@@ -45,6 +42,6 @@ dealWithCommit GitInfo{..} ChangelogConfig{..} commitSHA = do
     commitIsPR <- fmap (PR . fromJustCustom "Cannot find commit hash in git log entry" . githubRefMatch . lineToText) <$>
         fold (grep githubRefGrep (grep (has (text (getSHA1 commitSHA))) (select gitHistory))) Fold.head
     commitMessage <- retrieveCommitMessage commitIsPR commitSHA
-    if optListMisses
+    if (optListMisses || optAction == Just BumpVersions)
       then plainDealWithEntry Commit{..} changelogChangelog
       else interactiveDealWithEntry gitRemoteUrl Commit{..} changelogChangelog

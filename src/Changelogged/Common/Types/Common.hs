@@ -26,5 +26,5 @@ data Level = App | Major | Minor | Fix | Doc
 data Action = BumpVersions
   deriving (Generic, Eq, Show, Enum, Bounded, ToJSON)
 
-data Interaction = Expand | Skip | Write | Remind | Ignore
+data Interaction = Expand | Skip | Remind | IgnoreAlways
   deriving (Generic, Eq, Show, Enum, Bounded, ToJSON)

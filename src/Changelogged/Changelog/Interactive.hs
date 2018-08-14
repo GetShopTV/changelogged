@@ -21,12 +21,22 @@ import           Changelogged.Pattern (isMerge)
 -- $setup
 -- >>> :set -XOverloadedStrings
 
-interactiveSession :: Link -> Commit -> FilePath -> Appl Bool
-interactiveSession _repoUrl _commit@Commit{..} _changelog = return True
+prompt :: Appl Interaction
+prompt = return Skip
+
+interactiveSession :: Link -> Commit -> FilePath -> Appl ()
+interactiveSession repoUrl commit@Commit{..} changelog = do
+  action <- prompt
+  ChangeloggedEnv Options{..} _config@Config{..} <- ask
+  case action of
+    Expand -> return ()
+    Skip -> return ()
+    Remind -> interactiveSession repoUrl commit changelog
+    IgnoreAlways -> return ()
 
 interactiveDealWithEntry :: Link -> Commit -> FilePath -> Appl Bool
 interactiveDealWithEntry repoUrl commit@Commit{..} changelog =
-  actOnMissingCommit commit changelog (interactiveSession repoUrl commit changelog)
+  actOnMissingCommit commit changelog (interactiveSession repoUrl commit changelog >> return True)
 
 suggestSubchanges :: Link -> SHA1 -> Appl ()
 suggestSubchanges gitUrl mergeHash = do
