@@ -14,7 +14,7 @@ import           Changelogged.Changelog.Plain
 import           Changelogged.Common
 import           Changelogged.Pattern
 
-checkChangelog :: GitInfo -> ChangelogConfig -> Appl Bool
+checkChangelog :: GitInfo -> ChangelogConfig -> Appl ()
 checkChangelog gitInfo@GitInfo{..} config@ChangelogConfig{..} = do
   Options{..} <- asks envOptions
   when optFromBC $ printf ("Checking "%fp%" from start of project\n") changelogChangelog
@@ -22,17 +22,17 @@ checkChangelog gitInfo@GitInfo{..} config@ChangelogConfig{..} = do
 
   commitHashes <- map (fromJustCustom "Cannot find commit hash in git log entry" . hashMatch . lineToText)
     <$> fold (select gitHistory) Fold.list
-  upToDate <- if optListMisses
+  if (optListMisses || optAction == Just BumpVersions)
     then do
       flags <- mapM (dealWithCommit gitInfo config) (map SHA1 commitHashes)
       if and flags
-        then success (showPath changelogChangelog <> " is up to date.\n" <> "You can run bump-versions to bump versions for it.")
-        else do
-          warning $ showPath changelogChangelog <> " is out of date." <> "\nRun changelogged to update it interactively."
-      return $ and flags
-    else mapM_ (dealWithCommit gitInfo config) (map SHA1 commitHashes) >> return True
-
-  return upToDate
+        then success $ showPath changelogChangelog <> " is up to date.\n"
+                       <> "You can edit it manually now and arrange levels of changes if not yet.\n"
+                       <> "To bump versions run changelogged bump-versions."
+        else warning $ showPath changelogChangelog <> " does not mention all git history entries.\n"
+                       <> "You can run changelogged to update it interactively.\n"
+                       <> "Or you are still allowed to keep them missing and bump versions."
+    else mapM_ (dealWithCommit gitInfo config) (map SHA1 commitHashes)
 
 dealWithCommit :: GitInfo -> ChangelogConfig -> SHA1 -> Appl Bool
 dealWithCommit GitInfo{..} ChangelogConfig{..} commitSHA = do

@@ -43,10 +43,10 @@ processChangelog gitInfo config@ChangelogConfig{..} = do
   when (not changelogExists) $ do
     info (format fp changelogChangelog <> " does not exist. Creating an empty changelog.")
     touch changelogChangelog
-
-  upToDate <- checkChangelog gitInfo config
+  
+  checkChangelog gitInfo config
   case optAction of
-    Just BumpVersions -> bumpVersions upToDate config
+    Just BumpVersions -> bumpVersions config
     Nothing -> return ()
 
 -- | Extract latest history and origin link from git through temporary file and store it in 'GitInfo'.
