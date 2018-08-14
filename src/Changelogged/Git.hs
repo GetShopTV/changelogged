@@ -81,3 +81,6 @@ getCommitTag :: SHA1 -> Appl (Maybe Text)
 getCommitTag (SHA1 sha) = do
   tag <- fold (inproc "git" ["tag", "--points-at", sha] empty) Fold.head
   return $ lineToText <$> tag
+
+showDiff :: SHA1 -> Appl ()
+showDiff (SHA1 sha) = stdout $ inproc "git" ["show", sha] empty

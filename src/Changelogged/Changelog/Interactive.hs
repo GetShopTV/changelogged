@@ -16,14 +16,14 @@ import           System.Console.ANSI  (Color (..))
 import           Changelogged.Common
 import           Changelogged.Config (addCommitMessageToIgnored)
 import           Changelogged.Changelog.Common
-import           Changelogged.Git     (listPRCommits)
+import           Changelogged.Git     (listPRCommits, showDiff)
 import           Changelogged.Pattern (isMerge)
 
 -- $setup
 -- >>> :set -XOverloadedStrings
 
 prompt :: Appl Interaction
-prompt = return Expand
+prompt = return Write
 
 interactiveSession :: Text -> Link -> Commit -> FilePath -> Appl ()
 interactiveSession entryPrefix repoUrl commit@Commit{..} changelog = do
@@ -40,7 +40,7 @@ interactiveSession entryPrefix repoUrl commit@Commit{..} changelog = do
           mapM_ (\sha -> interactiveSession ("  " <> entryPrefix) repoUrl sha changelog) subChanges
         else return ()
     Skip -> return ()
-    Remind -> interactiveSession "" repoUrl commit changelog
+    Remind -> showDiff commitSHA >> interactiveSession "" repoUrl commit changelog
     IgnoreAlways -> debug (showText changelog) >> addCommitMessageToIgnored commitMessage changelog
 
 interactiveDealWithEntry :: Link -> Commit -> FilePath -> Appl Bool
