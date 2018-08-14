@@ -23,7 +23,7 @@ import           Changelogged.Pattern (isMerge)
 -- >>> :set -XOverloadedStrings
 
 prompt :: Appl Interaction
-prompt = return IgnoreAlways
+prompt = return Expand
 
 interactiveSession :: Text -> Link -> Commit -> FilePath -> Appl ()
 interactiveSession entryPrefix repoUrl commit@Commit{..} changelog = do
@@ -31,6 +31,7 @@ interactiveSession entryPrefix repoUrl commit@Commit{..} changelog = do
   action <- prompt
   Options{..} <- gets envOptions
   case action of
+    Write -> addMissing entryPrefix repoUrl commit changelog
     Expand -> do
       addMissing entryPrefix repoUrl commit changelog
       if (isMerge commitMessage || isJust commitIsPR) 
