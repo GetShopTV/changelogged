@@ -2,6 +2,7 @@
 {-# LANGUAGE RecordWildCards   #-}
 module Changelogged.Config where
 
+import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as Text
@@ -25,6 +26,18 @@ defaultConfig = Config
   , configBranch = Nothing
   , configEntryFormat = Nothing
   }
+
+addCommitMessageToIgnored :: Text -> Turtle.FilePath -> Appl ()
+addCommitMessageToIgnored message changelog = do
+  ChangeloggedEnv opts@Options{..} cfg'@Config{..} <- get
+  let configPath = fromMaybe ".changelogged.yaml" (Text.unpack . showPath <$> optConfigPath)
+      newIgnoreCommits cc = Just [message] <> changelogIgnoreCommits cc
+      replaceElem =
+        (\(first, as) -> first <> ((head as) {changelogIgnoreCommits = newIgnoreCommits (head as)}: tail as))
+        . break (\cconf -> changelogChangelog cconf == changelog)
+      cfg = cfg' {configChangelogs = replaceElem configChangelogs}
+  put $ ChangeloggedEnv opts cfg
+  liftIO $ Yaml.encodeFile configPath cfg
 
 loadConfig :: FilePath -> IO (Either Yaml.ParseException Config)
 loadConfig path = Yaml.decodeFileEither path >>= mapM adjustConfig

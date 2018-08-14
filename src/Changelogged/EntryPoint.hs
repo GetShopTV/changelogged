@@ -22,7 +22,7 @@ import           Changelogged.Versions.Bump
 
 processChangelogs :: GitInfo -> Appl ()
 processChangelogs gitInfo = do
-  (ChangeloggedEnv Options{..} Config{..}) <- ask
+  (ChangeloggedEnv Options{..} Config{..}) <- get
   case optTargetChangelog of
     Nothing -> if null configChangelogs
       then failure "You have empty configuration file"
@@ -36,18 +36,16 @@ processChangelogs gitInfo = do
 
 processChangelog :: GitInfo -> ChangelogConfig -> Appl ()
 processChangelog gitInfo config@ChangelogConfig{..} = do
-  Options{..} <- asks envOptions
+  Options{..} <- gets envOptions
   liftIO $ putStrLn ""
-  info $ "processing " <> format fp changelogChangelog
   changelogExists <- testfile changelogChangelog
   when (not changelogExists) $ do
     info (format fp changelogChangelog <> " does not exist. Creating an empty changelog.")
     touch changelogChangelog
-
-  upToDate <- checkChangelog gitInfo config
+  
+  checkChangelog gitInfo config
   case optAction of
-    Just BumpVersions -> bumpVersions upToDate config
-    Just UpdateChangelogs -> success (showPath changelogChangelog <> " is updated.\n" <> "You can edit it manually.")
+    Just BumpVersions -> bumpVersions config
     Nothing -> return ()
 
 -- | Extract latest history and origin link from git through temporary file and store it in 'GitInfo'.
@@ -55,9 +53,11 @@ loadGitInfo
   :: Maybe Text -- ^ Branch with version tags (@HEAD@ is used by default).
   -> Appl GitInfo
 loadGitInfo branch = do
-  entireHistory <- asks (optFromBC . envOptions)
+  fromTag      <- gets (optFromVersion . envOptions)
   latestTag    <- loadGitLatestTag branch
-  gitHistory   <- loadGitHistory (if entireHistory then Nothing else latestTag)
+  gitHistory   <- loadGitHistory (case fromTag of
+    Nothing -> latestTag
+    Just tag -> tag)
   gitRemoteUrl <- loadGitRemoteUrl
   let gitLatestVersion = extractVersion latestTag
   return GitInfo {..}

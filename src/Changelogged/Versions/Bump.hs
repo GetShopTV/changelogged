@@ -65,24 +65,18 @@ generateVersionByChangelog logConfig@ChangelogConfig{..} = do
       warning $ "keeping current version since " <> showPath changelogChangelog <> " does not contain any new level headers or even entries."
       return Nothing
 
-bumpVersions :: Bool -> ChangelogConfig -> Appl ()
-bumpVersions upToDate config@ChangelogConfig{..} = do
-  Options{..} <- asks envOptions
-  if (upToDate || optForce)
-    then (do
-      when optForce $ warning $ format fp changelogChangelog <> " is out of date. Bumping versions anyway due to --force."
-      newVersion <- case optChangeLevel of
-        Just lev -> generateVersion lev config
-        Nothing  -> generateVersionByChangelog config
+bumpVersions :: ChangelogConfig -> Appl ()
+bumpVersions config@ChangelogConfig{..} = flip catch (\(ex :: PatternMatchFail) -> failure (showText ex)) $ do
+  Options{..} <- gets envOptions
+  do
+    newVersion <- case optChangeLevel of
+      Just lev -> generateVersion lev config
+      Nothing  -> generateVersionByChangelog config
 
-      case newVersion of
-        Nothing -> return ()
-        Just version -> case changelogVersionFiles of
-          Just versionFiles -> do
-            mapM_ (bumpPart version) versionFiles
-            headChangelog version changelogChangelog
-          Nothing -> warning "no files specified to bump versions in"
-      ) `catch` (\(ex :: PatternMatchFail) -> failure (showText ex))
-    else failure $ "cannot bump versions because " <> format fp changelogChangelog <> " is out of date.\n" <>
-                   "Use --no-check to skip changelog checks.\n" <>
-                   "Use --force to force bump version."
+    case newVersion of
+      Nothing -> return ()
+      Just version -> case changelogVersionFiles of
+        Just versionFiles -> do
+          mapM_ (bumpPart version) versionFiles
+          headChangelog version changelogChangelog
+        Nothing -> warning "no files specified to bump versions in"

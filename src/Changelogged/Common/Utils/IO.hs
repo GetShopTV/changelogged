@@ -30,7 +30,7 @@ coloredPrintIO noColor color line = if noColor
 -- |Print '@text@' with ansi-terminal color.
 coloredPrint :: Color -> Text -> Appl ()
 coloredPrint color line = do
-  noColor <- asks (optNoColors . envOptions)
+  noColor <- gets (optNoColors . envOptions)
   liftIO $ coloredPrintIO noColor color line
 
 success :: Text -> Appl ()
@@ -51,7 +51,7 @@ info msg = coloredPrint Cyan $
 
 debug :: Text -> Appl ()
 debug msg = do
-  verbose <- asks (optVerbose . envOptions)
+  verbose <- gets (optVerbose . envOptions)
   when verbose $ do
     coloredPrint Magenta $
       "DEBUG: " <> msg <> "\n"

@@ -3,40 +3,53 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Changelogged.Changelog.Check where
 
-import           Data.Foldable                  (asum)
 import           Prelude                        hiding (FilePath)
 import           Turtle                         hiding (find, stderr, stdout)
 
 import qualified Control.Foldl                  as Fold
+import           Control.Monad                  (unless)
 
-import           Changelogged.Changelog.Compose
+import           Changelogged.Changelog.Common
+import           Changelogged.Changelog.Interactive
+import           Changelogged.Changelog.Plain
 import           Changelogged.Common
 import           Changelogged.Pattern
+import           Changelogged.Git (retrieveCommitMessage)
 
-checkChangelog :: GitInfo -> ChangelogConfig -> Appl Bool
+checkChangelog :: GitInfo -> ChangelogConfig -> Appl ()
 checkChangelog gitInfo@GitInfo{..} config@ChangelogConfig{..} = do
-  Options{..} <- asks envOptions
-  upToDate <- do
-      when optFromBC $ printf ("Checking "%fp%" from start of project\n") changelogChangelog
-      info $ "looking for missing entries in " <> format fp changelogChangelog
+  Options{..} <- gets envOptions
+  case optFromVersion of
+    Nothing -> return ()
+    Just Nothing -> printf ("Checking "%fp%" from start of project\n") changelogChangelog
+    Just (Just tag) -> printf ("Checking "%fp%" from "%s%"\n") changelogChangelog tag
+  info $ "looking for missing entries in " <> format fp changelogChangelog <> "\n"
 
-      commitHashes <- map (fromJustCustom "Cannot find commit hash in git log entry" . hashMatch . lineToText)
-        <$> fold (select gitHistory) Fold.list
-      flags <- mapM (checkCommits gitInfo config) (map SHA1 commitHashes)
-      return $ and flags
+  commitHashes <- map (fromJustCustom "Cannot find commit hash in git log entry" . hashMatch . lineToText)
+    <$> fold (select gitHistory) Fold.list
 
-  if upToDate
-    then success (showPath changelogChangelog <> " is up to date.\n" <> "You can run bump-versions to bump versions for it.")
-    else do
-      warning $ showPath changelogChangelog <> " is out of date." <>
-        if optAction == Just UpdateChangelogs
-          then ""
-          else "\nUse update-changelog to add missing changelog entries automatically."
+  unless optListMisses $ info $ "You have entered interactiive session with Changelogged.\n"
+      <> "You will be asked what to do with each suggested entry.\n"
+      <> "You can:\n"
+      <> "  1. Write entry to changelog (type w/write and press Enter, or simply press Enter)\n"
+      <> "  2. Skip entry (type s/skip and press Enter)\n"
+      <> "  3. Write entry and go into it's subchanges if it was merge commit (type e/expand and press Enter)\n"
+      <> "  4. Ask changelogged to remind commit contents (type r/remind and press Enter). It's git show actually\n"
+      <> "  5. Set changelogged to always ignore commit with such commit message (it will never appear in interactive session)\n"
+      <> "     (type i/ignore and press Enter). It's git show actually\n"
 
-  return upToDate
+  flags <- mapM (dealWithCommit gitInfo config) (map SHA1 commitHashes)
+  if and flags
+    then success $ showPath changelogChangelog <> " is up to date.\n"
+                   <> "You can edit it manually now and arrange levels of changes if not yet.\n"
+                   <> "To bump versions run changelogged bump-versions."
+    else warning $ showPath changelogChangelog <> " does not mention all git history entries.\n"
+                   <> "You can run changelogged to update it interactively.\n"
+                   <> "Or you are still allowed to keep them missing and bump versions."
 
-checkCommits :: GitInfo -> ChangelogConfig -> SHA1 -> Appl Bool
-checkCommits GitInfo{..} ChangelogConfig{..} commitSHA = do
+dealWithCommit :: GitInfo -> ChangelogConfig -> SHA1 -> Appl Bool
+dealWithCommit GitInfo{..} ChangelogConfig{..} commitSHA = do
+  Options{..} <- gets envOptions
   ignoreChangeReasoned <- sequence $
     [ commitNotWatched changelogWatchFiles commitSHA
     , allFilesIgnored changelogIgnoreFiles commitSHA
@@ -45,44 +58,6 @@ checkCommits GitInfo{..} ChangelogConfig{..} commitSHA = do
     commitIsPR <- fmap (PR . fromJustCustom "Cannot find commit hash in git log entry" . githubRefMatch . lineToText) <$>
         fold (grep githubRefGrep (grep (has (text (getSHA1 commitSHA))) (select gitHistory))) Fold.head
     commitMessage <- retrieveCommitMessage commitIsPR commitSHA
-    changelogIsUp gitRemoteUrl Commit{..} changelogChangelog
-
-allFilesIgnored :: Maybe [FilePath] -> SHA1 -> Appl Bool
-allFilesIgnored Nothing _ = return False
-allFilesIgnored (Just files) (SHA1 commit) = do
-  affectedFiles <- fold (inproc "git" ["diff-tree", "--name-only", "--no-commit-id", "-m", "-r", commit] empty) Fold.list
-  let expandIgnoredFiles = map makeWildcardPattern (map encodeString files)
-  return . null . filter null . map (match (choice expandIgnoredFiles)) $ (map lineToText affectedFiles)
-
-commitNotWatched :: Maybe [FilePath] -> SHA1 -> Appl Bool
-commitNotWatched Nothing _ = return False
-commitNotWatched (Just files) (SHA1 commit) = let expandWatchFiles = asum (map makeWildcardPattern (map encodeString files)) in
-  fold
-      (grep expandWatchFiles
-      (inproc "git" ["diff-tree", "--name-only", "--no-commit-id", "-m", "-r", commit] empty))
-    Fold.null
-
-commitIgnored :: Maybe [Text] -> SHA1 -> Appl Bool
-commitIgnored Nothing _ = return False
-commitIgnored (Just names) (SHA1 commit) = not <$> fold
-  (grep (asum (map text names))
-    (inproc "git" ["show", "-s", "--format=%B", commit] empty))
-  Fold.null
-
--- |Check if commit/pr is present in changelog. Return '@True@' if present.
-changelogIsUp :: Link -> Commit -> FilePath -> Appl Bool
-changelogIsUp repoUrl commit@Commit{..} changelog = do
-  Options{..} <- asks envOptions
-  noEntry <- case commitIsPR of
-    Nothing -> fold (grep (has (text (getSHA1 commitSHA))) (input changelog)) Fold.null
-    Just (PR num) -> fold (grep (has (text num)) (input changelog)) Fold.null
-  if noEntry
-    then do
-      -- If --from-bc option invoked it will prepend list of misses with version tag.
-      printCommitTag commitSHA
-      if optSuggest
-        then suggestMissing repoUrl commit
-        else warnMissing commit
-      when (optAction == Just UpdateChangelogs) $ addMissing repoUrl commit changelog
-      return False
-    else return True
+    if (optListMisses || optAction == Just BumpVersions)
+      then plainDealWithEntry Commit{..} changelogChangelog
+      else interactiveDealWithEntry gitRemoteUrl Commit{..} changelogChangelog

@@ -4,16 +4,21 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Changelogged.Git where
 
+import qualified System.Process as Proc
+
 import qualified Control.Foldl           as Fold
+import           Control.Monad           (void)
 import           Control.Monad.Catch     (catch)
 
 import           Data.Either.Combinators (fromRight)
 import           Data.Maybe              (fromMaybe)
+import           Data.String.Conversions
 import           Data.Text               (Text)
 import qualified Data.Text               as Text
 
 import           Turtle
 
+import           Changelogged.Pattern
 import           Changelogged.Common
 
 -- | Get latest git tag in a given branch (if present).
@@ -54,12 +59,61 @@ loadGitHistory from = fold (inproc "git" (["log", "--oneline", "--first-parent"]
       Nothing     -> []
       Just commit -> [commit <> "..HEAD"]
 
-listPRCommits :: SHA1 -> Appl [(SHA1, Text)]
+-- |Get commit message for any entry in history.
+retrieveCommitMessage :: Maybe PR -> SHA1 -> Appl Text
+retrieveCommitMessage isPR (SHA1 commit) = do
+  summary <- fold (inproc "git" ["show", "-s", "--format=%B", commit] empty) Fold.list
+  return $ Text.stripStart $ lineToText $ case isPR of
+    Just _  -> summary !! 2
+    Nothing -> summary !! 0
+
+messageToCommitData :: Line -> Appl Commit
+messageToCommitData message = do
+  commitIsPR <- fmap (PR . fromJustCustom "Cannot find commit hash in git log entry" . githubRefMatch . lineToText) <$>
+    fold (grep githubRefGrep (select [message])) Fold.head
+  let commitSHA = SHA1 . fst . Text.breakOn " " . lineToText $ message
+  commitMessage <- retrieveCommitMessage commitIsPR commitSHA
+  return Commit{..}
+
+listPRCommits :: SHA1 -> Appl [Commit]
 listPRCommits (SHA1 sha) = do
   messages <- fold (inproc "git" ["log", "--oneline", sha <> "^1..." <> sha <> "^2"] empty) Fold.list
-  return . reverse . map ((\(first,second) -> (SHA1 first, Text.drop 1 second)) . Text.breakOn " " . lineToText) $ messages
+  commits <- mapM messageToCommitData messages
+  return . reverse $ commits
 
 getCommitTag :: SHA1 -> Appl (Maybe Text)
 getCommitTag (SHA1 sha) = do
   tag <- fold (inproc "git" ["tag", "--points-at", sha] empty) Fold.head
   return $ lineToText <$> tag
+
+showDiff :: SHA1 -> Appl ()
+showDiff (SHA1 sha) = do
+  args <- buildArgs
+  (lessHandle, gitHandle) <- liftIO Proc.createPipe
+  (_,_,_,lessWaiter) <- liftIO $ Proc.createProcess Proc.CreateProcess
+    { Proc.cmdspec = (Proc.RawCommand "less" ["-r"])
+    , Proc.cwd = Nothing
+    , Proc.env = Nothing
+    , Proc.std_in = (Proc.UseHandle lessHandle)
+    , Proc.std_out = Proc.Inherit
+    , Proc.std_err = Proc.Inherit
+    , Proc.close_fds = True
+    , Proc.create_group = False
+    , Proc.delegate_ctlc = True
+    , Proc.detach_console = True
+    , Proc.create_new_console = True
+    , Proc.new_session = True
+    , Proc.child_group = Nothing
+    , Proc.child_user = Nothing
+    , Proc.use_process_jobs = False
+    }
+  void . liftIO $ Proc.runProcess "git" args Nothing Nothing Nothing (Just gitHandle) Nothing
+  void . liftIO . Proc.waitForProcess $ lessWaiter
+  
+  --stdout $ inproc "git" args empty
+  where
+    buildArgs = do
+      noColor <- gets (optNoColors . envOptions)
+      return . map cs $ if noColor
+        then ["show", "--minimal", "--color=never", sha]
+        else ["show", "--minimal", "--color=always", sha]
