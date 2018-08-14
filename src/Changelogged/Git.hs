@@ -14,6 +14,7 @@ import qualified Data.Text               as Text
 
 import           Turtle
 
+import           Changelogged.Pattern
 import           Changelogged.Common
 
 -- | Get latest git tag in a given branch (if present).
@@ -54,10 +55,27 @@ loadGitHistory from = fold (inproc "git" (["log", "--oneline", "--first-parent"]
       Nothing     -> []
       Just commit -> [commit <> "..HEAD"]
 
-listPRCommits :: SHA1 -> Appl [(SHA1, Text)]
+-- |Get commit message for any entry in history.
+retrieveCommitMessage :: Maybe PR -> SHA1 -> Appl Text
+retrieveCommitMessage isPR (SHA1 commit) = do
+  summary <- fold (inproc "git" ["show", "-s", "--format=%B", commit] empty) Fold.list
+  return $ Text.stripStart $ lineToText $ case isPR of
+    Just _  -> summary !! 2
+    Nothing -> summary !! 0
+
+messageToCommitData :: Line -> Appl Commit
+messageToCommitData message = do
+  commitIsPR <- fmap (PR . fromJustCustom "Cannot find commit hash in git log entry" . githubRefMatch . lineToText) <$>
+    fold (grep githubRefGrep (select [message])) Fold.head
+  let commitSHA = SHA1 . fst . Text.breakOn " " . lineToText $ message
+  commitMessage <- retrieveCommitMessage commitIsPR commitSHA
+  return Commit{..}
+
+listPRCommits :: SHA1 -> Appl [Commit]
 listPRCommits (SHA1 sha) = do
   messages <- fold (inproc "git" ["log", "--oneline", sha <> "^1..." <> sha <> "^2"] empty) Fold.list
-  return . reverse . map ((\(first,second) -> (SHA1 first, Text.drop 1 second)) . Text.breakOn " " . lineToText) $ messages
+  commits <- mapM messageToCommitData messages
+  return . reverse $ commits
 
 getCommitTag :: SHA1 -> Appl (Maybe Text)
 getCommitTag (SHA1 sha) = do

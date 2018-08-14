@@ -13,6 +13,7 @@ import           Changelogged.Changelog.Interactive
 import           Changelogged.Changelog.Plain
 import           Changelogged.Common
 import           Changelogged.Pattern
+import           Changelogged.Git (retrieveCommitMessage)
 
 checkChangelog :: GitInfo -> ChangelogConfig -> Appl ()
 checkChangelog gitInfo@GitInfo{..} config@ChangelogConfig{..} = do

@@ -19,8 +19,6 @@ data Options = Options
   , optFromBC          :: Bool
     -- | Print all texts in standard terminal color.
   , optNoColors        :: Bool
-    -- | Expand PRs while suggesting and writing to changelog.
-  , optExpandPR        :: Bool
     -- | Run avoiding changes in files.
   , optDryRun          :: Bool
     -- | Check exactly one target changelog.

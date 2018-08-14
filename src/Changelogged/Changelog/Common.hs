@@ -41,14 +41,6 @@ prLink (Link link) (PR num) = Link $ " " <> link <> "/pull/" <> Text.drop 1 num 
 commitLink :: Link -> SHA1 -> Link
 commitLink (Link link) (SHA1 sha) = Link $ " " <> link <> "/commit/" <> sha <> " "
 
--- |Get commit message for any entry in history.
-retrieveCommitMessage :: Maybe PR -> SHA1 -> Appl Text
-retrieveCommitMessage isPR (SHA1 commit) = do
-  summary <- fold (inproc "git" ["show", "-s", "--format=%B", commit] empty) Fold.list
-  return $ Text.stripStart $ lineToText $ case isPR of
-    Just _  -> summary !! 2
-    Nothing -> summary !! 0
-
 printCommitTag :: SHA1 -> Appl ()
 printCommitTag sha = getCommitTag sha >>= \tag -> case tag of
   Nothing -> return ()

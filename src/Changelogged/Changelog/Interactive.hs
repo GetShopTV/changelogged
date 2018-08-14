@@ -24,66 +24,51 @@ import           Changelogged.Pattern (isMerge)
 prompt :: Appl Interaction
 prompt = return Skip
 
-interactiveSession :: Link -> Commit -> FilePath -> Appl ()
-interactiveSession repoUrl commit@Commit{..} changelog = do
+interactiveSession :: Text -> Link -> Commit -> FilePath -> Appl ()
+interactiveSession entryPrefix repoUrl commit@Commit{..} changelog = do
+  suggestMissing entryPrefix repoUrl commit
   action <- prompt
   ChangeloggedEnv Options{..} _config@Config{..} <- ask
   case action of
-    Expand -> return ()
+    Expand -> do
+      addMissing entryPrefix repoUrl commit changelog
+      if (isMerge commitMessage || isJust commitIsPR) 
+        then do
+          subChanges <- listPRCommits commitSHA
+          mapM_ (\sha -> interactiveSession ("  " <> entryPrefix) repoUrl sha changelog) subChanges
+        else return ()
     Skip -> return ()
-    Remind -> interactiveSession repoUrl commit changelog
+    Remind -> interactiveSession "" repoUrl commit changelog
     IgnoreAlways -> return ()
 
 interactiveDealWithEntry :: Link -> Commit -> FilePath -> Appl Bool
 interactiveDealWithEntry repoUrl commit@Commit{..} changelog =
-  actOnMissingCommit commit changelog (interactiveSession repoUrl commit changelog >> return True)
-
-suggestSubchanges :: Link -> SHA1 -> Appl ()
-suggestSubchanges gitUrl mergeHash = do
-  entryFormat <- asks (configEntryFormat . envConfig)
-  subChanges <- listPRCommits mergeHash
-  mapM_ (suggest entryFormat) subChanges
-  where
-    suggest formatting (sha1, message) = printf "  " >> printEntry (fromMaybe defaultEntryFormat formatting) message (commitLink gitUrl sha1) (getSHA1 sha1)
+  actOnMissingCommit commit changelog (interactiveSession "" repoUrl commit changelog >> return True)
 
 -- |
-suggestMissing :: Link -> Commit -> Appl ()
-suggestMissing gitUrl Commit{..} = do
+suggestMissing :: Text -> Link -> Commit -> Appl ()
+suggestMissing entryPrefix gitUrl Commit{..} = do
   (ChangeloggedEnv Options{..} Config{..}) <- ask
   case commitIsPR of
-    Just num -> do
-      printEntry (fromMaybe defaultEntryFormat configEntryFormat) commitMessage (prLink gitUrl num) (getPR num)
-      when optExpandPR $ suggestSubchanges gitUrl commitSHA
-    Nothing -> do
-      printEntry (fromMaybe defaultEntryFormat configEntryFormat) commitMessage (commitLink gitUrl commitSHA) (getSHA1 commitSHA)
-      when (isMerge commitMessage && optExpandPR) $ do
-        suggestSubchanges gitUrl commitSHA
-        debug commitMessage
-
-addSubchanges :: Link -> SHA1 -> FilePath -> Appl ()
-addSubchanges gitUrl mergeHash changelog = do
-  subChanges <- listPRCommits mergeHash
-  add subChanges
-  where
-    add :: [(SHA1, Text)] -> Appl ()
-    add changes = do
-      entryFormat <- asks (configEntryFormat . envConfig)
-      append changelog (select . (map unsafeTextToLine) $ map (buildSubEntry entryFormat) changes)
-    buildSubEntry formatting (sha1, message) = "  " <> buildEntry (fromMaybe defaultEntryFormat formatting) message (commitLink gitUrl sha1) (getSHA1 sha1)
+    Just num ->
+      printEntry (EntryFormat entryPrefix <> fromMaybe defaultEntryFormat configEntryFormat) commitMessage (prLink gitUrl num) (getPR num)
+    Nothing ->
+      printEntry (EntryFormat entryPrefix <> fromMaybe defaultEntryFormat configEntryFormat) commitMessage (commitLink gitUrl commitSHA) (getSHA1 commitSHA)
 
 -- |Add generated suggestion directly to changelog.
-addMissing :: Link -> Commit -> FilePath -> Appl ()
-addMissing gitUrl Commit{..} changelog = do
+addMissing :: Text -> Link -> Commit -> FilePath -> Appl ()
+addMissing entryPrefix gitUrl Commit{..} changelog = do
   currentLogs <- fold (input changelog) Fold.list
   (ChangeloggedEnv Options{..} Config{..}) <- ask
   unless optDryRun $ do
     output changelog (return $ unsafeTextToLine (entry configEntryFormat))
-    when ((isJust commitIsPR || isMerge commitMessage) && optExpandPR) $ addSubchanges gitUrl commitSHA changelog
     append changelog (select currentLogs)
   where
     entry formatting = case commitIsPR of
-      Just num -> buildEntry (fromMaybe defaultEntryFormat formatting) commitMessage (prLink gitUrl num) (getPR num)
-      Nothing -> buildEntry (fromMaybe defaultEntryFormat formatting) commitMessage (commitLink gitUrl commitSHA) (getSHA1 commitSHA)
+      Just num ->
+        buildEntry (EntryFormat entryPrefix <> fromMaybe defaultEntryFormat formatting) commitMessage (prLink gitUrl num) (getPR num)
+      Nothing ->
+        buildEntry (EntryFormat entryPrefix <> fromMaybe defaultEntryFormat formatting) commitMessage (commitLink gitUrl commitSHA) (getSHA1 commitSHA)
 
 buildEntry ::  EntryFormat -> Text -> Link -> Text -> Text
 buildEntry (EntryFormat formattingString) message link identifier =

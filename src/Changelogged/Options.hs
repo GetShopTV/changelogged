@@ -88,7 +88,6 @@ parser = Options
   <*> hiddenSwitch "list-misses" "List missing entries in simplest format with no expansion, don't modify anything."
   <*> hiddenSwitch "from-bc" "Look for missing changelog entries from the start of the project."
   <*> hiddenSwitch "no-colors" "Print all messages in standard terminal color."
-  <*> hiddenSwitch "expand-pr" "Do not expand PRs."
   <*> longSwitch "dry-run" "Do not change files while running."
   <*> optional targetChangelog
   <*> optional configPath
