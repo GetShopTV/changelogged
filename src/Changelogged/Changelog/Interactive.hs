@@ -14,6 +14,7 @@ import qualified Data.Text            as Text
 import           System.Console.ANSI  (Color (..))
 
 import           Changelogged.Common
+import           Changelogged.Config (addCommitMessageToIgnored)
 import           Changelogged.Changelog.Common
 import           Changelogged.Git     (listPRCommits)
 import           Changelogged.Pattern (isMerge)
@@ -22,13 +23,13 @@ import           Changelogged.Pattern (isMerge)
 -- >>> :set -XOverloadedStrings
 
 prompt :: Appl Interaction
-prompt = return Skip
+prompt = return IgnoreAlways
 
 interactiveSession :: Text -> Link -> Commit -> FilePath -> Appl ()
 interactiveSession entryPrefix repoUrl commit@Commit{..} changelog = do
   suggestMissing entryPrefix repoUrl commit
   action <- prompt
-  ChangeloggedEnv Options{..} _config@Config{..} <- ask
+  Options{..} <- gets envOptions
   case action of
     Expand -> do
       addMissing entryPrefix repoUrl commit changelog
@@ -39,7 +40,7 @@ interactiveSession entryPrefix repoUrl commit@Commit{..} changelog = do
         else return ()
     Skip -> return ()
     Remind -> interactiveSession "" repoUrl commit changelog
-    IgnoreAlways -> return ()
+    IgnoreAlways -> debug (showText changelog) >> addCommitMessageToIgnored commitMessage changelog
 
 interactiveDealWithEntry :: Link -> Commit -> FilePath -> Appl Bool
 interactiveDealWithEntry repoUrl commit@Commit{..} changelog =
@@ -48,7 +49,7 @@ interactiveDealWithEntry repoUrl commit@Commit{..} changelog =
 -- |
 suggestMissing :: Text -> Link -> Commit -> Appl ()
 suggestMissing entryPrefix gitUrl Commit{..} = do
-  (ChangeloggedEnv Options{..} Config{..}) <- ask
+  (ChangeloggedEnv Options{..} Config{..}) <- get
   case commitIsPR of
     Just num ->
       printEntry (EntryFormat entryPrefix <> fromMaybe defaultEntryFormat configEntryFormat) commitMessage (prLink gitUrl num) (getPR num)
@@ -59,7 +60,7 @@ suggestMissing entryPrefix gitUrl Commit{..} = do
 addMissing :: Text -> Link -> Commit -> FilePath -> Appl ()
 addMissing entryPrefix gitUrl Commit{..} changelog = do
   currentLogs <- fold (input changelog) Fold.list
-  (ChangeloggedEnv Options{..} Config{..}) <- ask
+  (ChangeloggedEnv Options{..} Config{..}) <- get
   unless optDryRun $ do
     output changelog (return $ unsafeTextToLine (entry configEntryFormat))
     append changelog (select currentLogs)

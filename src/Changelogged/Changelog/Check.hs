@@ -17,7 +17,7 @@ import           Changelogged.Git (retrieveCommitMessage)
 
 checkChangelog :: GitInfo -> ChangelogConfig -> Appl ()
 checkChangelog gitInfo@GitInfo{..} config@ChangelogConfig{..} = do
-  Options{..} <- asks envOptions
+  Options{..} <- gets envOptions
   when optFromBC $ printf ("Checking "%fp%" from start of project\n") changelogChangelog
   info $ "looking for missing entries in " <> format fp changelogChangelog
 
@@ -34,7 +34,7 @@ checkChangelog gitInfo@GitInfo{..} config@ChangelogConfig{..} = do
 
 dealWithCommit :: GitInfo -> ChangelogConfig -> SHA1 -> Appl Bool
 dealWithCommit GitInfo{..} ChangelogConfig{..} commitSHA = do
-  Options{..} <- asks envOptions
+  Options{..} <- gets envOptions
   ignoreChangeReasoned <- sequence $
     [ commitNotWatched changelogWatchFiles commitSHA
     , allFilesIgnored changelogIgnoreFiles commitSHA

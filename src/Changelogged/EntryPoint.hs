@@ -22,7 +22,7 @@ import           Changelogged.Versions.Bump
 
 processChangelogs :: GitInfo -> Appl ()
 processChangelogs gitInfo = do
-  (ChangeloggedEnv Options{..} Config{..}) <- ask
+  (ChangeloggedEnv Options{..} Config{..}) <- get
   case optTargetChangelog of
     Nothing -> if null configChangelogs
       then failure "You have empty configuration file"
@@ -36,7 +36,7 @@ processChangelogs gitInfo = do
 
 processChangelog :: GitInfo -> ChangelogConfig -> Appl ()
 processChangelog gitInfo config@ChangelogConfig{..} = do
-  Options{..} <- asks envOptions
+  Options{..} <- gets envOptions
   liftIO $ putStrLn ""
   info $ "processing " <> format fp changelogChangelog
   changelogExists <- testfile changelogChangelog
@@ -54,7 +54,7 @@ loadGitInfo
   :: Maybe Text -- ^ Branch with version tags (@HEAD@ is used by default).
   -> Appl GitInfo
 loadGitInfo branch = do
-  entireHistory <- asks (optFromBC . envOptions)
+  entireHistory <- gets (optFromBC . envOptions)
   latestTag    <- loadGitLatestTag branch
   gitHistory   <- loadGitHistory (if entireHistory then Nothing else latestTag)
   gitRemoteUrl <- loadGitRemoteUrl

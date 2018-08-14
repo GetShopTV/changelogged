@@ -67,7 +67,7 @@ generateVersionByChangelog logConfig@ChangelogConfig{..} = do
 
 bumpVersions :: ChangelogConfig -> Appl ()
 bumpVersions config@ChangelogConfig{..} = flip catch (\(ex :: PatternMatchFail) -> failure (showText ex)) $ do
-  Options{..} <- asks envOptions
+  Options{..} <- gets envOptions
   do
     newVersion <- case optChangeLevel of
       Just lev -> generateVersion lev config
