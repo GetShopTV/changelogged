@@ -53,9 +53,11 @@ loadGitInfo
   :: Maybe Text -- ^ Branch with version tags (@HEAD@ is used by default).
   -> Appl GitInfo
 loadGitInfo branch = do
-  entireHistory <- gets (optFromBC . envOptions)
+  fromTag      <- gets (optFromVersion . envOptions)
   latestTag    <- loadGitLatestTag branch
-  gitHistory   <- loadGitHistory (if entireHistory then Nothing else latestTag)
+  gitHistory   <- loadGitHistory (case fromTag of
+    Nothing -> latestTag
+    Just tag -> tag)
   gitRemoteUrl <- loadGitRemoteUrl
   let gitLatestVersion = extractVersion latestTag
   return GitInfo {..}

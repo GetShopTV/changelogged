@@ -11,6 +11,7 @@ import           Data.Char                      (toLower)
 import           Data.List                      (intercalate)
 import           Data.Monoid                    ((<>))
 import           Data.String.Conversions        (cs)
+import           Data.Text                      (Text)
 
 import           Options.Applicative
 
@@ -53,6 +54,14 @@ prettyPossibleValues xs = case reverse xs of
   where
     prettyValue v = "'" <> hyphenate (show v) <> "'"
 
+readOptionalText :: ReadM (Maybe Text)
+readOptionalText = eitherReader (r . map toLower)
+  where
+    r "init" = Right Nothing
+    r "bc" = Right Nothing
+    r "start" = Right Nothing
+    r txt   = Right (Just (cs txt))
+
 readLevel :: ReadM Level
 readLevel = eitherReader (r . map toLower)
   where
@@ -86,7 +95,7 @@ parser = Options
   <$> optional changeloggedAction
   <*> optional changesLevel
   <*> hiddenSwitch "list-misses" "List missing entries in simplest format with no expansion, don't modify anything."
-  <*> hiddenSwitch "from-bc" "Look for missing changelog entries from the start of the project."
+  <*> optional fromVersion
   <*> hiddenSwitch "no-colors" "Print all messages in standard terminal color."
   <*> longSwitch "dry-run" "Do not change files while running."
   <*> optional targetChangelog
@@ -114,6 +123,14 @@ parser = Options
       <> help (unlines
            [ "Level of changes (to override one inferred from changelog)."
            , "CHANGE_LEVEL can be " <> availableLevelsStr <> "."
+           ])
+      <> hidden
+
+    fromVersion = option readOptionalText $
+         long "from-version"
+      <> metavar "CHECK_FROM_TAG"
+      <> help (unlines
+           [ "Tag or commit from which to check changelogs."
            ])
       <> hidden
 
