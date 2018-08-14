@@ -13,8 +13,8 @@ data Options = Options
     optAction          :: Maybe Action
     -- | Format missing changelog entry warnings as suggestion writtable to changelog.
   , optChangeLevel     :: Maybe Level
-    -- | Look for missing changelog entries from the start of the project.
-  , optSuggest         :: Bool
+    -- | Only display report on changelog misses.
+  , optListMisses      :: Bool
     -- | Level of changes (to override one inferred from changelogs).
   , optFromBC          :: Bool
     -- | Bump versions ignoring possibly outdated changelogs.
