@@ -28,7 +28,7 @@ availableLevels = [minBound..maxBound]
 
 -- |
 -- >>> availableActions
--- [UpdateChangelogs,BumpVersions]
+-- [BumpVersions]
 availableActions :: [Action]
 availableActions = if (minBound :: Action) == maxBound
   then [minBound]
