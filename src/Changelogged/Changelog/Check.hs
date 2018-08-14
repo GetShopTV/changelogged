@@ -70,21 +70,26 @@ commitIgnored (Just names) (SHA1 commit) = not <$> fold
     (inproc "git" ["show", "-s", "--format=%B", commit] empty))
   Fold.null
 
+interactiveSession :: Link -> Commit -> FilePath -> Appl Bool
+interactiveSession _repoUrl _commit@Commit{..} _changelog = return True
+
 interactiveChangelogIsUp :: Link -> Commit -> FilePath -> Appl Bool
-interactiveChangelogIsUp _repoUrl _commit@Commit{..} _changelog = do
-  return True
+interactiveChangelogIsUp repoUrl commit@Commit{..} changelog =
+  actOnMissingCommit commit changelog (interactiveSession repoUrl commit changelog)
 
 -- |Check if commit/pr is present in changelog. Return '@True@' if present.
 changelogIsUp :: Commit -> FilePath -> Appl Bool
-changelogIsUp commit@Commit{..} changelog = do
-  Options{..} <- asks envOptions
+changelogIsUp commit@Commit{..} changelog =
+  actOnMissingCommit commit changelog $ do
+    warnMissing commit
+    return False
+
+actOnMissingCommit :: Commit -> FilePath -> Appl Bool -> Appl Bool
+actOnMissingCommit Commit{..} changelog action = do
   noEntry <- case commitIsPR of
     Nothing -> fold (grep (has (text (getSHA1 commitSHA))) (input changelog)) Fold.null
     Just (PR num) -> fold (grep (has (text num)) (input changelog)) Fold.null
   if noEntry
-    then do
-      -- If --from-bc option invoked it will prepend list of misses with version tag.
-      printCommitTag commitSHA
-      warnMissing commit
-      return False
+    -- If --from-bc option invoked it will prepend list of misses with version tag.
+    then printCommitTag commitSHA >> action
     else return True
