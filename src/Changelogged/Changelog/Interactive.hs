@@ -16,7 +16,7 @@ import           System.Console.ANSI  (Color (..))
 import           Changelogged.Common
 import           Changelogged.Config (addCommitMessageToIgnored)
 import           Changelogged.Changelog.Common
-import           Changelogged.Git     (listPRCommits, showDiff)
+import           Changelogged.Git     (listPRCommits, showDiff, getCommitTag)
 import           Changelogged.Pattern (isMerge)
 
 -- $setup
@@ -92,6 +92,10 @@ addMissing entryPrefix gitUrl Commit{..} changelog = do
   (ChangeloggedEnv Options{..} Config{..}) <- get
   unless optDryRun $ do
     output changelog (return $ unsafeTextToLine (entry configEntryFormat))
+    tagm <- getCommitTag commitSHA
+    case tagm of
+      Nothing -> return ()
+      Just tag -> append changelog (select [unsafeTextToLine ("#### Tag between missing commits: " <> tag)])
     append changelog (select currentLogs)
   where
     entry formatting = case commitIsPR of
