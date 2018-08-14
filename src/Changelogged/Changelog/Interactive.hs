@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
-module Changelogged.Changelog.Compose where
+module Changelogged.Changelog.Interactive where
 
 import           Prelude              hiding (FilePath)
 import           Turtle
@@ -14,35 +14,19 @@ import qualified Data.Text            as Text
 import           System.Console.ANSI  (Color (..))
 
 import           Changelogged.Common
-import           Changelogged.Git     (getCommitTag, listPRCommits)
+import           Changelogged.Changelog.Common
+import           Changelogged.Git     (listPRCommits)
 import           Changelogged.Pattern (isMerge)
 
 -- $setup
 -- >>> :set -XOverloadedStrings
 
--- |
-warnMissing :: Commit -> Appl ()
-warnMissing Commit{..} = do
-  case commitIsPR of
-    Nothing -> do
-      printf ("- Commit ")
-      coloredPrint Cyan (getSHA1 commitSHA)
-    Just (PR num) -> do
-      printf ("- Pull request ")
-      coloredPrint Cyan (num)
-  printf (" is missing: "%s%".\n") commitMessage
+interactiveSession :: Link -> Commit -> FilePath -> Appl Bool
+interactiveSession _repoUrl _commit@Commit{..} _changelog = return True
 
--- |
--- >>> prLink (Link "https://github.com/GetShopTV/changelogged") (PR "#13")
--- Link {getLink = " https://github.com/GetShopTV/changelogged/pull/13 "}
-prLink :: Link -> PR -> Link
-prLink (Link link) (PR num) = Link $ " " <> link <> "/pull/" <> Text.drop 1 num <> " "
-
--- |
--- >>> commitLink (Link "https://github.com/GetShopTV/changelogged") (SHA1 "9e14840")
--- Link {getLink = " https://github.com/GetShopTV/changelogged/commit/9e14840 "}
-commitLink :: Link -> SHA1 -> Link
-commitLink (Link link) (SHA1 sha) = Link $ " " <> link <> "/commit/" <> sha <> " "
+interactiveDealWithEntry :: Link -> Commit -> FilePath -> Appl Bool
+interactiveDealWithEntry repoUrl commit@Commit{..} changelog =
+  actOnMissingCommit commit changelog (interactiveSession repoUrl commit changelog)
 
 suggestSubchanges :: Link -> SHA1 -> Appl ()
 suggestSubchanges gitUrl mergeHash = do
@@ -90,19 +74,6 @@ addMissing gitUrl Commit{..} changelog = do
     entry formatting = case commitIsPR of
       Just num -> buildEntry (fromMaybe defaultEntryFormat formatting) commitMessage (prLink gitUrl num) (getPR num)
       Nothing -> buildEntry (fromMaybe defaultEntryFormat formatting) commitMessage (commitLink gitUrl commitSHA) (getSHA1 commitSHA)
-
--- |Get commit message for any entry in history.
-retrieveCommitMessage :: Maybe PR -> SHA1 -> Appl Text
-retrieveCommitMessage isPR (SHA1 commit) = do
-  summary <- fold (inproc "git" ["show", "-s", "--format=%B", commit] empty) Fold.list
-  return $ Text.stripStart $ lineToText $ case isPR of
-    Just _  -> summary !! 2
-    Nothing -> summary !! 0
-
-printCommitTag :: SHA1 -> Appl ()
-printCommitTag sha = getCommitTag sha >>= \tag -> case tag of
-  Nothing -> return ()
-  Just t  -> coloredPrint Yellow (t <> "\n")
 
 buildEntry ::  EntryFormat -> Text -> Link -> Text -> Text
 buildEntry (EntryFormat formattingString) message link identifier =
