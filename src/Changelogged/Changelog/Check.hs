@@ -16,27 +16,26 @@ import           Changelogged.Pattern
 checkChangelog :: GitInfo -> ChangelogConfig -> Appl Bool
 checkChangelog gitInfo@GitInfo{..} config@ChangelogConfig{..} = do
   Options{..} <- asks envOptions
-  upToDate <- do
-      when optFromBC $ printf ("Checking "%fp%" from start of project\n") changelogChangelog
-      info $ "looking for missing entries in " <> format fp changelogChangelog
+  when optFromBC $ printf ("Checking "%fp%" from start of project\n") changelogChangelog
+  info $ "looking for missing entries in " <> format fp changelogChangelog
 
-      commitHashes <- map (fromJustCustom "Cannot find commit hash in git log entry" . hashMatch . lineToText)
-        <$> fold (select gitHistory) Fold.list
-      flags <- mapM (checkCommits gitInfo config) (map SHA1 commitHashes)
+  commitHashes <- map (fromJustCustom "Cannot find commit hash in git log entry" . hashMatch . lineToText)
+    <$> fold (select gitHistory) Fold.list
+  upToDate <- if optListMisses
+    then do
+      flags <- mapM (checkCommit gitInfo config) (map SHA1 commitHashes)
+      if and flags
+        then success (showPath changelogChangelog <> " is up to date.\n" <> "You can run bump-versions to bump versions for it.")
+        else do
+          warning $ showPath changelogChangelog <> " is out of date." <> "\nRun changelogged to update it interactively."
       return $ and flags
-
-  if upToDate
-    then success (showPath changelogChangelog <> " is up to date.\n" <> "You can run bump-versions to bump versions for it.")
-    else do
-      warning $ showPath changelogChangelog <> " is out of date." <>
-        if optAction == Just UpdateChangelogs
-          then ""
-          else "\nUse update-changelog to add missing changelog entries automatically."
+    else mapM_ (checkCommit gitInfo config) (map SHA1 commitHashes) >> return True
 
   return upToDate
 
-checkCommits :: GitInfo -> ChangelogConfig -> SHA1 -> Appl Bool
-checkCommits GitInfo{..} ChangelogConfig{..} commitSHA = do
+checkCommit :: GitInfo -> ChangelogConfig -> SHA1 -> Appl Bool
+checkCommit GitInfo{..} ChangelogConfig{..} commitSHA = do
+  Options{..} <- asks envOptions
   ignoreChangeReasoned <- sequence $
     [ commitNotWatched changelogWatchFiles commitSHA
     , allFilesIgnored changelogIgnoreFiles commitSHA
@@ -45,7 +44,9 @@ checkCommits GitInfo{..} ChangelogConfig{..} commitSHA = do
     commitIsPR <- fmap (PR . fromJustCustom "Cannot find commit hash in git log entry" . githubRefMatch . lineToText) <$>
         fold (grep githubRefGrep (grep (has (text (getSHA1 commitSHA))) (select gitHistory))) Fold.head
     commitMessage <- retrieveCommitMessage commitIsPR commitSHA
-    changelogIsUp gitRemoteUrl Commit{..} changelogChangelog
+    if optListMisses
+      then changelogIsUp Commit{..} changelogChangelog
+      else interactiveChangelogIsUp gitRemoteUrl Commit{..} changelogChangelog
 
 allFilesIgnored :: Maybe [FilePath] -> SHA1 -> Appl Bool
 allFilesIgnored Nothing _ = return False
@@ -69,9 +70,13 @@ commitIgnored (Just names) (SHA1 commit) = not <$> fold
     (inproc "git" ["show", "-s", "--format=%B", commit] empty))
   Fold.null
 
+interactiveChangelogIsUp :: Link -> Commit -> FilePath -> Appl Bool
+interactiveChangelogIsUp _repoUrl _commit@Commit{..} _changelog = do
+  return True
+
 -- |Check if commit/pr is present in changelog. Return '@True@' if present.
-changelogIsUp :: Link -> Commit -> FilePath -> Appl Bool
-changelogIsUp repoUrl commit@Commit{..} changelog = do
+changelogIsUp :: Commit -> FilePath -> Appl Bool
+changelogIsUp commit@Commit{..} changelog = do
   Options{..} <- asks envOptions
   noEntry <- case commitIsPR of
     Nothing -> fold (grep (has (text (getSHA1 commitSHA))) (input changelog)) Fold.null
@@ -80,9 +85,6 @@ changelogIsUp repoUrl commit@Commit{..} changelog = do
     then do
       -- If --from-bc option invoked it will prepend list of misses with version tag.
       printCommitTag commitSHA
-      if optSuggest
-        then suggestMissing repoUrl commit
-        else warnMissing commit
-      when (optAction == Just UpdateChangelogs) $ addMissing repoUrl commit changelog
+      warnMissing commit
       return False
     else return True

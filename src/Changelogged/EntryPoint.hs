@@ -47,7 +47,6 @@ processChangelog gitInfo config@ChangelogConfig{..} = do
   upToDate <- checkChangelog gitInfo config
   case optAction of
     Just BumpVersions -> bumpVersions upToDate config
-    Just UpdateChangelogs -> success (showPath changelogChangelog <> " is updated.\n" <> "You can edit it manually.")
     Nothing -> return ()
 
 -- | Extract latest history and origin link from git through temporary file and store it in 'GitInfo'.

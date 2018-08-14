@@ -30,7 +30,9 @@ availableLevels = [minBound..maxBound]
 -- >>> availableActions
 -- [UpdateChangelogs,BumpVersions]
 availableActions :: [Action]
-availableActions = [minBound..maxBound]
+availableActions = if (minBound :: Action) == maxBound
+  then [minBound]
+  else [minBound..maxBound]
 
 -- >>> availableActionsStr
 -- "'update-changelogs' or 'bump-versions'"
@@ -66,8 +68,6 @@ readLevel = eitherReader (r . map toLower)
 readAction :: ReadM Action
 readAction = eitherReader (r . map toLower)
   where
-    r "update-changelog"   = Right UpdateChangelogs
-    r "update-changelogs"  = Right UpdateChangelogs
     r "bump-versions"      = Right BumpVersions
     r "bump-version"       = Right BumpVersions
     r cmd = Left $
@@ -85,7 +85,7 @@ parser :: Parser Options
 parser = Options
   <$> optional changeloggedAction
   <*> optional changesLevel
-  <*> hiddenSwitch "suggest" "Format printed missing entries as writtable suggestions for ChangeLog"
+  <*> hiddenSwitch "list-misses" "List missing entries in simplest format with no expansion, don't modify anything."
   <*> hiddenSwitch "from-bc" "Look for missing changelog entries from the start of the project."
   <*> hiddenSwitch "force" "Bump versions ignoring possibly outdated changelogs. Usable with bump-versions only"
   <*> hiddenSwitch "no-colors" "Print all messages in standard terminal color."
@@ -107,8 +107,8 @@ parser = Options
 
     changeloggedAction = argument readAction $
          metavar "ACTION"
-      <> completeWith ["update-changelog","bump-versions"]
-      <> help ("If present could be update-changelog or bump-versions.")
+      <> completeWith ["bump-versions"]
+      <> help ("argument form: bump-versions.")
 
     changesLevel = option readLevel $
          long "level"
