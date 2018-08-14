@@ -3,7 +3,7 @@
 module Changelogged.Changelog.Interactive where
 
 import           Prelude              hiding (FilePath)
-import           Turtle
+import           Turtle               hiding (stdout)
 
 import qualified Control.Foldl        as Fold
 
@@ -23,7 +23,35 @@ import           Changelogged.Pattern (isMerge)
 -- >>> :set -XOverloadedStrings
 
 prompt :: Appl Interaction
-prompt = return Write
+prompt = go
+  where go = do
+          coloredPrint Cyan "(↵/s↵/e↵/r↵/i↵):  \n"
+          answer <- liftIO getLine
+          case answer of
+            "" -> return Write
+            "w" -> return Write
+            "W" -> return Write
+            "Write" -> return Write
+            "write" -> return Write
+            "s" -> return Skip
+            "skip" -> return Skip
+            "Skip" -> return Skip
+            "S" -> return Skip
+            "e" -> return Expand
+            "E" -> return Expand
+            "Expand" -> return Expand
+            "expand" -> return Expand
+            "r" -> return Remind
+            "remind" -> return Remind
+            "Remind" -> return Remind
+            "R" -> return Remind
+            "i" -> return IgnoreAlways
+            "ignore" -> return IgnoreAlways
+            "Ignore" -> return IgnoreAlways
+            "I" -> return IgnoreAlways
+            _ -> do
+              liftIO $ putStrLn "Cannot parse action. Please repeat."
+              go
 
 interactiveSession :: Text -> Link -> Commit -> FilePath -> Appl ()
 interactiveSession entryPrefix repoUrl commit@Commit{..} changelog = do

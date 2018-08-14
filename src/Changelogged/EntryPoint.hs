@@ -38,7 +38,6 @@ processChangelog :: GitInfo -> ChangelogConfig -> Appl ()
 processChangelog gitInfo config@ChangelogConfig{..} = do
   Options{..} <- gets envOptions
   liftIO $ putStrLn ""
-  info $ "processing " <> format fp changelogChangelog
   changelogExists <- testfile changelogChangelog
   when (not changelogExists) $ do
     info (format fp changelogChangelog <> " does not exist. Creating an empty changelog.")
