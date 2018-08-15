@@ -25,13 +25,13 @@ import           Changelogged.Common.Utils.Pure
 
 -- |
 -- >>> availableLevels
--- [App,Major,Minor,Fix,Doc]
+-- [Application,Major,Minor,Fix,Doc]
 availableLevels :: [Level]
 availableLevels = [minBound..maxBound]
 
 -- |
 -- >>> availableLevelsStr
--- "'app', 'major', 'minor', 'fix' or 'doc'"
+-- "'application', 'major', 'minor', 'fix' or 'doc'"
 availableLevelsStr :: String
 availableLevelsStr = prettyPossibleValues availableLevels
 
