@@ -29,3 +29,5 @@ changelogs:
 branch: origin/master
 
 entry_format: "  - %message% (see [%link%](%id%));"
+
+editor_command: "nano -EiT 2"

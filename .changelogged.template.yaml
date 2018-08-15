@@ -66,3 +66,6 @@ changelogs:
 
 # Format of entries going to be added to changelogs
 # entry_format: "  - %message% (see [%link%](%id%));"
+
+# Text editor command to run for editing changelog.
+# editor_command: "nano -i"

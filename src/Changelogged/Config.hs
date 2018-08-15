@@ -25,6 +25,7 @@ defaultConfig = Config
       }
   , configBranch = Nothing
   , configEntryFormat = Nothing
+  , configEditorCommand = Just "vim"
   }
 
 addCommitMessageToIgnored :: Text -> Turtle.FilePath -> Appl ()
@@ -53,6 +54,7 @@ ppConfig :: Config -> Text
 ppConfig Config{..} = mconcat
   [ "Main branch (with version tags)" ?: configBranch
   , "Format of inferred changelog entries" ?: (getEntryFormat <$> configEntryFormat)
+  , "Preferred editor" ?: configEditorCommand
   , "Changelogs" !: formatItems Turtle.fp (map changelogChangelog configChangelogs)
   ]
   where

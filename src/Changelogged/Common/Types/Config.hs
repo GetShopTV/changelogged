@@ -9,9 +9,10 @@ import qualified Filesystem.Path.CurrentOS        as Path
 import           Changelogged.Common.Types.Common
 
 data Config = Config
-  { configChangelogs  :: [ChangelogConfig]
-  , configBranch      :: Maybe Text
-  , configEntryFormat :: Maybe EntryFormat
+  { configChangelogs    :: [ChangelogConfig]
+  , configBranch        :: Maybe Text
+  , configEntryFormat   :: Maybe EntryFormat
+  , configEditorCommand :: Maybe Text
   } deriving (Eq, Show, Generic)
 
 data LevelHeaders = LevelHeaders

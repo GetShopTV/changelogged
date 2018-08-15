@@ -42,10 +42,8 @@ checkChangelog gitInfo@GitInfo{..} config@ChangelogConfig{..} = do
   if and flags
     then success $ showPath changelogChangelog <> " is up to date.\n"
                    <> "You can edit it manually now and arrange levels of changes if not yet.\n"
-                   <> "To bump versions run changelogged bump-versions."
     else warning $ showPath changelogChangelog <> " does not mention all git history entries.\n"
-                   <> "You can run changelogged to update it interactively.\n"
-                   <> "Or you are still allowed to keep them missing and bump versions."
+                   <> "You can run changelogged to update it interactively and bump versions.\n"
 
 dealWithCommit :: GitInfo -> ChangelogConfig -> SHA1 -> Appl Bool
 dealWithCommit GitInfo{..} ChangelogConfig{..} commitSHA = do
