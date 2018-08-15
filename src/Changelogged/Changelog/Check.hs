@@ -6,6 +6,8 @@ module Changelogged.Changelog.Check where
 import           Prelude                        hiding (FilePath)
 import           Turtle                         hiding (find, stderr, stdout)
 
+import           System.Console.ANSI            (Color (..))
+
 import qualified Control.Foldl                  as Fold
 
 import           Changelogged.Changelog.Common
@@ -27,15 +29,30 @@ checkChangelog gitInfo@GitInfo{..} config@ChangelogConfig{..} = do
   commitHashes <- map (fromJustCustom "Cannot find commit hash in git log entry" . hashMatch . lineToText)
     <$> fold (select gitHistory) Fold.list
 
-  flags <- mapM (dealWithCommit gitInfo config) (map SHA1 commitHashes)
+  interactiveMode <- promptGoInteractive
+  flags <- mapM (dealWithCommit interactiveMode gitInfo config) (map SHA1 commitHashes)
   if and flags
     then success $ showPath changelogChangelog <> " is up to date.\n"
                    <> "You can edit it manually now and arrange levels of changes if not yet.\n"
     else warning $ showPath changelogChangelog <> " does not mention all git history entries.\n"
                    <> "You can run changelogged to update it interactively and bump versions.\n"
 
-dealWithCommit :: GitInfo -> ChangelogConfig -> SHA1 -> Appl Bool
-dealWithCommit GitInfo{..} ChangelogConfig{..} commitSHA = do
+promptGoInteractive :: Appl Bool
+promptGoInteractive = do
+  coloredPrint Yellow $ "You can go to interactive mode or simply write changes to changelog. Go to interactive mode?\n"
+  go
+  where go = do
+          coloredPrint Cyan "(y/n):  \n"
+          answer <- liftIO getLine
+          case answer of
+            "y" -> return True
+            "n" -> return False
+            _ -> do
+              liftIO $ putStrLn "Cannot parse answer. Please repeat."
+              go
+
+dealWithCommit :: Bool -> GitInfo -> ChangelogConfig -> SHA1 -> Appl Bool
+dealWithCommit interactiveMode GitInfo{..} ChangelogConfig{..} commitSHA = do
   Options{..} <- gets envOptions
   ignoreChangeReasoned <- sequence $
     [ commitNotWatched changelogWatchFiles commitSHA
@@ -45,6 +62,10 @@ dealWithCommit GitInfo{..} ChangelogConfig{..} commitSHA = do
     commitIsPR <- fmap (PR . fromJustCustom "Cannot find commit hash in git log entry" . githubRefMatch . lineToText) <$>
         fold (grep githubRefGrep (grep (has (text (getSHA1 commitSHA))) (select gitHistory))) Fold.head
     commitMessage <- retrieveCommitMessage commitIsPR commitSHA
+    plainResult <- plainDealWithEntry Commit{..} changelogChangelog
     if optListMisses
-      then plainDealWithEntry Commit{..} changelogChangelog
-      else interactiveDealWithEntry gitRemoteUrl Commit{..} changelogChangelog
+      then return plainResult
+      else do
+        if interactiveMode
+          then interactiveDealWithEntry gitRemoteUrl Commit{..} changelogChangelog 
+          else simpleDealWithEntry gitRemoteUrl Commit{..} changelogChangelog

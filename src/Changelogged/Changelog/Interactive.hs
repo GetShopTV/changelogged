@@ -22,8 +22,11 @@ import           Changelogged.Pattern (isMerge)
 -- $setup
 -- >>> :set -XOverloadedStrings
 
-prompt :: Appl Interaction
-prompt = go
+promptSimple :: Appl Interaction
+promptSimple = return Write
+
+promptInteractive :: Appl Interaction
+promptInteractive = go
   where go = do
           coloredPrint Cyan "(↵/s↵/e↵/r↵/i↵):  \n"
           answer <- liftIO getLine
@@ -53,8 +56,8 @@ prompt = go
               liftIO $ putStrLn "Cannot parse action. Please repeat."
               go
 
-interactiveSession :: Text -> Link -> Commit -> FilePath -> Appl ()
-interactiveSession entryPrefix repoUrl commit@Commit{..} changelog = do
+interactiveSession :: Appl Interaction -> Text -> Link -> Commit -> FilePath -> Appl ()
+interactiveSession prompt entryPrefix repoUrl commit@Commit{..} changelog = do
   suggestMissing entryPrefix repoUrl commit
   action <- prompt
   Options{..} <- gets envOptions
@@ -65,15 +68,19 @@ interactiveSession entryPrefix repoUrl commit@Commit{..} changelog = do
       if (isMerge commitMessage || isJust commitIsPR) 
         then do
           subChanges <- listPRCommits commitSHA
-          mapM_ (\sha -> interactiveSession ("  " <> entryPrefix) repoUrl sha changelog) subChanges
+          mapM_ (\sha -> interactiveSession prompt ("  " <> entryPrefix) repoUrl sha changelog) subChanges
         else return ()
     Skip -> return ()
-    Remind -> showDiff commitSHA >> interactiveSession "" repoUrl commit changelog
+    Remind -> showDiff commitSHA >> interactiveSession prompt "" repoUrl commit changelog
     IgnoreAlways -> debug (showText changelog) >> addCommitMessageToIgnored commitMessage changelog
 
 interactiveDealWithEntry :: Link -> Commit -> FilePath -> Appl Bool
 interactiveDealWithEntry repoUrl commit@Commit{..} changelog =
-  actOnMissingCommit commit changelog (interactiveSession "" repoUrl commit changelog >> return True)
+  actOnMissingCommit commit changelog (interactiveSession promptInteractive "" repoUrl commit changelog >> return True)
+
+simpleDealWithEntry :: Link -> Commit -> FilePath -> Appl Bool
+simpleDealWithEntry repoUrl commit@Commit{..} changelog =
+  actOnMissingCommit commit changelog (interactiveSession promptSimple "" repoUrl commit changelog >> return True)
 
 -- |
 suggestMissing :: Text -> Link -> Commit -> Appl ()
