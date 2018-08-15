@@ -102,7 +102,7 @@ addMissing entryPrefix gitUrl Commit{..} changelog = do
     tagm <- getCommitTag commitSHA
     case tagm of
       Nothing -> return ()
-      Just tag -> append changelog (select [unsafeTextToLine ("#### Tag between missing commits: " <> tag)])
+      Just tag -> append changelog (select (map unsafeTextToLine ["","#### " <> tag,""]))
     append changelog (select currentLogs)
   where
     entry formatting = case commitIsPR of
