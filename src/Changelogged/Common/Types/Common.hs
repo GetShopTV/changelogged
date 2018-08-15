@@ -22,7 +22,7 @@ data Commit = Commit
   } deriving (Eq, Show)
 
 -- |Level of changes to bump to.
-data Level = App | Major | Minor | Fix | Doc
+data Level = Application | Major | Minor | Fix | Doc
   deriving (Generic, Show, Enum, Bounded, ToJSON)
 
 -- |Available altenative actions

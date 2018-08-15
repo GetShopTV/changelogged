@@ -21,33 +21,33 @@ prepareConfig configPath Options{..} = do
   -- load config file (or default config)
   if configExists
     then do
-    coloredPrintIO optNoColors Magenta ("Using config file at "<> pack configPath <>"\n")
+    coloredPrintIO (optNoColors optionsCommon) Magenta ("Using config file at "<> pack configPath <>"\n")
     eitherConf <- loadConfig configPath
     case eitherConf of
       Left parseError -> (die . showText) parseError
       Right conf -> return conf
     else do
-      coloredPrintIO optNoColors Magenta ("Config file at "<> pack configPath <>" not found. Using default config.\n")
+      coloredPrintIO (optNoColors optionsCommon) Magenta ("Config file at "<> pack configPath <>" not found. Using default config.\n")
       return defaultConfig
 
 main :: IO ()
 main = do
   -- parse command line options
-  opts@Options{..} <- parseOptions
+  envOptions@Options{..} <- parseOptions
 
-  let configPath = fromMaybe ".changelogged.yaml" (unpack . showPath <$> optConfigPath)
-  config@Config{..} <- prepareConfig configPath opts
+  let configPath = fromMaybe ".changelogged.yaml" (unpack . showPath <$> optConfigPath optionsCommon)
+  envConfig@Config{..} <- prepareConfig configPath envOptions
 
-  runInAppl opts config $ if optVersion
+  runInAppl ChangeloggedEnv{..} $ if optVersion optionsCommon
     then versionP changeloggedVersion
     else do
-      debugYaml "parsed options:" opts
-      debugYaml "config:" config
+      debugYaml "parsed options:" envOptions
+      debugYaml "config:" envConfig
 
       -- load git info
       gitInfo <- loadGitInfo configBranch
 
-      coloredPrint Blue (ppConfig  config)
+      coloredPrint Blue (ppConfig  envConfig)
       coloredPrint Blue (ppGitInfo gitInfo)
       -- process changelogs
       projectRoot <- liftIO $ splitPwdBy . extractProjectNameFromUrl $ gitRemoteUrl gitInfo

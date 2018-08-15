@@ -18,17 +18,17 @@ import           Changelogged.Git (retrieveCommitMessage)
 
 checkChangelog :: GitInfo -> ChangelogConfig -> Appl ()
 checkChangelog gitInfo@GitInfo{..} config@ChangelogConfig{..} = do
-  Options{..} <- gets envOptions
-  case optFromVersion of
-    Nothing -> return ()
-    Just Nothing -> printf ("Checking "%fp%" from start of project\n") changelogChangelog
-    Just (Just tag) -> printf ("Checking "%fp%" from "%s%"\n") changelogChangelog tag
+  CommonOptions{..} <- gets (optionsCommon . envOptions)
+  cmdOpts <- gets (optionsCmd . envOptions)
   info $ "looking for missing entries in " <> format fp changelogChangelog <> "\n"
 
   commitHashes <- map (fromJustCustom "Cannot find commit hash in git log entry" . hashMatch . lineToText)
     <$> fold (select gitHistory) Fold.list
 
-  unless optListMisses $ info $ "You have entered interactiive session with Changelogged.\n"
+  let listMisses = case cmdOpts of
+        Right _ -> True
+        Left ChangelogOptions{..} -> optListMisses
+  unless listMisses $ info $ "You have entered interactiive session with Changelogged.\n"
       <> "You will be asked what to do with each suggested entry.\n"
       <> "You can:\n"
       <> "  1. Write entry to changelog (type w/write and press Enter, or simply press Enter)\n"
@@ -49,7 +49,8 @@ checkChangelog gitInfo@GitInfo{..} config@ChangelogConfig{..} = do
 
 dealWithCommit :: GitInfo -> ChangelogConfig -> SHA1 -> Appl Bool
 dealWithCommit GitInfo{..} ChangelogConfig{..} commitSHA = do
-  Options{..} <- gets envOptions
+  CommonOptions{..} <- gets (optionsCommon . envOptions)
+  cmdOpts <- gets (optionsCmd . envOptions)
   ignoreChangeReasoned <- sequence $
     [ commitNotWatched changelogWatchFiles commitSHA
     , allFilesIgnored changelogIgnoreFiles commitSHA
@@ -58,6 +59,8 @@ dealWithCommit GitInfo{..} ChangelogConfig{..} commitSHA = do
     commitIsPR <- fmap (PR . fromJustCustom "Cannot find commit hash in git log entry" . githubRefMatch . lineToText) <$>
         fold (grep githubRefGrep (grep (has (text (getSHA1 commitSHA))) (select gitHistory))) Fold.head
     commitMessage <- retrieveCommitMessage commitIsPR commitSHA
-    if (optListMisses || optAction == Just BumpVersions)
-      then plainDealWithEntry Commit{..} changelogChangelog
-      else interactiveDealWithEntry gitRemoteUrl Commit{..} changelogChangelog
+    case cmdOpts of
+      Right _ -> plainDealWithEntry Commit{..} changelogChangelog
+      Left ChangelogOptions{..} -> if optListMisses
+        then plainDealWithEntry Commit{..} changelogChangelog
+        else interactiveDealWithEntry gitRemoteUrl Commit{..} changelogChangelog

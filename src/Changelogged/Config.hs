@@ -30,7 +30,7 @@ defaultConfig = Config
 addCommitMessageToIgnored :: Text -> Turtle.FilePath -> Appl ()
 addCommitMessageToIgnored message changelog = do
   ChangeloggedEnv opts@Options{..} cfg'@Config{..} <- get
-  let configPath = fromMaybe ".changelogged.yaml" (Text.unpack . showPath <$> optConfigPath)
+  let configPath = fromMaybe ".changelogged.yaml" (Text.unpack . showPath <$> (optConfigPath optionsCommon))
       newIgnoreCommits cc = Just [message] <> changelogIgnoreCommits cc
       replaceElem =
         (\(first, as) -> first <> ((head as) {changelogIgnoreCommits = newIgnoreCommits (head as)}: tail as))
