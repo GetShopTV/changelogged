@@ -9,6 +9,7 @@ import           Turtle                         hiding (find, stderr, stdout)
 import           System.Console.ANSI            (Color (..))
 
 import qualified Control.Foldl                  as Fold
+import           Control.Monad                  (when)
 
 import           Changelogged.Changelog.Common
 import           Changelogged.Changelog.Interactive
@@ -20,10 +21,10 @@ import           Changelogged.Git (retrieveCommitMessage)
 checkChangelog :: GitInfo -> ChangelogConfig -> Appl ()
 checkChangelog gitInfo@GitInfo{..} config@ChangelogConfig{..} = do
   Options{..} <- gets envOptions
+  when optFromBeginning $ printf ("Checking "%fp%" from start of the project\n") changelogChangelog
   case optFromVersion of
-    Nothing -> return ()
-    Just Nothing -> printf ("Checking "%fp%" from start of project\n") changelogChangelog
-    Just (Just tag) -> printf ("Checking "%fp%" from "%s%"\n") changelogChangelog tag
+    Nothing -> printf ("Checking "%fp%" from latest version\n") changelogChangelog
+    Just tag -> printf ("Checking "%fp%" from "%s%"\n") changelogChangelog tag
   info $ "looking for missing entries in " <> format fp changelogChangelog <> "\n"
 
   commitHashes <- map (fromJustCustom "Cannot find commit hash in git log entry" . hashMatch . lineToText)

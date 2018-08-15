@@ -87,10 +87,12 @@ loadGitInfo
   -> Appl GitInfo
 loadGitInfo branch = do
   fromTag      <- gets (optFromVersion . envOptions)
+  fromBC      <- gets (optFromBeginning . envOptions)
   latestTag    <- loadGitLatestTag branch
-  gitHistory   <- loadGitHistory (case fromTag of
-    Nothing -> latestTag
-    Just tag -> tag)
+  gitHistory   <- loadGitHistory (case (fromTag, fromBC) of
+    (Nothing, False) -> latestTag
+    (Just tag, False) -> Just tag
+    (_, True) -> Nothing)
   gitRemoteUrl <- loadGitRemoteUrl
   let gitLatestVersion = extractVersion latestTag
   return GitInfo {..}
