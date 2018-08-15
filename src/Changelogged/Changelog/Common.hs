@@ -8,7 +8,6 @@ import           Turtle
 import qualified Control.Foldl        as Fold
 
 import           Data.Foldable        (asum)
-import           Data.Text            (Text)
 import qualified Data.Text            as Text
 
 import           System.Console.ANSI  (Color (..))
@@ -61,9 +60,6 @@ commitNotWatched (Just files) (SHA1 commit) = let expandWatchFiles = asum (map m
       (inproc "git" ["diff-tree", "--name-only", "--no-commit-id", "-m", "-r", commit] empty))
     Fold.null
 
-commitIgnored :: Maybe [Text] -> SHA1 -> Appl Bool
+commitIgnored :: Maybe [SHA1] -> SHA1 -> Appl Bool
 commitIgnored Nothing _ = return False
-commitIgnored (Just names) (SHA1 commit) = not <$> fold
-  (grep (asum (map text names))
-    (inproc "git" ["show", "-s", "--format=%B", commit] empty))
-  Fold.null
+commitIgnored (Just commits) commit = return $ commit `elem` commits

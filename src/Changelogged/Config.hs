@@ -28,11 +28,11 @@ defaultConfig = Config
   , configEditorCommand = Just "vim"
   }
 
-addCommitMessageToIgnored :: Text -> Turtle.FilePath -> Appl ()
-addCommitMessageToIgnored message changelog = do
+addCommitToIgnored :: SHA1 -> Turtle.FilePath -> Appl ()
+addCommitToIgnored hash changelog = do
   ChangeloggedEnv opts@Options{..} cfg'@Config{..} <- get
   let configPath = fromMaybe ".changelogged.yaml" (Text.unpack . showPath <$> optConfigPath)
-      newIgnoreCommits cc = Just [message] <> changelogIgnoreCommits cc
+      newIgnoreCommits cc = Just [hash] <> changelogIgnoreCommits cc
       replaceElem =
         (\(first, as) -> first <> ((head as) {changelogIgnoreCommits = newIgnoreCommits (head as)}: tail as))
         . break (\cconf -> changelogChangelog cconf == changelog)

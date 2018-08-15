@@ -14,7 +14,7 @@ import qualified Data.Text            as Text
 import           System.Console.ANSI  (Color (..))
 
 import           Changelogged.Common
-import           Changelogged.Config (addCommitMessageToIgnored)
+import           Changelogged.Config (addCommitToIgnored)
 import           Changelogged.Changelog.Common
 import           Changelogged.Git     (listPRCommits, showDiff, getCommitTag)
 import           Changelogged.Pattern (isMerge)
@@ -79,7 +79,7 @@ interactiveSession prompt entryPrefix repoUrl commit@Commit{..} changelog = do
         else return ()
     Skip -> return ()
     Remind -> showDiff commitSHA >> interactiveSession prompt "" repoUrl commit changelog
-    IgnoreAlways -> debug (showText changelog) >> addCommitMessageToIgnored commitMessage changelog
+    IgnoreAlways -> debug (showText changelog) >> addCommitToIgnored commitSHA changelog
     Quit -> interactiveSession promptSkip "" repoUrl commit changelog
     WriteRest -> interactiveSession promptSimple "" repoUrl commit changelog
 

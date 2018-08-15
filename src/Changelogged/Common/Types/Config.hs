@@ -28,7 +28,7 @@ data ChangelogConfig = ChangelogConfig
   , changelogLevelHeaders  :: Maybe LevelHeaders
   , changelogWatchFiles    :: Maybe [Path.FilePath]
   , changelogIgnoreFiles   :: Maybe [Path.FilePath]
-  , changelogIgnoreCommits :: Maybe [Text]
+  , changelogIgnoreCommits :: Maybe [SHA1]
   , changelogVersionFiles  :: Maybe [VersionFile]
   } deriving (Eq, Show, Generic)
 

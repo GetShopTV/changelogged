@@ -9,6 +9,7 @@ import           Data.Text    (Text)
 import           GHC.Generics (Generic)
 
 newtype SHA1 = SHA1 {getSHA1 :: Text} deriving (Eq, Show)
+                                      deriving  newtype (ToJSON, FromJSON)
 newtype Link = Link {getLink :: Text} deriving (Eq, Show)
 newtype PR = PR {getPR :: Text} deriving (Eq, Show)
 newtype EntryFormat = EntryFormat {getEntryFormat :: Text} deriving (Eq, Show, Generic)
