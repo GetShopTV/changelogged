@@ -25,5 +25,5 @@ data Commit = Commit
 data Level = App | Major | Minor | Fix | Doc
   deriving (Generic, Show, Enum, Bounded, ToJSON)
 
-data Interaction = Write | Expand | Skip | Remind | IgnoreAlways
+data Interaction = Write | Expand | Skip | Remind | IgnoreAlways | Quit | WriteRest
   deriving (Generic, Eq, Show, Enum, Bounded, ToJSON)

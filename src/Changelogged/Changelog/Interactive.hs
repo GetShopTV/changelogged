@@ -22,13 +22,16 @@ import           Changelogged.Pattern (isMerge)
 -- $setup
 -- >>> :set -XOverloadedStrings
 
+promptSkip :: Appl Interaction
+promptSkip = return Skip
+
 promptSimple :: Appl Interaction
 promptSimple = return Write
 
 promptInteractive :: Appl Interaction
 promptInteractive = go
   where go = do
-          coloredPrint Cyan "(↵/s↵/e↵/r↵/i↵):  \n"
+          coloredPrint Cyan "(↵/(s)kip/(e)xpand/(r)emind/(i)gnore/(q)uit/(a)ll):  \n"
           answer <- liftIO getLine
           case answer of
             "" -> return Write
@@ -52,6 +55,10 @@ promptInteractive = go
             "ignore" -> return IgnoreAlways
             "Ignore" -> return IgnoreAlways
             "I" -> return IgnoreAlways
+            "q" -> return Quit
+            "quit" -> return Quit
+            "a" -> return WriteRest
+            "all" -> return WriteRest
             _ -> do
               liftIO $ putStrLn "Cannot parse action. Please repeat."
               go
@@ -73,6 +80,8 @@ interactiveSession prompt entryPrefix repoUrl commit@Commit{..} changelog = do
     Skip -> return ()
     Remind -> showDiff commitSHA >> interactiveSession prompt "" repoUrl commit changelog
     IgnoreAlways -> debug (showText changelog) >> addCommitMessageToIgnored commitMessage changelog
+    Quit -> interactiveSession promptSkip "" repoUrl commit changelog
+    WriteRest -> interactiveSession promptSimple "" repoUrl commit changelog
 
 interactiveDealWithEntry :: Link -> Commit -> FilePath -> Appl Bool
 interactiveDealWithEntry repoUrl commit@Commit{..} changelog =
@@ -126,4 +135,4 @@ printEntry (EntryFormat formattingString) message link identifier = do
     in printParts parts
 
 defaultEntryFormat :: EntryFormat
-defaultEntryFormat = EntryFormat "- %message% (see [%link%](%id%));"
+defaultEntryFormat = EntryFormat "- %message% (see [%id%](%link%));"

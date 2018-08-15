@@ -29,8 +29,13 @@ checkChangelog gitInfo@GitInfo{..} config@ChangelogConfig{..} = do
   commitHashes <- map (fromJustCustom "Cannot find commit hash in git log entry" . hashMatch . lineToText)
     <$> fold (select gitHistory) Fold.list
 
-  interactiveMode <- promptGoInteractive
-  flags <- mapM (dealWithCommit interactiveMode gitInfo config) (map SHA1 commitHashes)
+  flags <- do 
+    upToDate <- mapM (dealWithCommit True False gitInfo config) (map SHA1 commitHashes)
+    if optListMisses
+      then return upToDate
+      else do
+        interactiveMode <- promptGoInteractive
+        mapM (dealWithCommit False interactiveMode gitInfo config) (map SHA1 commitHashes)
   if and flags
     then success $ showPath changelogChangelog <> " is up to date.\n"
                    <> "You can edit it manually now and arrange levels of changes if not yet.\n"
@@ -51,9 +56,8 @@ promptGoInteractive = do
               liftIO $ putStrLn "Cannot parse answer. Please repeat."
               go
 
-dealWithCommit :: Bool -> GitInfo -> ChangelogConfig -> SHA1 -> Appl Bool
-dealWithCommit interactiveMode GitInfo{..} ChangelogConfig{..} commitSHA = do
-  Options{..} <- gets envOptions
+dealWithCommit :: Bool -> Bool -> GitInfo -> ChangelogConfig -> SHA1 -> Appl Bool
+dealWithCommit listMisses interactiveMode GitInfo{..} ChangelogConfig{..} commitSHA = do
   ignoreChangeReasoned <- sequence $
     [ commitNotWatched changelogWatchFiles commitSHA
     , allFilesIgnored changelogIgnoreFiles commitSHA
@@ -62,9 +66,8 @@ dealWithCommit interactiveMode GitInfo{..} ChangelogConfig{..} commitSHA = do
     commitIsPR <- fmap (PR . fromJustCustom "Cannot find commit hash in git log entry" . githubRefMatch . lineToText) <$>
         fold (grep githubRefGrep (grep (has (text (getSHA1 commitSHA))) (select gitHistory))) Fold.head
     commitMessage <- retrieveCommitMessage commitIsPR commitSHA
-    plainResult <- plainDealWithEntry Commit{..} changelogChangelog
-    if optListMisses
-      then return plainResult
+    if listMisses
+      then plainDealWithEntry Commit{..} changelogChangelog
       else do
         if interactiveMode
           then interactiveDealWithEntry gitRemoteUrl Commit{..} changelogChangelog 
