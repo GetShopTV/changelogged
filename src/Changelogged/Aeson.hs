@@ -25,6 +25,9 @@ instance FromJSON EntryFormat where
 instance ToJSON EntryFormat where
   toJSON = toJSON . getEntryFormat
 
+deriving instance ToJSON CommonOptions
+deriving instance ToJSON ChangelogOptions
+deriving instance ToJSON VersionOptions
 deriving instance ToJSON Options
 
 deriveJSON (jsonDerivingModifier "VersionPattern") ''VersionPattern

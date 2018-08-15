@@ -3,8 +3,10 @@
 {-# LANGUAGE DeriveGeneric    #-}
 {-# LANGUAGE FlexibleContexts #-}
 module Changelogged.Options
-  ( Options(..),
-    parseOptions
+  ( CommonOptions(..)
+  , ChangelogOptions(..)
+  , VersionOptions(..)
+  , parseOptions
   ) where
 
 import           Data.Char                      (toLower)
@@ -28,19 +30,6 @@ availableLevels :: [Level]
 availableLevels = [minBound..maxBound]
 
 -- |
--- >>> availableActions
--- [BumpVersions]
-availableActions :: [Action]
-availableActions = if (minBound :: Action) == maxBound
-  then [minBound]
-  else [minBound..maxBound]
-
--- >>> availableActionsStr
--- "'update-changelogs' or 'bump-versions'"
-availableActionsStr :: String
-availableActionsStr = prettyPossibleValues availableActions
-
--- |
 -- >>> availableLevelsStr
 -- "'app', 'major', 'minor', 'fix' or 'doc'"
 availableLevelsStr :: String
@@ -58,30 +47,19 @@ readOptionalText :: ReadM (Maybe Text)
 readOptionalText = eitherReader (r . map toLower)
   where
     r "init" = Right Nothing
-    r "bc" = Right Nothing
-    r "start" = Right Nothing
     r txt   = Right (Just (cs txt))
 
 readLevel :: ReadM Level
 readLevel = eitherReader (r . map toLower)
   where
-    r "app"   = Right App
-    r "major" = Right Major
-    r "minor" = Right Minor
-    r "fix"   = Right Fix
-    r "doc"   = Right Doc
+    r "application" = Right Application
+    r "major"       = Right Major
+    r "minor"       = Right Minor
+    r "fix"         = Right Fix
+    r "doc"         = Right Doc
     r lvl = Left $
          "Unknown level of changes: " <> show lvl <> ".\n"
       <> "Should be " <> availableLevelsStr <> ".\n"
-
-readAction :: ReadM Action
-readAction = eitherReader (r . map toLower)
-  where
-    r "bump-versions"      = Right BumpVersions
-    r "bump-version"       = Right BumpVersions
-    r cmd = Left $
-         "Unknown command: " <> show cmd <> ".\n"
-      <> "Should be " <> availableActionsStr <> ".\n"
 
 readFilePath :: ReadM FilePath
 readFilePath = eitherReader r
@@ -90,13 +68,9 @@ readFilePath = eitherReader r
       then Right (fromText $ cs filePathString)
       else Left ("Invalid file path " <> filePathString <> ".\n")
 
-parser :: Parser Options
-parser = Options
-  <$> optional changeloggedAction
-  <*> optional changesLevel
-  <*> hiddenSwitch "list-misses" "List missing entries in simplest format with no expansion, don't modify anything."
-  <*> optional fromVersion
-  <*> hiddenSwitch "no-colors" "Print all messages in standard terminal color."
+parserCommon :: Parser CommonOptions
+parserCommon = CommonOptions
+  <$> hiddenSwitch "no-colors" "Print all messages in standard terminal color."
   <*> longSwitch "dry-run" "Do not change files while running."
   <*> optional targetChangelog
   <*> optional configPath
@@ -112,18 +86,23 @@ parser = Options
       <> help description
       <> hidden
 
-    changeloggedAction = argument readAction $
-         metavar "ACTION"
-      <> completeWith ["bump-versions"]
-      <> help ("argument form: bump-versions.")
+    targetChangelog = argument readFilePath $
+         metavar "TARGET_CHANGELOG"
+      <> help ("Path to target changelog.")
 
-    changesLevel = option readLevel $
-         long "level"
-      <> metavar "CHANGE_LEVEL"
-      <> help (unlines
-           [ "Level of changes (to override one inferred from changelog)."
-           , "CHANGE_LEVEL can be " <> availableLevelsStr <> "."
-           ])
+    configPath = option readFilePath $
+         long "config"
+      <> metavar "changelogged.yaml config file location"
+      <> help ("Path to config file.")
+
+parserChangelog :: Parser (Either ChangelogOptions VersionOptions)
+parserChangelog = fmap Left $ ChangelogOptions
+  <$> hiddenSwitch "list-misses" "List missing entries in simplest format with no expansion, don't modify anything."
+  <*> optional fromVersion
+  where
+    hiddenSwitch name description = switch $
+         long name
+      <> help description
       <> hidden
 
     fromVersion = option readOptionalText $
@@ -134,18 +113,31 @@ parser = Options
            ])
       <> hidden
 
-    targetChangelog = argument readFilePath $
-         metavar "TARGET_CHANGELOG"
-      <> help ("Path to target changelog.")
+parserVersion :: Parser (Either ChangelogOptions VersionOptions)
+parserVersion = fmap Right $ VersionOptions
+  <$> optional changesLevel
+  where
+    changesLevel = argument readLevel $
+         metavar "CHANGE_LEVEL"
+      <> completeWith (map (hyphenate . show) availableLevels)
+      <> help (unlines
+           [ "Level of changes (to override one inferred from changelog)."
+           , "CHANGE_LEVEL can be " <> availableLevelsStr <> "."
+           ])
+      <> hidden
 
-    configPath = option readFilePath $
-         long "config"
-      <> metavar "changelogged.yaml config file location"
-      <> help ("Path to config file.")
+parserCommandOptions :: Parser (Either ChangelogOptions VersionOptions)
+parserCommandOptions = subparser $
+  command "run"              (info (helper <*> parserChangelog)
+    ( fullDesc
+   <> progDesc "Update changelogs")) <>
+  command "bump-versions" (info (helper <*> parserVersion)
+    ( fullDesc
+   <> progDesc "Bump versions"))
 
 -- | Parse command line options.
 parseOptions :: IO Options
-parseOptions = execParser $ info (helper <*> parser)
+parseOptions = execParser $ info (helper <*> (Options <$> parserCommandOptions <*> parserCommon))
     ( fullDesc
    <> progDesc "Changelogged"
    <> header "Changelog Manager for Git Projects")

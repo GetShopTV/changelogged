@@ -21,12 +21,12 @@ import           Changelogged.Common.Types.Git
 import           Changelogged.Common.Types.Options
 
 data ChangeloggedEnv = ChangeloggedEnv
-  { envOptions :: Options
-  , envConfig  :: Config
+  { envOptions    :: Options
+  , envConfig     :: Config
   } deriving Show
 
 newtype Appl a = Appl { runAppl :: StateT ChangeloggedEnv IO a }
   deriving newtype (Functor, Applicative, Monad, MonadState ChangeloggedEnv, MonadIO, MonadBase IO, MonadThrow, MonadCatch)
 
-runInAppl :: Options -> Config -> Appl a -> IO a
-runInAppl opts cfg r = evalStateT (runAppl r) (ChangeloggedEnv opts cfg)
+runInAppl :: ChangeloggedEnv -> Appl a -> IO a
+runInAppl env r = evalStateT (runAppl r) env

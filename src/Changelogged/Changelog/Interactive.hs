@@ -57,7 +57,6 @@ interactiveSession :: Text -> Link -> Commit -> FilePath -> Appl ()
 interactiveSession entryPrefix repoUrl commit@Commit{..} changelog = do
   suggestMissing entryPrefix repoUrl commit
   action <- prompt
-  Options{..} <- gets envOptions
   case action of
     Write -> addMissing entryPrefix repoUrl commit changelog
     Expand -> do
@@ -78,7 +77,7 @@ interactiveDealWithEntry repoUrl commit@Commit{..} changelog =
 -- |
 suggestMissing :: Text -> Link -> Commit -> Appl ()
 suggestMissing entryPrefix gitUrl Commit{..} = do
-  (ChangeloggedEnv Options{..} Config{..}) <- get
+  Config{..} <- gets envConfig
   case commitIsPR of
     Just num ->
       printEntry (EntryFormat entryPrefix <> fromMaybe defaultEntryFormat configEntryFormat) commitMessage (prLink gitUrl num) (getPR num)
@@ -90,7 +89,7 @@ addMissing :: Text -> Link -> Commit -> FilePath -> Appl ()
 addMissing entryPrefix gitUrl Commit{..} changelog = do
   currentLogs <- fold (input changelog) Fold.list
   (ChangeloggedEnv Options{..} Config{..}) <- get
-  unless optDryRun $ do
+  unless (optDryRun optionsCommon) $ do
     output changelog (return $ unsafeTextToLine (entry configEntryFormat))
     tagm <- getCommitTag commitSHA
     case tagm of

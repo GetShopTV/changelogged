@@ -113,7 +113,7 @@ showDiff (SHA1 sha) = do
   --stdout $ inproc "git" args empty
   where
     buildArgs = do
-      noColor <- gets (optNoColors . envOptions)
+      noColor <- gets (optNoColors . optionsCommon . envOptions)
       return . map cs $ if noColor
         then ["show", "--minimal", "--color=never", sha]
         else ["show", "--minimal", "--color=always", sha]
