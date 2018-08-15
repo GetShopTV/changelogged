@@ -58,6 +58,6 @@ dealWithCommit GitInfo{..} ChangelogConfig{..} commitSHA = do
     commitIsPR <- fmap (PR . fromJustCustom "Cannot find commit hash in git log entry" . githubRefMatch . lineToText) <$>
         fold (grep githubRefGrep (grep (has (text (getSHA1 commitSHA))) (select gitHistory))) Fold.head
     commitMessage <- retrieveCommitMessage commitIsPR commitSHA
-    if (optListMisses || optAction == Just BumpVersions)
+    if optListMisses
       then plainDealWithEntry Commit{..} changelogChangelog
       else interactiveDealWithEntry gitRemoteUrl Commit{..} changelogChangelog

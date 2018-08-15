@@ -44,9 +44,7 @@ processChangelog gitInfo config@ChangelogConfig{..} = do
     touch changelogChangelog
   
   checkChangelog gitInfo config
-  case optAction of
-    Just BumpVersions -> bumpVersions config
-    Nothing -> return ()
+  bumpVersions config
 
 -- | Extract latest history and origin link from git through temporary file and store it in 'GitInfo'.
 loadGitInfo

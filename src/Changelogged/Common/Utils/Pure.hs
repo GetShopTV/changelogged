@@ -3,6 +3,7 @@ module Changelogged.Common.Utils.Pure where
 
 import           Data.Aeson
 
+import           Data.Monoid                      ((<>))
 import           Data.Maybe                       (fromMaybe)
 import           Data.Text                        (Text)
 import qualified Data.Text                        as Text
@@ -18,6 +19,26 @@ import Changelogged.Common.Types.Config
 
 changeloggedVersion :: Version
 changeloggedVersion = Version "0.3.0"
+
+prettyPossibleValues :: Show a => [a] -> String
+prettyPossibleValues xs = case reverse xs of
+  []  -> "none"
+  [y] -> prettyValue y
+  (y:ys) -> intercalate ", " (map prettyValue (reverse ys)) <> " or " <> prettyValue y
+  where
+    prettyValue v = "'" <> hyphenate (show v) <> "'"
+
+-- |
+-- >>> availableLevels
+-- [App,Major,Minor,Fix,Doc]
+availableLevels :: [Level]
+availableLevels = [minBound..maxBound]
+
+-- |
+-- >>> availableLevelsStr
+-- "'app', 'major', 'minor', 'fix' or 'doc'"
+availableLevelsStr :: String
+availableLevelsStr = prettyPossibleValues availableLevels
 
 -- | Maximum in list ordered by length.
 maxByLen :: [Text] -> Maybe Text

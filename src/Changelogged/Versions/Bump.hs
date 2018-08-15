@@ -55,6 +55,30 @@ generateVersion lev ChangelogConfig{..} = do
       versions <- mapM (generateVersionForFile lev) versionFiles
       return (listToMaybe versions)
 
+levelPrompt :: Appl (Maybe Level)
+levelPrompt = do
+  coloredPrint Yellow $ "Changelog does not contain any new version level labels.\n"
+                     <> "You can specify level of changes explicitly or press Enter to miss bumping versions.\n"
+  go
+  where go = do
+          coloredPrint Cyan "(↵/app↵/major↵/minor↵/fix↵/doc↵):  \n"
+          answer <- liftIO getLine
+          case answer of
+            "" -> return Nothing
+            "App" -> return (Just App)
+            "app" -> return (Just App)
+            "Major" -> return (Just Major)
+            "major" -> return (Just Major)
+            "Minor" -> return (Just Minor)
+            "minor" -> return (Just Minor)
+            "Fix" -> return (Just Fix)
+            "fix" -> return (Just Fix)
+            "Doc" -> return (Just Doc)
+            "doc" -> return (Just Doc)
+            _ -> do
+              liftIO $ putStrLn "Cannot parse level. Please repeat."
+              go
+
 -- |Infer new local version.
 generateVersionByChangelog :: ChangelogConfig -> Appl (Maybe Version)
 generateVersionByChangelog logConfig@ChangelogConfig{..} = do
@@ -62,16 +86,17 @@ generateVersionByChangelog logConfig@ChangelogConfig{..} = do
   case versionedChanges of
     Just lev -> generateVersion lev logConfig
     Nothing -> do
-      warning $ "keeping current version since " <> showPath changelogChangelog <> " does not contain any new level headers or even entries."
-      return Nothing
+      levelm <- levelPrompt
+      case levelm of
+        Nothing -> do
+          warning $ "keeping current version since " <> showPath changelogChangelog <> " does not contain any new level headers or even entries."
+          return Nothing
+        Just level -> generateVersion level logConfig
 
 bumpVersions :: ChangelogConfig -> Appl ()
 bumpVersions config@ChangelogConfig{..} = flip catch (\(ex :: PatternMatchFail) -> failure (showText ex)) $ do
-  Options{..} <- gets envOptions
   do
-    newVersion <- case optChangeLevel of
-      Just lev -> generateVersion lev config
-      Nothing  -> generateVersionByChangelog config
+    newVersion <- generateVersionByChangelog config
 
     case newVersion of
       Nothing -> return ()
