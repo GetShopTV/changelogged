@@ -7,7 +7,6 @@ import           Prelude                        hiding (FilePath)
 import           Turtle                         hiding (find, stderr, stdout)
 
 import qualified Control.Foldl                  as Fold
-import           Control.Monad                  (unless)
 
 import           Changelogged.Changelog.Common
 import           Changelogged.Changelog.Interactive
@@ -27,16 +26,6 @@ checkChangelog gitInfo@GitInfo{..} config@ChangelogConfig{..} = do
 
   commitHashes <- map (fromJustCustom "Cannot find commit hash in git log entry" . hashMatch . lineToText)
     <$> fold (select gitHistory) Fold.list
-
-  unless optListMisses $ info $ "You have entered interactiive session with Changelogged.\n"
-      <> "You will be asked what to do with each suggested entry.\n"
-      <> "You can:\n"
-      <> "  1. Write entry to changelog (type w/write and press Enter, or simply press Enter)\n"
-      <> "  2. Skip entry (type s/skip and press Enter)\n"
-      <> "  3. Write entry and go into it's subchanges if it was merge commit (type e/expand and press Enter)\n"
-      <> "  4. Ask changelogged to remind commit contents (type r/remind and press Enter). It's git show actually\n"
-      <> "  5. Set changelogged to always ignore commit with such commit message (it will never appear in interactive session)\n"
-      <> "     (type i/ignore and press Enter). It's git show actually\n"
 
   flags <- mapM (dealWithCommit gitInfo config) (map SHA1 commitHashes)
   if and flags
