@@ -8,7 +8,6 @@ module Changelogged.Options
   ) where
 
 import           Data.Char                      (toLower)
-import           Data.List                      (intercalate)
 import           Data.Monoid                    ((<>))
 import           Data.String.Conversions        (cs)
 import           Data.Text                      (Text)
@@ -19,40 +18,6 @@ import           Filesystem.Path.CurrentOS
 import           Prelude                        hiding (FilePath)
 
 import           Changelogged.Common.Types
-import           Changelogged.Common.Utils.Pure
-
--- |
--- >>> availableLevels
--- [App,Major,Minor,Fix,Doc]
-availableLevels :: [Level]
-availableLevels = [minBound..maxBound]
-
--- |
--- >>> availableActions
--- [BumpVersions]
-availableActions :: [Action]
-availableActions = if (minBound :: Action) == maxBound
-  then [minBound]
-  else [minBound..maxBound]
-
--- >>> availableActionsStr
--- "'update-changelogs' or 'bump-versions'"
-availableActionsStr :: String
-availableActionsStr = prettyPossibleValues availableActions
-
--- |
--- >>> availableLevelsStr
--- "'app', 'major', 'minor', 'fix' or 'doc'"
-availableLevelsStr :: String
-availableLevelsStr = prettyPossibleValues availableLevels
-
-prettyPossibleValues :: Show a => [a] -> String
-prettyPossibleValues xs = case reverse xs of
-  []  -> "none"
-  [y] -> prettyValue y
-  (y:ys) -> intercalate ", " (map prettyValue (reverse ys)) <> " or " <> prettyValue y
-  where
-    prettyValue v = "'" <> hyphenate (show v) <> "'"
 
 readOptionalText :: ReadM (Maybe Text)
 readOptionalText = eitherReader (r . map toLower)
@@ -61,27 +26,6 @@ readOptionalText = eitherReader (r . map toLower)
     r "bc" = Right Nothing
     r "start" = Right Nothing
     r txt   = Right (Just (cs txt))
-
-readLevel :: ReadM Level
-readLevel = eitherReader (r . map toLower)
-  where
-    r "app"   = Right App
-    r "major" = Right Major
-    r "minor" = Right Minor
-    r "fix"   = Right Fix
-    r "doc"   = Right Doc
-    r lvl = Left $
-         "Unknown level of changes: " <> show lvl <> ".\n"
-      <> "Should be " <> availableLevelsStr <> ".\n"
-
-readAction :: ReadM Action
-readAction = eitherReader (r . map toLower)
-  where
-    r "bump-versions"      = Right BumpVersions
-    r "bump-version"       = Right BumpVersions
-    r cmd = Left $
-         "Unknown command: " <> show cmd <> ".\n"
-      <> "Should be " <> availableActionsStr <> ".\n"
 
 readFilePath :: ReadM FilePath
 readFilePath = eitherReader r
@@ -92,9 +36,7 @@ readFilePath = eitherReader r
 
 parser :: Parser Options
 parser = Options
-  <$> optional changeloggedAction
-  <*> optional changesLevel
-  <*> hiddenSwitch "list-misses" "List missing entries in simplest format with no expansion, don't modify anything."
+  <$> hiddenSwitch "list-misses" "List missing entries in simplest format with no expansion, don't modify anything."
   <*> optional fromVersion
   <*> hiddenSwitch "no-colors" "Print all messages in standard terminal color."
   <*> longSwitch "dry-run" "Do not change files while running."
@@ -110,20 +52,6 @@ parser = Options
     hiddenSwitch name description = switch $
          long name
       <> help description
-      <> hidden
-
-    changeloggedAction = argument readAction $
-         metavar "ACTION"
-      <> completeWith ["bump-versions"]
-      <> help ("argument form: bump-versions.")
-
-    changesLevel = option readLevel $
-         long "level"
-      <> metavar "CHANGE_LEVEL"
-      <> help (unlines
-           [ "Level of changes (to override one inferred from changelog)."
-           , "CHANGE_LEVEL can be " <> availableLevelsStr <> "."
-           ])
       <> hidden
 
     fromVersion = option readOptionalText $

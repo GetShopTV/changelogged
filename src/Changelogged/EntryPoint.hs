@@ -7,13 +7,20 @@ module Changelogged.EntryPoint
   , ppGitInfo
   ) where
 
+import           Control.Monad                (unless)
+
+import qualified System.Process               as Proc
+
 import           Prelude                      hiding (FilePath)
 import           Turtle                       hiding (find)
 
 import           Data.Char                    (isDigit)
 import           Data.List                    (find)
 import           Data.Maybe                   (fromMaybe)
+import           Data.String.Conversions      (cs)
 import qualified Data.Text                    as Text
+
+import           Filesystem.Path.CurrentOS    (encodeString)
 
 import           Changelogged.Changelog.Check
 import           Changelogged.Common
@@ -37,6 +44,7 @@ processChangelogs gitInfo = do
 processChangelog :: GitInfo -> ChangelogConfig -> Appl ()
 processChangelog gitInfo config@ChangelogConfig{..} = do
   Options{..} <- gets envOptions
+  editorCommand <- gets (configEditorCommand . envConfig)
   liftIO $ putStrLn ""
   changelogExists <- testfile changelogChangelog
   when (not changelogExists) $ do
@@ -44,9 +52,33 @@ processChangelog gitInfo config@ChangelogConfig{..} = do
     touch changelogChangelog
   
   checkChangelog gitInfo config
-  case optAction of
-    Just BumpVersions -> bumpVersions config
-    Nothing -> return ()
+  enableEditor editorCommand changelogChangelog
+  unless optListMisses $ bumpVersions config
+
+enableEditor :: Maybe Text -> FilePath -> Appl ()
+enableEditor cmd file = do
+  let editorCmd =
+        case cmd of
+          Nothing -> "vim"
+          Just ed -> ed
+  (_,_,_,waiter) <- liftIO $ Proc.createProcess Proc.CreateProcess
+    { Proc.cmdspec = (Proc.ShellCommand (cs editorCmd <> " " <> encodeString file))
+    , Proc.cwd = Nothing
+    , Proc.env = Nothing
+    , Proc.std_in = Proc.Inherit
+    , Proc.std_out = Proc.Inherit
+    , Proc.std_err = Proc.Inherit
+    , Proc.close_fds = True
+    , Proc.create_group = False
+    , Proc.delegate_ctlc = True
+    , Proc.detach_console = True
+    , Proc.create_new_console = True
+    , Proc.new_session = True
+    , Proc.child_group = Nothing
+    , Proc.child_user = Nothing
+    , Proc.use_process_jobs = False
+    }
+  void . liftIO . Proc.waitForProcess $ waiter
 
 -- | Extract latest history and origin link from git through temporary file and store it in 'GitInfo'.
 loadGitInfo

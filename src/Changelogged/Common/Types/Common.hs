@@ -25,9 +25,5 @@ data Commit = Commit
 data Level = App | Major | Minor | Fix | Doc
   deriving (Generic, Show, Enum, Bounded, ToJSON)
 
--- |Available altenative actions
-data Action = BumpVersions
-  deriving (Generic, Eq, Show, Enum, Bounded, ToJSON)
-
 data Interaction = Write | Expand | Skip | Remind | IgnoreAlways
   deriving (Generic, Eq, Show, Enum, Bounded, ToJSON)
