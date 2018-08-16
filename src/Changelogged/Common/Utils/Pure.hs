@@ -70,9 +70,9 @@ delimited ver = tuplify $ map (read . Text.unpack) (Text.split (=='.') ver)
 bump :: (Int, Int, Int, Int, Int) -> Level -> Text
 bump (app, major, minor, fix, doc) lev = Text.intercalate "." $ map showText $ case lev of
   App   -> [app + 1, 0]
-  Major -> [app, major + 1, 0]
-  Minor -> [app, major, minor + 1, 0]
-  Fix   -> [app, major, minor, fix + 1, 0]
+  Major -> [app, major + 1]
+  Minor -> [app, major, minor + 1]
+  Fix   -> [app, major, minor, fix + 1]
   Doc   -> [app, major, minor, fix, doc + 1]
 
 showPath :: FilePath -> Text
