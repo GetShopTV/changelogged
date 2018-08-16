@@ -17,7 +17,6 @@ defaultConfig :: Config
 defaultConfig = Config
   { configChangelogs    = pure ChangelogConfig
       { changelogChangelog     = "ChangeLog.md"
-      , changelogLevelHeaders  = Just defaultLevelHeaders
       , changelogWatchFiles    = Nothing  -- watch everything
       , changelogIgnoreFiles   = Just ["ChangeLog.md"]
       , changelogIgnoreCommits = Nothing

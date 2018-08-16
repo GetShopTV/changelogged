@@ -29,6 +29,5 @@ deriving instance ToJSON Options
 
 deriveJSON (jsonDerivingModifier "VersionPattern") ''VersionPattern
 deriveJSON (jsonDerivingModifier "VersionFile") ''VersionFile
-deriveJSON (jsonDerivingModifier "LevelHeaders") ''LevelHeaders
 deriveJSON (jsonDerivingModifier "Changelog") ''ChangelogConfig
 deriveJSON (jsonDerivingModifier "Config") ''Config

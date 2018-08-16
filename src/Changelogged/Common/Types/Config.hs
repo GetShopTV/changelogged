@@ -15,18 +15,8 @@ data Config = Config
   , configEditorCommand :: Maybe Text
   } deriving (Eq, Show, Generic)
 
--- FIXME: Remove
-data LevelHeaders = LevelHeaders
-  { levelHeadersApp   :: Maybe Text
-  , levelHeadersMajor :: Maybe Text
-  , levelHeadersMinor :: Maybe Text
-  , levelHeadersFix   :: Maybe Text
-  , levelHeadersDoc   :: Maybe Text
-  } deriving (Eq, Show, Generic)
-
 data ChangelogConfig = ChangelogConfig
   { changelogChangelog     :: Path.FilePath
-  , changelogLevelHeaders  :: Maybe LevelHeaders
   , changelogWatchFiles    :: Maybe [Path.FilePath]
   , changelogIgnoreFiles   :: Maybe [Path.FilePath]
   , changelogIgnoreCommits :: Maybe [SHA1]

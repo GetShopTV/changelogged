@@ -58,7 +58,7 @@ generateVersion lev ChangelogConfig{..} = do
 -- |Infer new local version.
 generateVersionByChangelog :: ChangelogConfig -> Appl (Maybe Version)
 generateVersionByChangelog logConfig@ChangelogConfig{..} = do
-  versionedChanges <- getLevelOfChanges changelogChangelog changelogLevelHeaders
+  versionedChanges <- predictLevelOfChanges changelogChangelog
   case versionedChanges of
     Just lev -> generateVersion lev logConfig
     Nothing -> do
