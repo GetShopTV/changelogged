@@ -55,31 +55,6 @@ generateVersion lev ChangelogConfig{..} = do
       versions <- mapM (generateVersionForFile lev) versionFiles
       return (listToMaybe versions)
 
-levelPrompt :: Appl (Maybe Level)
-levelPrompt = do
-  -- FIXME: here will be prompt. And versions must not be inferred, it's too formal.
-  coloredPrint Yellow $ "Changelog does not contain any new version level labels.\n"
-                     <> "You can specify level of changes explicitly or press Enter to miss bumping versions.\n"
-  go
-  where go = do
-          coloredPrint Cyan "(↵/app↵/major↵/minor↵/fix↵/doc↵):  \n"
-          answer <- liftIO getLine
-          case answer of
-            "" -> return Nothing
-            "App" -> return (Just App)
-            "app" -> return (Just App)
-            "Major" -> return (Just Major)
-            "major" -> return (Just Major)
-            "Minor" -> return (Just Minor)
-            "minor" -> return (Just Minor)
-            "Fix" -> return (Just Fix)
-            "fix" -> return (Just Fix)
-            "Doc" -> return (Just Doc)
-            "doc" -> return (Just Doc)
-            _ -> do
-              liftIO $ putStrLn "Cannot parse level. Please repeat."
-              go
-
 -- |Infer new local version.
 generateVersionByChangelog :: ChangelogConfig -> Appl (Maybe Version)
 generateVersionByChangelog logConfig@ChangelogConfig{..} = do

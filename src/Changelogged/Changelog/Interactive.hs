@@ -64,33 +64,38 @@ promptInteractive = go
               go
 
 -- FIXME: names and modules. interactive session with constant prompt is not interactive.
-interactiveSession :: Appl Interaction -> Text -> Link -> Commit -> FilePath -> Appl ()
-interactiveSession prompt entryPrefix repoUrl commit@Commit{..} changelog = do
-  suggestMissing entryPrefix repoUrl commit
+interactiveSession :: Appl Interaction -> Text -> Link -> FilePath -> [Commit] -> Appl ()
+interactiveSession _ _ _ _ [] = return ()
+interactiveSession prompt entryPrefix repoUrl changelog (current@Commit{..}:rest) = do
+  suggestMissing entryPrefix repoUrl current
   action <- prompt
   Options{..} <- gets envOptions
   case action of
-    Write -> addMissing entryPrefix repoUrl commit changelog
+    Write -> do
+      addMissing entryPrefix repoUrl current changelog
+      interactiveSession prompt entryPrefix repoUrl changelog rest
     Expand -> do
-      addMissing entryPrefix repoUrl commit changelog
+      addMissing entryPrefix repoUrl current changelog
       if (isMerge commitMessage || isJust commitIsPR) 
         then do
           subChanges <- listPRCommits commitSHA
-          mapM_ (\sha -> interactiveSession prompt ("  " <> entryPrefix) repoUrl sha changelog) subChanges
+          interactiveSession prompt ("  " <> entryPrefix) repoUrl changelog subChanges
         else return ()
-    Skip -> return ()
-    Remind -> showDiff commitSHA >> interactiveSession prompt "" repoUrl commit changelog
-    IgnoreAlways -> debug (showText changelog) >> addCommitToIgnored commitSHA changelog
-    Quit -> interactiveSession promptSkip "" repoUrl commit changelog
-    WriteRest -> interactiveSession promptSimple "" repoUrl commit changelog
+      interactiveSession prompt entryPrefix repoUrl changelog rest
+    Skip -> interactiveSession prompt entryPrefix repoUrl changelog rest
+    Remind -> showDiff commitSHA >> interactiveSession prompt "" repoUrl changelog (current:rest)
+    IgnoreAlways -> do
+      debug (showText changelog)
+      addCommitToIgnored commitSHA changelog
+      interactiveSession prompt entryPrefix repoUrl changelog rest
+    Quit -> interactiveSession promptSkip "" repoUrl changelog rest
+    WriteRest -> interactiveSession promptSimple "" repoUrl changelog (current:rest)
 
-interactiveDealWithEntry :: Link -> Commit -> FilePath -> Appl Bool
-interactiveDealWithEntry repoUrl commit@Commit{..} changelog =
-  actOnMissingCommit commit changelog (interactiveSession promptInteractive "" repoUrl commit changelog >> return True)
+interactiveWalk :: Link -> FilePath -> [Commit] -> Appl ()
+interactiveWalk = interactiveSession promptInteractive ""
 
-simpleDealWithEntry :: Link -> Commit -> FilePath -> Appl Bool
-simpleDealWithEntry repoUrl commit@Commit{..} changelog =
-  actOnMissingCommit commit changelog (interactiveSession promptSimple "" repoUrl commit changelog >> return True)
+simpleWalk :: Link -> FilePath -> [Commit] -> Appl ()
+simpleWalk = interactiveSession promptSimple ""
 
 -- |
 suggestMissing :: Text -> Link -> Commit -> Appl ()

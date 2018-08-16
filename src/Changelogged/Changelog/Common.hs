@@ -18,16 +18,6 @@ import           Changelogged.Git     (getCommitTag)
 -- $setup
 -- >>> :set -XOverloadedStrings
 
-actOnMissingCommit :: Commit -> FilePath -> Appl Bool -> Appl Bool
-actOnMissingCommit Commit{..} changelog action = do
-  noEntry <- case commitIsPR of
-    Nothing -> fold (grep (has (text (getSHA1 commitSHA))) (input changelog)) Fold.null
-    Just (PR num) -> fold (grep (has (text num)) (input changelog)) Fold.null
-  if noEntry
-    -- If --from-bc option invoked it will prepend list of misses with version tag.
-    then printCommitTag commitSHA >> action
-    else return True
-
 -- |
 -- >>> prLink (Link "https://github.com/GetShopTV/changelogged") (PR "#13")
 -- Link {getLink = " https://github.com/GetShopTV/changelogged/pull/13 "}

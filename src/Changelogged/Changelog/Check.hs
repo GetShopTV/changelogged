@@ -11,6 +11,8 @@ import           System.Console.ANSI            (Color (..))
 import qualified Control.Foldl                  as Fold
 import           Control.Monad                  (when)
 
+import           Data.Maybe                     (catMaybes)
+
 import           Changelogged.Changelog.Common
 import           Changelogged.Changelog.Interactive
 import           Changelogged.Changelog.Plain
@@ -30,19 +32,23 @@ checkChangelog gitInfo@GitInfo{..} config@ChangelogConfig{..} = do
   commitHashes <- map (fromJustCustom "Cannot find commit hash in git log entry" . hashMatch . lineToText)
     <$> fold (select gitHistory) Fold.list
 
-  flags <- do 
-    -- FIXME: remove dealWithCommit, run from here all modes. InteractiveSession mode must be completely recursive. It will enable Quit and WriteRest.
-    upToDate <- mapM (dealWithCommit True False gitInfo config) (map SHA1 commitHashes)
-    if optListMisses
-      then return upToDate
-      else do
-        interactiveMode <- promptGoInteractive
-        mapM (dealWithCommit False interactiveMode gitInfo config) (map SHA1 commitHashes)
-  if and flags
-    then success $ showPath changelogChangelog <> " is updated.\n"
+  checkableCommits <- catMaybes <$> mapM (extractCommitMetadata gitInfo config) (map SHA1 commitHashes)
+
+  upToDate <- listEntries changelogChangelog checkableCommits
+  if optListMisses 
+    then if upToDate
+      then success $ showPath changelogChangelog <> " is up to date.\n"
+                    <> "You can use changelogged to bump versions.\n"
+      else warning $ showPath changelogChangelog <> " does not mention all git history entries.\n"
+                    <> "You can run changelogged to update it interactively and bump versions.\n"
+    else do
+      interactiveMode <- promptGoInteractive
+      (if interactiveMode
+              then interactiveWalk gitRemoteUrl changelogChangelog 
+              else simpleWalk gitRemoteUrl changelogChangelog) $
+            checkableCommits
+      success $ showPath changelogChangelog <> " is updated.\n"
                    <> "You can edit it manually now.\n"
-    else warning $ showPath changelogChangelog <> " does not mention all git history entries.\n"
-                   <> "You can run changelogged to update it interactively and bump versions.\n"
 
 promptGoInteractive :: Appl Bool
 promptGoInteractive = do
@@ -58,20 +64,17 @@ promptGoInteractive = do
               liftIO $ putStrLn "Cannot parse answer. Please repeat."
               go
 
-dealWithCommit :: Bool -> Bool -> GitInfo -> ChangelogConfig -> SHA1 -> Appl Bool
-dealWithCommit listMisses interactiveMode GitInfo{..} ChangelogConfig{..} commitSHA = do
+extractCommitMetadata :: GitInfo -> ChangelogConfig -> SHA1 -> Appl (Maybe Commit)
+extractCommitMetadata GitInfo{..} ChangelogConfig{..} commitSHA = do
   ignoreChangeReasoned <- sequence $
     [ commitNotWatched changelogWatchFiles commitSHA
     , allFilesIgnored changelogIgnoreFiles commitSHA
     , commitIgnored changelogIgnoreCommits commitSHA]
-  if or ignoreChangeReasoned then return True else do
-    -- FIXME: impossible.
-    commitIsPR <- fmap (PR . fromJustCustom "Cannot find commit hash in git log entry" . githubRefMatch . lineToText) <$>
-        fold (grep githubRefGrep (grep (has (text (getSHA1 commitSHA))) (select gitHistory))) Fold.head
-    commitMessage <- retrieveCommitMessage commitIsPR commitSHA
-    if listMisses
-      then plainDealWithEntry Commit{..} changelogChangelog
-      else do
-        if interactiveMode
-          then interactiveDealWithEntry gitRemoteUrl Commit{..} changelogChangelog 
-          else simpleDealWithEntry gitRemoteUrl Commit{..} changelogChangelog
+  if or ignoreChangeReasoned
+    then return Nothing 
+    else do
+      -- FIXME: impossible.
+      commitIsPR <- fmap (PR . fromJustCustom "Cannot find commit hash in git log entry" . githubRefMatch . lineToText) <$>
+          fold (grep githubRefGrep (grep (has (text (getSHA1 commitSHA))) (select gitHistory))) Fold.head
+      commitMessage <- retrieveCommitMessage commitIsPR commitSHA
+      return $ Just Commit{..}
