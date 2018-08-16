@@ -55,15 +55,22 @@ generateVersion lev ChangelogConfig{..} = do
       versions <- mapM (generateVersionForFile lev) versionFiles
       return (listToMaybe versions)
 
+askGenerateVersion :: ChangelogConfig -> Appl (Maybe Version)
+askGenerateVersion logConfig = do
+  level <- levelPrompt
+  generateVersion level logConfig
+
 -- |Infer new local version.
 generateVersionByChangelog :: ChangelogConfig -> Appl (Maybe Version)
 generateVersionByChangelog logConfig@ChangelogConfig{..} = do
   versionedChanges <- predictLevelOfChanges changelogChangelog
   case versionedChanges of
-    Just lev -> generateVersion lev logConfig
-    Nothing -> do
-      level <- levelPrompt
-      generateVersion level logConfig
+    Just level -> do
+      acceptVersion <- promptAcceptPredictedVersion level
+      if acceptVersion
+        then generateVersion level logConfig
+        else askGenerateVersion logConfig
+    Nothing -> askGenerateVersion logConfig
 
 bumpVersions :: ChangelogConfig -> Appl ()
 bumpVersions config@ChangelogConfig{..} = flip catch (\(ex :: PatternMatchFail) -> failure (showText ex)) $ do

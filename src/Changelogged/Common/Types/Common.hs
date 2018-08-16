@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings           #-}
 {-# LANGUAGE DeriveAnyClass              #-}
 {-# LANGUAGE DeriveGeneric               #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving  #-}
@@ -25,6 +26,13 @@ data Commit = Commit
 -- |Level of changes to bump to.
 data Level = App | Major | Minor | Fix | Doc
   deriving (Generic, Show, Enum, Bounded, ToJSON)
+
+showHumanReadableLevel :: Level -> Text
+showHumanReadableLevel App = "application level changes"
+showHumanReadableLevel Major = "major changes"
+showHumanReadableLevel Minor = "minor changes"
+showHumanReadableLevel Fix = "fixes"
+showHumanReadableLevel Doc = "documentation changes"
 
 data Interaction = Write | Expand | Skip | Remind | IgnoreAlways | Quit | WriteRest
   deriving (Generic, Eq, Show, Enum, Bounded, ToJSON)

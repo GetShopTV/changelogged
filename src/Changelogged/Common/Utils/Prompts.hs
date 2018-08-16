@@ -31,6 +31,9 @@ promptGoInteractive = promptYesNo "You can go to interactive mode or simply writ
 promptBumpVersions :: Appl Bool
 promptBumpVersions = promptYesNo "Do you want to bump versions?\n"
 
+promptAcceptPredictedVersion :: Level -> Appl Bool
+promptAcceptPredictedVersion level = promptYesNo $ "Latest changes seem to be " <> showHumanReadableLevel level <> ". Is it right?\n"
+
 promptSkip :: Appl Interaction
 promptSkip = return Skip
 
