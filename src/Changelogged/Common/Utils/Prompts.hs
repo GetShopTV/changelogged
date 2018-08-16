@@ -6,7 +6,7 @@ import System.Console.ANSI (Color (..))
 import Data.Monoid ((<>))
 
 import Changelogged.Common.Types
-import Changelogged.Common.Utils.IO
+import Changelogged.Common.Utils.Printing
 
 promptGoInteractive :: Appl Bool
 promptGoInteractive = do
