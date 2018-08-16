@@ -60,7 +60,7 @@ enableEditor :: Maybe Text -> FilePath -> Appl ()
 enableEditor cmd file = do
   let editorCmd =
         case cmd of
-          Nothing -> "vim"
+          Nothing -> "$EDITOR"
           Just ed -> ed
   (_,_,_,waiter) <- liftIO $ Proc.createProcess Proc.CreateProcess
     { Proc.cmdspec = (Proc.ShellCommand (cs editorCmd <> " " <> encodeString file))
