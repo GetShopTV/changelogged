@@ -31,6 +31,7 @@ checkChangelog gitInfo@GitInfo{..} config@ChangelogConfig{..} = do
     <$> fold (select gitHistory) Fold.list
 
   flags <- do 
+    -- FIXME: remove dealWithCommit, run from here all modes. InteractiveSession mode must be completely recursive. It will enable Quit and WriteRest.
     upToDate <- mapM (dealWithCommit True False gitInfo config) (map SHA1 commitHashes)
     if optListMisses
       then return upToDate
@@ -38,8 +39,8 @@ checkChangelog gitInfo@GitInfo{..} config@ChangelogConfig{..} = do
         interactiveMode <- promptGoInteractive
         mapM (dealWithCommit False interactiveMode gitInfo config) (map SHA1 commitHashes)
   if and flags
-    then success $ showPath changelogChangelog <> " is up to date.\n"
-                   <> "You can edit it manually now and arrange levels of changes if not yet.\n"
+    then success $ showPath changelogChangelog <> " is updated.\n"
+                   <> "You can edit it manually now.\n"
     else warning $ showPath changelogChangelog <> " does not mention all git history entries.\n"
                    <> "You can run changelogged to update it interactively and bump versions.\n"
 
@@ -64,6 +65,7 @@ dealWithCommit listMisses interactiveMode GitInfo{..} ChangelogConfig{..} commit
     , allFilesIgnored changelogIgnoreFiles commitSHA
     , commitIgnored changelogIgnoreCommits commitSHA]
   if or ignoreChangeReasoned then return True else do
+    -- FIXME: impossible.
     commitIsPR <- fmap (PR . fromJustCustom "Cannot find commit hash in git log entry" . githubRefMatch . lineToText) <$>
         fold (grep githubRefGrep (grep (has (text (getSHA1 commitSHA))) (select gitHistory))) Fold.head
     commitMessage <- retrieveCommitMessage commitIsPR commitSHA

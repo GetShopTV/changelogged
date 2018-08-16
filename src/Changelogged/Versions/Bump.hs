@@ -50,13 +50,14 @@ generateVersionForFile lev indicator = do
 generateVersion :: Level -> ChangelogConfig -> Appl (Maybe Version)
 generateVersion lev ChangelogConfig{..} = do
   case changelogVersionFiles of
-    Nothing -> error "No file version files specified for changelog."
+    Nothing -> error "No version files specified for changelog."
     Just versionFiles -> do
       versions <- mapM (generateVersionForFile lev) versionFiles
       return (listToMaybe versions)
 
 levelPrompt :: Appl (Maybe Level)
 levelPrompt = do
+  -- FIXME: here will be prompt. And versions must not be inferred, it's too formal.
   coloredPrint Yellow $ "Changelog does not contain any new version level labels.\n"
                      <> "You can specify level of changes explicitly or press Enter to miss bumping versions.\n"
   go
@@ -89,6 +90,7 @@ generateVersionByChangelog logConfig@ChangelogConfig{..} = do
       levelm <- levelPrompt
       case levelm of
         Nothing -> do
+          -- FIXME: This will go away.
           warning $ "keeping current version since " <> showPath changelogChangelog <> " does not contain any new level headers or even entries."
           return Nothing
         Just level -> generateVersion level logConfig

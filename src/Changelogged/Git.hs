@@ -69,6 +69,7 @@ retrieveCommitMessage isPR (SHA1 commit) = do
 
 messageToCommitData :: Line -> Appl Commit
 messageToCommitData message = do
+  --FIXME: departed proofs?
   commitIsPR <- fmap (PR . fromJustCustom "Cannot find commit hash in git log entry" . githubRefMatch . lineToText) <$>
     fold (grep githubRefGrep (select [message])) Fold.head
   let commitSHA = SHA1 . fst . Text.breakOn " " . lineToText $ message
@@ -90,7 +91,9 @@ showDiff :: SHA1 -> Appl ()
 showDiff (SHA1 sha) = do
   args <- buildArgs
   (lessHandle, gitHandle) <- liftIO Proc.createPipe
+  -- FIXME: make Process template in Utils.
   (_,_,_,lessWaiter) <- liftIO $ Proc.createProcess Proc.CreateProcess
+    -- FIXME: make pager configurable. Now it's breaking Windows support.
     { Proc.cmdspec = (Proc.RawCommand "less" ["-r"])
     , Proc.cwd = Nothing
     , Proc.env = Nothing

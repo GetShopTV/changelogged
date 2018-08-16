@@ -64,6 +64,7 @@ tuplify (a1:a2:a3:a4:a5:_) = (a1,a2,a3,a4,a5)
 delimited :: Text -> (Int, Int, Int, Int, Int)
 delimited ver = tuplify $ map (read . Text.unpack) (Text.split (=='.') ver)
 
+-- FIXME: Refactor and make correspondent with PVP.
 bump :: (Int, Int, Int, Int, Int) -> Level -> Text
 bump (app, major, minor, fix, doc) lev = Text.intercalate "." $ map showText $ case lev of
   App   -> [app + 1, 0]

@@ -66,6 +66,7 @@ versionP :: Version -> Appl ()
 versionP (Version ver) = coloredPrint Green $
   "VERSION: " <> ver <> "\n"
 
+-- FIXME: Move to another module
 splitPwdBy :: Text -> IO (Maybe Path.FilePath)
 splitPwdBy gitProjectName = do
   curDirText <- cs . Path.encodeString <$> pwd

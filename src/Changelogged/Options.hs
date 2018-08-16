@@ -26,7 +26,7 @@ readFilePath = eitherReader r
 
 parser :: Parser Options
 parser = Options
-  <$> hiddenSwitch "list-misses" "List missing entries in simplest format with no expansion, don't modify anything."
+  <$> hiddenSwitch "list-misses" "List missing entries, don't modify changelogs."
   <*> optional fromVersion
   <*> hiddenSwitch "from-beginning" "Check all changelogs from start of the project."
   <*> hiddenSwitch "no-colors" "Print all messages in standard terminal color."

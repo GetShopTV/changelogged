@@ -15,6 +15,7 @@ data Config = Config
   , configEditorCommand :: Maybe Text
   } deriving (Eq, Show, Generic)
 
+-- FIXME: Remove
 data LevelHeaders = LevelHeaders
   { levelHeadersApp   :: Maybe Text
   , levelHeadersMajor :: Maybe Text

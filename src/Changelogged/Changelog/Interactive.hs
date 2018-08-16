@@ -63,6 +63,7 @@ promptInteractive = go
               liftIO $ putStrLn "Cannot parse action. Please repeat."
               go
 
+-- FIXME: names and modules. interactive session with constant prompt is not interactive.
 interactiveSession :: Appl Interaction -> Text -> Link -> Commit -> FilePath -> Appl ()
 interactiveSession prompt entryPrefix repoUrl commit@Commit{..} changelog = do
   suggestMissing entryPrefix repoUrl commit

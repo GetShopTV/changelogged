@@ -53,8 +53,8 @@ adjustConfig cfg'@Config{..} = do
 ppConfig :: Config -> Text
 ppConfig Config{..} = mconcat
   [ "Main branch (with version tags)" ?: configBranch
-  , "Format of inferred changelog entries" ?: (getEntryFormat <$> configEntryFormat)
-  , "Preferred editor" ?: configEditorCommand
+  , "Format of changelog entries" ?: (getEntryFormat <$> configEntryFormat)
+  , "Editor" ?: configEditorCommand
   , "Changelogs" !: formatItems Turtle.fp (map changelogChangelog configChangelogs)
   ]
   where

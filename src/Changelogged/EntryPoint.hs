@@ -37,7 +37,7 @@ processChangelogs gitInfo = do
     Just changelogPath -> do
       case lookupChangelog changelogPath configChangelogs of
         Just changelog -> processChangelog gitInfo changelog
-        Nothing -> failure $ "Given target changelog " <> format fp changelogPath <> " is missed in config or mistyped."
+        Nothing -> failure $ "Given target changelog " <> format fp changelogPath <> " is missed in config."
       where
         lookupChangelog path changelogs = find (\entry -> changelogChangelog entry == path) changelogs
 

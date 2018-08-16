@@ -50,6 +50,7 @@ generateVersionedFile
   --result
   -> [Line]
 generateVersionedFile file [] [] = file
+-- FIXME: impossible cases.
 generateVersionedFile _ [] _ = error "internal sed error"
 generateVersionedFile _ _ [] = error "internal sed error"
 generateVersionedFile file (new:news) (old:olds) = generateVersionedFile (replaceLine file new old) news olds
@@ -67,6 +68,7 @@ bumpPart version file@VersionFile{..} = do
   unless dryRun $ sh $ bumpAny file version
 
 -- |Get level of changes from changelog.
+-- FIXME: remove or keep as template for future heuristics.
 getLevelOfChanges :: FilePath -> Maybe LevelHeaders -> Appl (Maybe Level)
 getLevelOfChanges changelogFile Nothing = getLevelOfChanges changelogFile (Just defaultLevelHeaders)
 getLevelOfChanges changelogFile (Just levelHeaders@LevelHeaders{..}) = do
