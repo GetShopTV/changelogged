@@ -53,7 +53,7 @@ remoteUrlToHttps
 loadGitHistory
   :: Maybe Text  -- ^ A commit/tag to mark the start of history.
   -> Appl [Turtle.Line]
-loadGitHistory from = fold (inproc "git" (["log", "--oneline", "--first-parent"] <> range) empty) Fold.list
+loadGitHistory from = reverse <$> fold (inproc "git" (["log", "--oneline", "--first-parent"] <> range) empty) Fold.list
   where
     range = case from of
       Nothing     -> []
@@ -69,6 +69,7 @@ retrieveCommitMessage isPR (SHA1 commit) = do
 
 messageToCommitData :: Line -> Appl Commit
 messageToCommitData message = do
+  --FIXME: departed proofs?
   commitIsPR <- fmap (PR . fromJustCustom "Cannot find commit hash in git log entry" . githubRefMatch . lineToText) <$>
     fold (grep githubRefGrep (select [message])) Fold.head
   let commitSHA = SHA1 . fst . Text.breakOn " " . lineToText $ message
@@ -90,22 +91,10 @@ showDiff :: SHA1 -> Appl ()
 showDiff (SHA1 sha) = do
   args <- buildArgs
   (lessHandle, gitHandle) <- liftIO Proc.createPipe
-  (_,_,_,lessWaiter) <- liftIO $ Proc.createProcess Proc.CreateProcess
+  (_,_,_,lessWaiter) <- liftIO $ Proc.createProcess templateProcess
+    -- FIXME: make pager configurable. Now it's breaking Windows support.
     { Proc.cmdspec = (Proc.RawCommand "less" ["-r"])
-    , Proc.cwd = Nothing
-    , Proc.env = Nothing
     , Proc.std_in = (Proc.UseHandle lessHandle)
-    , Proc.std_out = Proc.Inherit
-    , Proc.std_err = Proc.Inherit
-    , Proc.close_fds = True
-    , Proc.create_group = False
-    , Proc.delegate_ctlc = True
-    , Proc.detach_console = True
-    , Proc.create_new_console = True
-    , Proc.new_session = True
-    , Proc.child_group = Nothing
-    , Proc.child_user = Nothing
-    , Proc.use_process_jobs = False
     }
   void . liftIO $ Proc.runProcess "git" args Nothing Nothing Nothing (Just gitHandle) Nothing
   void . liftIO . Proc.waitForProcess $ lessWaiter

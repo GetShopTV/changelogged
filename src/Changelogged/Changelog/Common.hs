@@ -8,7 +8,6 @@ import           Turtle
 import qualified Control.Foldl        as Fold
 
 import           Data.Foldable        (asum)
-import           Data.Text            (Text)
 import qualified Data.Text            as Text
 
 import           System.Console.ANSI  (Color (..))
@@ -18,16 +17,6 @@ import           Changelogged.Git     (getCommitTag)
 
 -- $setup
 -- >>> :set -XOverloadedStrings
-
-actOnMissingCommit :: Commit -> FilePath -> Appl Bool -> Appl Bool
-actOnMissingCommit Commit{..} changelog action = do
-  noEntry <- case commitIsPR of
-    Nothing -> fold (grep (has (text (getSHA1 commitSHA))) (input changelog)) Fold.null
-    Just (PR num) -> fold (grep (has (text num)) (input changelog)) Fold.null
-  if noEntry
-    -- If --from-bc option invoked it will prepend list of misses with version tag.
-    then printCommitTag commitSHA >> action
-    else return True
 
 -- |
 -- >>> prLink (Link "https://github.com/GetShopTV/changelogged") (PR "#13")
@@ -61,9 +50,6 @@ commitNotWatched (Just files) (SHA1 commit) = let expandWatchFiles = asum (map m
       (inproc "git" ["diff-tree", "--name-only", "--no-commit-id", "-m", "-r", commit] empty))
     Fold.null
 
-commitIgnored :: Maybe [Text] -> SHA1 -> Appl Bool
+commitIgnored :: Maybe [SHA1] -> SHA1 -> Appl Bool
 commitIgnored Nothing _ = return False
-commitIgnored (Just names) (SHA1 commit) = not <$> fold
-  (grep (asum (map text names))
-    (inproc "git" ["show", "-s", "--format=%B", commit] empty))
-  Fold.null
+commitIgnored (Just commits) commit = return $ commit `elem` commits

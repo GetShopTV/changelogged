@@ -101,6 +101,15 @@ Available options:
   --version                Print version.
 ```
 
+Interactive mode reference:
+For each entry you can:
+ * Write entry to changelog (press Enter or (w)rite)
+ * Skip entry (type s/skip and press Enter)
+ * Write entry and go into it's subchanges if it was merge commit (type e/expand and press Enter)
+ * Ask changelogged to show commit contents (type r/remind and press Enter).
+ * Set changelogged to always ignore commit this commit (it will never appear in interactive session)
+   (type i/ignore and press Enter).
+
 ### Checking changelogs
 
 This is default feature. Changelogged will output all missing pull requests and commits with their messages.

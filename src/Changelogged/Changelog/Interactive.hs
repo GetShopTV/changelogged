@@ -14,7 +14,7 @@ import qualified Data.Text            as Text
 import           System.Console.ANSI  (Color (..))
 
 import           Changelogged.Common
-import           Changelogged.Config (addCommitMessageToIgnored)
+import           Changelogged.Config (addCommitToIgnored)
 import           Changelogged.Changelog.Common
 import           Changelogged.Git     (listPRCommits, showDiff, getCommitTag)
 import           Changelogged.Pattern (isMerge)
@@ -22,58 +22,39 @@ import           Changelogged.Pattern (isMerge)
 -- $setup
 -- >>> :set -XOverloadedStrings
 
-prompt :: Appl Interaction
-prompt = go
-  where go = do
-          coloredPrint Cyan "(↵/s↵/e↵/r↵/i↵):  \n"
-          answer <- liftIO getLine
-          case answer of
-            "" -> return Write
-            "w" -> return Write
-            "W" -> return Write
-            "Write" -> return Write
-            "write" -> return Write
-            "s" -> return Skip
-            "skip" -> return Skip
-            "Skip" -> return Skip
-            "S" -> return Skip
-            "e" -> return Expand
-            "E" -> return Expand
-            "Expand" -> return Expand
-            "expand" -> return Expand
-            "r" -> return Remind
-            "remind" -> return Remind
-            "Remind" -> return Remind
-            "R" -> return Remind
-            "i" -> return IgnoreAlways
-            "ignore" -> return IgnoreAlways
-            "Ignore" -> return IgnoreAlways
-            "I" -> return IgnoreAlways
-            _ -> do
-              liftIO $ putStrLn "Cannot parse action. Please repeat."
-              go
-
-interactiveSession :: Text -> Link -> Commit -> FilePath -> Appl ()
-interactiveSession entryPrefix repoUrl commit@Commit{..} changelog = do
-  suggestMissing entryPrefix repoUrl commit
+-- It cannot be folded since we have 'Remind' option.
+interactiveSession :: Appl Interaction -> Text -> Link -> FilePath -> [Commit] -> Appl ()
+interactiveSession _ _ _ _ [] = return ()
+interactiveSession prompt entryPrefix repoUrl changelog (current@Commit{..}:rest) = do
+  suggestMissing entryPrefix repoUrl current
   action <- prompt
   Options{..} <- gets envOptions
   case action of
-    Write -> addMissing entryPrefix repoUrl commit changelog
+    Write -> do
+      addMissing entryPrefix repoUrl current changelog
+      interactiveSession prompt entryPrefix repoUrl changelog rest
     Expand -> do
-      addMissing entryPrefix repoUrl commit changelog
+      addMissing entryPrefix repoUrl current changelog
       if (isMerge commitMessage || isJust commitIsPR) 
         then do
           subChanges <- listPRCommits commitSHA
-          mapM_ (\sha -> interactiveSession ("  " <> entryPrefix) repoUrl sha changelog) subChanges
+          interactiveSession prompt ("  " <> entryPrefix) repoUrl changelog subChanges
         else return ()
-    Skip -> return ()
-    Remind -> showDiff commitSHA >> interactiveSession "" repoUrl commit changelog
-    IgnoreAlways -> debug (showText changelog) >> addCommitMessageToIgnored commitMessage changelog
+      interactiveSession prompt entryPrefix repoUrl changelog rest
+    Skip -> interactiveSession prompt entryPrefix repoUrl changelog rest
+    Remind -> showDiff commitSHA >> interactiveSession prompt "" repoUrl changelog (current:rest)
+    IgnoreAlways -> do
+      debug (showText changelog)
+      addCommitToIgnored commitSHA changelog
+      interactiveSession prompt entryPrefix repoUrl changelog rest
+    Quit -> interactiveSession promptSkip "" repoUrl changelog rest
+    WriteRest -> interactiveSession promptSimple "" repoUrl changelog (current:rest)
 
-interactiveDealWithEntry :: Link -> Commit -> FilePath -> Appl Bool
-interactiveDealWithEntry repoUrl commit@Commit{..} changelog =
-  actOnMissingCommit commit changelog (interactiveSession "" repoUrl commit changelog >> return True)
+interactiveWalk :: Link -> FilePath -> [Commit] -> Appl ()
+interactiveWalk = interactiveSession promptInteractive ""
+
+simpleWalk :: Link -> FilePath -> [Commit] -> Appl ()
+simpleWalk = interactiveSession promptSimple ""
 
 -- |
 suggestMissing :: Text -> Link -> Commit -> Appl ()
@@ -95,7 +76,7 @@ addMissing entryPrefix gitUrl Commit{..} changelog = do
     tagm <- getCommitTag commitSHA
     case tagm of
       Nothing -> return ()
-      Just tag -> append changelog (select [unsafeTextToLine ("#### Tag between missing commits: " <> tag)])
+      Just tag -> append changelog (select (map unsafeTextToLine ["","#### " <> tag,""]))
     append changelog (select currentLogs)
   where
     entry formatting = case commitIsPR of
@@ -119,4 +100,4 @@ printEntry (EntryFormat formattingString) message link identifier = do
     in printParts parts
 
 defaultEntryFormat :: EntryFormat
-defaultEntryFormat = EntryFormat "- %message% (see [%link%](%id%));"
+defaultEntryFormat = EntryFormat "- %message% (see [%id%](%link%));"

@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings           #-}
 {-# LANGUAGE DeriveAnyClass              #-}
 {-# LANGUAGE DeriveGeneric               #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving  #-}
@@ -9,6 +10,7 @@ import           Data.Text    (Text)
 import           GHC.Generics (Generic)
 
 newtype SHA1 = SHA1 {getSHA1 :: Text} deriving (Eq, Show)
+                                      deriving  newtype (ToJSON, FromJSON)
 newtype Link = Link {getLink :: Text} deriving (Eq, Show)
 newtype PR = PR {getPR :: Text} deriving (Eq, Show)
 newtype EntryFormat = EntryFormat {getEntryFormat :: Text} deriving (Eq, Show, Generic)
@@ -25,5 +27,12 @@ data Commit = Commit
 data Level = App | Major | Minor | Fix | Doc
   deriving (Generic, Show, Enum, Bounded, ToJSON)
 
-data Interaction = Write | Expand | Skip | Remind | IgnoreAlways
+showHumanReadableLevel :: Level -> Text
+showHumanReadableLevel App = "application level changes"
+showHumanReadableLevel Major = "major changes"
+showHumanReadableLevel Minor = "minor changes"
+showHumanReadableLevel Fix = "fixes"
+showHumanReadableLevel Doc = "documentation changes"
+
+data Interaction = Write | Expand | Skip | Remind | IgnoreAlways | Quit | WriteRest
   deriving (Generic, Eq, Show, Enum, Bounded, ToJSON)

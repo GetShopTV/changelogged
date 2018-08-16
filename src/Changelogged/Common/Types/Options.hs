@@ -10,8 +10,10 @@ import qualified Filesystem.Path.CurrentOS        as Path
 data Options = Options
   { -- | Only display report on changelog misses.
     optListMisses      :: Bool
-    -- | Check changelogs from specified version tag or from the very start.
-  , optFromVersion     :: Maybe (Maybe Text)
+    -- | Check changelogs from specified version tag.
+  , optFromVersion     :: Maybe Text
+    -- | Check changelogs from the very start.
+  , optFromBeginning   :: Bool
     -- | Print all texts in standard terminal color.
   , optNoColors        :: Bool
     -- | Run avoiding changes in files.

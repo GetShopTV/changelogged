@@ -9,7 +9,6 @@ import           Control.Exception
 import qualified Control.Foldl             as Fold
 
 import           Data.Functor              (($>))
-import qualified Data.List                 as List
 
 import           Filesystem.Path.CurrentOS (encodeString)
 
@@ -50,6 +49,7 @@ generateVersionedFile
   --result
   -> [Line]
 generateVersionedFile file [] [] = file
+-- FIXME: impossible cases.
 generateVersionedFile _ [] _ = error "internal sed error"
 generateVersionedFile _ _ [] = error "internal sed error"
 generateVersionedFile file (new:news) (old:olds) = generateVersionedFile (replaceLine file new old) news olds
@@ -67,16 +67,7 @@ bumpPart version file@VersionFile{..} = do
   unless dryRun $ sh $ bumpAny file version
 
 -- |Get level of changes from changelog.
-getLevelOfChanges :: FilePath -> Maybe LevelHeaders -> Appl (Maybe Level)
-getLevelOfChanges changelogFile Nothing = getLevelOfChanges changelogFile (Just defaultLevelHeaders)
-getLevelOfChanges changelogFile (Just levelHeaders@LevelHeaders{..}) = do
-  levels <- lookupLevels unreleased levelHeaders
-  return . fmap toEnum $ List.findIndex id levels
-  where
-    unreleased = limitWhile (null . match (prefix versionExactRegex) . lineToText) (input changelogFile)
-
-    lookupLevel linesList levelHeader = case levelHeader of
-      Just txt -> fold (grep (prefix (text txt)) linesList) countLines >>= return . (/= 0)
-      Nothing -> return False
-    -- Maybe it's better to resolve it with instance Foldable LevelHeaders
-    lookupLevels linesList (LevelHeaders h1 h2 h3 h4 h5) = mapM (lookupLevel linesList) [h1,h2,h3,h4,h5]
+-- There once could be set of heuristics to determine new version.
+-- See original issue - https://github.com/GetShopTV/changelogged/issues/87
+predictLevelOfChanges :: FilePath -> Appl (Maybe Level)
+predictLevelOfChanges _changelogFile = return Nothing

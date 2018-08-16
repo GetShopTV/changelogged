@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Changelogged.Common.Utils.Pure where
 
+import qualified System.Process                   as Proc
+
 import           Data.Aeson
 
 import           Data.Monoid                      ((<>))
@@ -15,7 +17,6 @@ import           Data.List
 import           Filesystem.Path.CurrentOS        (FilePath, encodeString)
 
 import Changelogged.Common.Types.Common
-import Changelogged.Common.Types.Config
 
 changeloggedVersion :: Version
 changeloggedVersion = Version "0.3.0"
@@ -64,12 +65,13 @@ tuplify (a1:a2:a3:a4:a5:_) = (a1,a2,a3,a4,a5)
 delimited :: Text -> (Int, Int, Int, Int, Int)
 delimited ver = tuplify $ map (read . Text.unpack) (Text.split (=='.') ver)
 
+-- FIXME: Refactor and make correspondent with PVP.
 bump :: (Int, Int, Int, Int, Int) -> Level -> Text
 bump (app, major, minor, fix, doc) lev = Text.intercalate "." $ map showText $ case lev of
   App   -> [app + 1, 0]
-  Major -> [app, major + 1, 0]
-  Minor -> [app, major, minor + 1, 0]
-  Fix   -> [app, major, minor, fix + 1, 0]
+  Major -> [app, major + 1]
+  Minor -> [app, major, minor + 1]
+  Fix   -> [app, major, minor, fix + 1]
   Doc   -> [app, major, minor, fix, doc + 1]
 
 showPath :: FilePath -> Text
@@ -119,11 +121,21 @@ jsonDerivingModifier prefix = defaultOptions {
 extractProjectNameFromUrl :: Link -> Text
 extractProjectNameFromUrl (Link url) = Text.takeWhileEnd (/= '/') . fromMaybe url $ Text.stripSuffix ".git" url
 
-defaultLevelHeaders :: LevelHeaders
-defaultLevelHeaders = LevelHeaders
-  { levelHeadersApp = Just "* App"
-  , levelHeadersMajor = Just "* Major"
-  , levelHeadersMinor = Just "* Minor"
-  , levelHeadersFix = Just "* Fix"
-  , levelHeadersDoc = Just "* Doc"
+templateProcess :: Proc.CreateProcess
+templateProcess = Proc.CreateProcess
+  { Proc.cmdspec = (Proc.RawCommand "echo" ["Template process on the run"])
+  , Proc.cwd = Nothing
+  , Proc.env = Nothing
+  , Proc.std_in = Proc.Inherit
+  , Proc.std_out = Proc.Inherit
+  , Proc.std_err = Proc.Inherit
+  , Proc.close_fds = True
+  , Proc.create_group = False
+  , Proc.delegate_ctlc = True
+  , Proc.detach_console = True
+  , Proc.create_new_console = True
+  , Proc.new_session = True
+  , Proc.child_group = Nothing
+  , Proc.child_user = Nothing
+  , Proc.use_process_jobs = False
   }

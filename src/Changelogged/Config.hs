@@ -17,7 +17,6 @@ defaultConfig :: Config
 defaultConfig = Config
   { configChangelogs    = pure ChangelogConfig
       { changelogChangelog     = "ChangeLog.md"
-      , changelogLevelHeaders  = Just defaultLevelHeaders
       , changelogWatchFiles    = Nothing  -- watch everything
       , changelogIgnoreFiles   = Just ["ChangeLog.md"]
       , changelogIgnoreCommits = Nothing
@@ -28,11 +27,11 @@ defaultConfig = Config
   , configEditorCommand = Just "vim"
   }
 
-addCommitMessageToIgnored :: Text -> Turtle.FilePath -> Appl ()
-addCommitMessageToIgnored message changelog = do
+addCommitToIgnored :: SHA1 -> Turtle.FilePath -> Appl ()
+addCommitToIgnored hash changelog = do
   ChangeloggedEnv opts@Options{..} cfg'@Config{..} <- get
   let configPath = fromMaybe ".changelogged.yaml" (Text.unpack . showPath <$> optConfigPath)
-      newIgnoreCommits cc = Just [message] <> changelogIgnoreCommits cc
+      newIgnoreCommits cc = Just [hash] <> changelogIgnoreCommits cc
       replaceElem =
         (\(first, as) -> first <> ((head as) {changelogIgnoreCommits = newIgnoreCommits (head as)}: tail as))
         . break (\cconf -> changelogChangelog cconf == changelog)
@@ -53,8 +52,8 @@ adjustConfig cfg'@Config{..} = do
 ppConfig :: Config -> Text
 ppConfig Config{..} = mconcat
   [ "Main branch (with version tags)" ?: configBranch
-  , "Format of inferred changelog entries" ?: (getEntryFormat <$> configEntryFormat)
-  , "Preferred editor" ?: configEditorCommand
+  , "Format of changelog entries" ?: (getEntryFormat <$> configEntryFormat)
+  , "Editor" ?: configEditorCommand
   , "Changelogs" !: formatItems Turtle.fp (map changelogChangelog configChangelogs)
   ]
   where
