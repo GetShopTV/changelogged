@@ -17,7 +17,25 @@ promptGoInteractive = do
           answer <- liftIO getLine
           case answer of
             "y" -> return True
+            "yes" -> return True
             "n" -> return False
+            "no" -> return False
+            _ -> do
+              liftIO $ putStrLn "Cannot parse answer. Please repeat."
+              go
+
+promptBumpVersions :: Appl Bool
+promptBumpVersions = do
+  coloredPrint Yellow $ "Do you want to bump versions?\n"
+  go
+  where go = do
+          coloredPrint Cyan "(y/n):  \n"
+          answer <- liftIO getLine
+          case answer of
+            "y" -> return True
+            "yes" -> return True
+            "n" -> return False
+            "no" -> return False
             _ -> do
               liftIO $ putStrLn "Cannot parse answer. Please repeat."
               go
@@ -63,27 +81,25 @@ promptInteractive = go
               liftIO $ putStrLn "Cannot parse action. Please repeat."
               go
 
-levelPrompt :: Appl (Maybe Level)
+levelPrompt :: Appl Level
 levelPrompt = do
-  -- FIXME: here will be prompt. And versions must not be inferred, it's too formal.
-  coloredPrint Yellow $ "Changelog does not contain any new version level labels.\n"
-                     <> "You can specify level of changes explicitly or press Enter to miss bumping versions.\n"
+  coloredPrint Yellow $ "Changelogged cannot predict version number by changelog.\n"
+                     <> "Choose level of changes:\n"
   go
   where go = do
-          coloredPrint Cyan "(↵/app↵/major↵/minor↵/fix↵/doc↵):  \n"
+          coloredPrint Cyan "(app/major/minor/fix/doc):  \n"
           answer <- liftIO getLine
           case answer of
-            "" -> return Nothing
-            "App" -> return (Just App)
-            "app" -> return (Just App)
-            "Major" -> return (Just Major)
-            "major" -> return (Just Major)
-            "Minor" -> return (Just Minor)
-            "minor" -> return (Just Minor)
-            "Fix" -> return (Just Fix)
-            "fix" -> return (Just Fix)
-            "Doc" -> return (Just Doc)
-            "doc" -> return (Just Doc)
+            "App" -> return App
+            "app" -> return App
+            "Major" -> return Major
+            "major" -> return Major
+            "Minor" -> return Minor
+            "minor" -> return Minor
+            "Fix" -> return Fix
+            "fix" -> return Fix
+            "Doc" -> return Doc
+            "doc" -> return Doc
             _ -> do
               liftIO $ putStrLn "Cannot parse level. Please repeat."
               go

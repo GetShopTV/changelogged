@@ -62,13 +62,8 @@ generateVersionByChangelog logConfig@ChangelogConfig{..} = do
   case versionedChanges of
     Just lev -> generateVersion lev logConfig
     Nothing -> do
-      levelm <- levelPrompt
-      case levelm of
-        Nothing -> do
-          -- FIXME: This will go away.
-          warning $ "keeping current version since " <> showPath changelogChangelog <> " does not contain any new level headers or even entries."
-          return Nothing
-        Just level -> generateVersion level logConfig
+      level <- levelPrompt
+      generateVersion level logConfig
 
 bumpVersions :: ChangelogConfig -> Appl ()
 bumpVersions config@ChangelogConfig{..} = flip catch (\(ex :: PatternMatchFail) -> failure (showText ex)) $ do

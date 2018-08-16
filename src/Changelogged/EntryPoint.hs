@@ -54,7 +54,8 @@ processChangelog gitInfo config@ChangelogConfig{..} = do
   checkChangelog gitInfo config
   unless optListMisses $ do
     enableEditor editorCommand changelogChangelog
-    bumpVersions config
+    bump_answer <- promptBumpVersions
+    when bump_answer $ bumpVersions config
 
 enableEditor :: Maybe Text -> FilePath -> Appl ()
 enableEditor cmd file = do
