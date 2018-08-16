@@ -92,23 +92,10 @@ showDiff (SHA1 sha) = do
   args <- buildArgs
   (lessHandle, gitHandle) <- liftIO Proc.createPipe
   -- FIXME: make Process template in Utils.
-  (_,_,_,lessWaiter) <- liftIO $ Proc.createProcess Proc.CreateProcess
+  (_,_,_,lessWaiter) <- liftIO $ Proc.createProcess templateProcess
     -- FIXME: make pager configurable. Now it's breaking Windows support.
     { Proc.cmdspec = (Proc.RawCommand "less" ["-r"])
-    , Proc.cwd = Nothing
-    , Proc.env = Nothing
     , Proc.std_in = (Proc.UseHandle lessHandle)
-    , Proc.std_out = Proc.Inherit
-    , Proc.std_err = Proc.Inherit
-    , Proc.close_fds = True
-    , Proc.create_group = False
-    , Proc.delegate_ctlc = True
-    , Proc.detach_console = True
-    , Proc.create_new_console = True
-    , Proc.new_session = True
-    , Proc.child_group = Nothing
-    , Proc.child_user = Nothing
-    , Proc.use_process_jobs = False
     }
   void . liftIO $ Proc.runProcess "git" args Nothing Nothing Nothing (Just gitHandle) Nothing
   void . liftIO . Proc.waitForProcess $ lessWaiter

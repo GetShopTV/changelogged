@@ -1,7 +1,26 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Changelogged.Common.Utils.Prompts where
 
+import System.Console.ANSI (Color (..))
+
+import Data.Monoid ((<>))
+
 import Changelogged.Common.Types
+import Changelogged.Common.Utils.IO
+
+promptGoInteractive :: Appl Bool
+promptGoInteractive = do
+  coloredPrint Yellow $ "You can go to interactive mode or simply write changes to changelog. Go to interactive mode?\n"
+  go
+  where go = do
+          coloredPrint Cyan "(y/n):  \n"
+          answer <- liftIO getLine
+          case answer of
+            "y" -> return True
+            "n" -> return False
+            _ -> do
+              liftIO $ putStrLn "Cannot parse answer. Please repeat."
+              go
 
 promptSkip :: Appl Interaction
 promptSkip = return Skip

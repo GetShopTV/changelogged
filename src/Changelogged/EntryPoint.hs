@@ -62,22 +62,8 @@ enableEditor cmd file = do
         case cmd of
           Nothing -> "$EDITOR"
           Just ed -> ed
-  (_,_,_,waiter) <- liftIO $ Proc.createProcess Proc.CreateProcess
+  (_,_,_,waiter) <- liftIO $ Proc.createProcess templateProcess
     { Proc.cmdspec = (Proc.ShellCommand (cs editorCmd <> " " <> encodeString file))
-    , Proc.cwd = Nothing
-    , Proc.env = Nothing
-    , Proc.std_in = Proc.Inherit
-    , Proc.std_out = Proc.Inherit
-    , Proc.std_err = Proc.Inherit
-    , Proc.close_fds = True
-    , Proc.create_group = False
-    , Proc.delegate_ctlc = True
-    , Proc.detach_console = True
-    , Proc.create_new_console = True
-    , Proc.new_session = True
-    , Proc.child_group = Nothing
-    , Proc.child_user = Nothing
-    , Proc.use_process_jobs = False
     }
   void . liftIO . Proc.waitForProcess $ waiter
 

@@ -6,8 +6,6 @@ module Changelogged.Changelog.Check where
 import           Prelude                        hiding (FilePath)
 import           Turtle                         hiding (find, stderr, stdout)
 
-import           System.Console.ANSI            (Color (..))
-
 import qualified Control.Foldl                  as Fold
 import           Control.Monad                  (when)
 
@@ -15,7 +13,7 @@ import           Data.Maybe                     (catMaybes)
 
 import           Changelogged.Changelog.Common
 import           Changelogged.Changelog.Interactive
-import           Changelogged.Changelog.Plain
+import           Changelogged.Changelog.Dry
 import           Changelogged.Common
 import           Changelogged.Pattern
 import           Changelogged.Git (retrieveCommitMessage)
@@ -49,20 +47,6 @@ checkChangelog gitInfo@GitInfo{..} config@ChangelogConfig{..} = do
             checkableCommits
       success $ showPath changelogChangelog <> " is updated.\n"
                    <> "You can edit it manually now.\n"
-
-promptGoInteractive :: Appl Bool
-promptGoInteractive = do
-  coloredPrint Yellow $ "You can go to interactive mode or simply write changes to changelog. Go to interactive mode?\n"
-  go
-  where go = do
-          coloredPrint Cyan "(y/n):  \n"
-          answer <- liftIO getLine
-          case answer of
-            "y" -> return True
-            "n" -> return False
-            _ -> do
-              liftIO $ putStrLn "Cannot parse answer. Please repeat."
-              go
 
 extractCommitMetadata :: GitInfo -> ChangelogConfig -> SHA1 -> Appl (Maybe Commit)
 extractCommitMetadata GitInfo{..} ChangelogConfig{..} commitSHA = do

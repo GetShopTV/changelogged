@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Changelogged.Common.Utils.Pure where
 
+import qualified System.Process                   as Proc
+
 import           Data.Aeson
 
 import           Data.Monoid                      ((<>))
@@ -127,4 +129,23 @@ defaultLevelHeaders = LevelHeaders
   , levelHeadersMinor = Just "* Minor"
   , levelHeadersFix = Just "* Fix"
   , levelHeadersDoc = Just "* Doc"
+  }
+
+templateProcess :: Proc.CreateProcess
+templateProcess = Proc.CreateProcess
+  { Proc.cmdspec = (Proc.RawCommand "echo" ["Template process on the run"])
+  , Proc.cwd = Nothing
+  , Proc.env = Nothing
+  , Proc.std_in = Proc.Inherit
+  , Proc.std_out = Proc.Inherit
+  , Proc.std_err = Proc.Inherit
+  , Proc.close_fds = True
+  , Proc.create_group = False
+  , Proc.delegate_ctlc = True
+  , Proc.detach_console = True
+  , Proc.create_new_console = True
+  , Proc.new_session = True
+  , Proc.child_group = Nothing
+  , Proc.child_user = Nothing
+  , Proc.use_process_jobs = False
   }
