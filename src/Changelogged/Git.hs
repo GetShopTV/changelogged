@@ -53,7 +53,7 @@ remoteUrlToHttps
 loadGitHistory
   :: Maybe Text  -- ^ A commit/tag to mark the start of history.
   -> Appl [Turtle.Line]
-loadGitHistory from = fold (inproc "git" (["log", "--oneline", "--first-parent"] <> range) empty) Fold.list
+loadGitHistory from = reverse <$> fold (inproc "git" (["log", "--oneline", "--first-parent"] <> range) empty) Fold.list
   where
     range = case from of
       Nothing     -> []
