@@ -22,7 +22,7 @@ import           Changelogged.Pattern (isMerge)
 -- $setup
 -- >>> :set -XOverloadedStrings
 
--- FIXME: names and modules. interactive session with constant prompt is not interactive.
+-- It cannot be folded since we have 'Remind' option.
 interactiveSession :: Appl Interaction -> Text -> Link -> FilePath -> [Commit] -> Appl ()
 interactiveSession _ _ _ _ [] = return ()
 interactiveSession prompt entryPrefix repoUrl changelog (current@Commit{..}:rest) = do

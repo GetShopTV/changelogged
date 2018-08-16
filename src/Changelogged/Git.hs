@@ -91,7 +91,6 @@ showDiff :: SHA1 -> Appl ()
 showDiff (SHA1 sha) = do
   args <- buildArgs
   (lessHandle, gitHandle) <- liftIO Proc.createPipe
-  -- FIXME: make Process template in Utils.
   (_,_,_,lessWaiter) <- liftIO $ Proc.createProcess templateProcess
     -- FIXME: make pager configurable. Now it's breaking Windows support.
     { Proc.cmdspec = (Proc.RawCommand "less" ["-r"])
