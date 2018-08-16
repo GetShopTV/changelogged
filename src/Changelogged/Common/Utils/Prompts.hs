@@ -4,13 +4,14 @@ module Changelogged.Common.Utils.Prompts where
 import System.Console.ANSI (Color (..))
 
 import Data.Monoid ((<>))
+import Data.Text (Text)
 
 import Changelogged.Common.Types
 import Changelogged.Common.Utils.Printing
 
-promptGoInteractive :: Appl Bool
-promptGoInteractive = do
-  coloredPrint Yellow $ "You can go to interactive mode or simply write changes to changelog. Go to interactive mode?\n"
+promptYesNo :: Text -> Appl Bool
+promptYesNo message = do
+  coloredPrint Yellow message
   go
   where go = do
           coloredPrint Cyan "(y/n):  \n"
@@ -24,21 +25,11 @@ promptGoInteractive = do
               liftIO $ putStrLn "Cannot parse answer. Please repeat."
               go
 
+promptGoInteractive :: Appl Bool
+promptGoInteractive = promptYesNo "You can go to interactive mode or simply write changes to changelog. Go to interactive mode?\n"
+
 promptBumpVersions :: Appl Bool
-promptBumpVersions = do
-  coloredPrint Yellow $ "Do you want to bump versions?\n"
-  go
-  where go = do
-          coloredPrint Cyan "(y/n):  \n"
-          answer <- liftIO getLine
-          case answer of
-            "y" -> return True
-            "yes" -> return True
-            "n" -> return False
-            "no" -> return False
-            _ -> do
-              liftIO $ putStrLn "Cannot parse answer. Please repeat."
-              go
+promptBumpVersions = promptYesNo "Do you want to bump versions?\n"
 
 promptSkip :: Appl Interaction
 promptSkip = return Skip
