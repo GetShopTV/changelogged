@@ -2,13 +2,10 @@ changelogs:
   - changelog: ChangeLog.md
 
     ignore_files:
-      - ChangeLog.md
+      - "*ChangeLog*.md"
       - .changelogged.yaml
 
-    ignore_commits:
-      - Update ChangeLog and bump versions
-      - Update ChangeLog.md and bump versions
-      - Bump versions
+    ignore_commits: []
 
     version_files:
       - path: package.yaml
