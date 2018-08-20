@@ -5,7 +5,7 @@
 
 `changelogged` is a changelog manager for Git projects.
 
-![`changelogged` demo.](images/demo.gif)
+![`changelogged` demo.](images/demo_new.gif)
 
 ## Quick start
 
