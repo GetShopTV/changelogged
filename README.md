@@ -17,29 +17,14 @@ eval "$(changelogged --bash-completion-script changelogged)"
 ```
 In new terminal sessions you will have it.
 
-For most projects you can start by simply running `changelogged` with no options or configuration files:
+For most projects you can simply run `changelogged` with no options or configuration files:
 
 ```
 changelogged
 ```
 
-That should print out some inferred information about your project
-and also list any recent changes that are not included in you changelog.
-
-You can then prepend missing changelog entries automatically with
-
-```
-changelogged update-changelog
-```
-
-Now you can see new entries in your changelog, make edits and group changes.
-Even if you see simple messages on a screen, detailed (with links, see demo) are written to changelog.
-Also each PR will be expanded to commits.
-When you're done you can automatically bump project's version with bump-version.
-
-```
-changelogged bump-versions
-```
+After you refuse to do to interactive mode it will add missing entries to your changelogs and open editor for each if them.
+After you can bummp versions over whole project (usable if you have more than one version file).
 
 That's it! Now you have a proper changelog with no forgotten changes.
 
@@ -52,6 +37,17 @@ This can confuse `changelogged` and result in more suggestions than needed.
 To avoid this situation add [`branch: master` line](https://github.com/GetShopTV/changelogged/blob/master/.changelogged.template.yaml#L37-L41)
 in your `.changelogged.yaml`.
 
+## Versioning
+
+Let A.B.C.D.E be version number.
+
+They are named in a prompt correspondingly `app`, `major`, `minor`, `fix` and `doc`
+
+A.B.C versions are bumped through zero. If you have version A.B.9 and bump B next version will be A.B+1.0.
+A.B version will never be reached since C was introduced once.
+
+non-PVP versions are bumped through one. A.B.C.9 -> A.B.C+1 -> A.B.C+1.1
+
 ## Configuration file
 
 For any non-trivial project you're likely to want to configure the way `changelogged`
@@ -63,7 +59,21 @@ See [.changelogged.template.yaml](.changelogged.template.yaml)
 for a template configuration file with description of all fields.
 All paths inside can be relative against project root directory.
 
-## Feature reference
+## Interactive mode
+
+![`changelogged` demo.](images/demo_interactive.gif)
+
+If you want a lot more customized changelog try to go to interactive mode.
+
+It allows to walk through history and do something with each entry.
+Options:
+ * `(w)rite` - write entry to changelog and go to next. You can omit `w` and do it by pressing enter.
+ * `(r)emind` - show commit in pager.
+ * `(s)kip` - skip entry and go to next.
+ * `(e)xpand` - write merge commit entry, expand to subchanges and walk through them.
+ * `(i)gnore` - ignore commit. It will be written to config and will never be suggested as missing.
+ * `(a)ll` - add remaining entries to changelog. Raised inside merge commit it will add rest of subchanges.
+ * `(q)uit` - skip remaining entries. Inside merge commit it will quit it only.
 
 ### Help message
 
@@ -72,25 +82,18 @@ changelogged --help
 ```
 
 ```
-changelogged - Changelog Manager for Git Projects
+Changelog Manager for Git Projects
 
-Usage: changelogged [ACTION] [--format FORMAT] [--dry-run] [TARGET_CHANGELOG]
+Usage: changelogged [--dry-run] [TARGET_CHANGELOG]
                     [--config changelogged.yaml config file location]
+  Changelogged
 
 Available options:
   -h,--help                Show this help text
-  ACTION                   If present could be update-changelog or
-                           bump-versions.
-  --format FORMAT          Format for missing changelog entry warnings. FORMAT
-                           can be 'simple' or 'suggest'. (default: simple)
-  --level CHANGE_LEVEL     Level of changes (to override one inferred from
-                           changelog). CHANGE_LEVEL can be 'app', 'major',
-                           'minor', 'fix' or 'doc'.
-  --from-bc                Look for missing changelog entries from the start of
-                           the project.
-  --force                  Bump versions ignoring possibly outdated changelogs.
-                           Usable with bump-versions only
-  --no-check               Do not check if changelogs have any missing entries.
+  --list-misses            List missing entries, don't modify changelogs.
+  --from-version CHECK_FROM_TAG
+                           Tag or commit from which to check changelogs.
+  --from-beginning         Check all changelogs from start of the project.
   --no-colors              Print all messages in standard terminal color.
   --dry-run                Do not change files while running.
   TARGET_CHANGELOG         Path to target changelog.
@@ -98,53 +101,17 @@ Available options:
                            Path to config file.
   --verbose                Turn verbose mode on (useful for developers).
   --version                Print version.
+
 ```
 
-Interactive mode reference:
-For each entry you can:
- * Write entry to changelog (press Enter or (w)rite)
- * Skip entry (type s/skip and press Enter)
- * Write entry and go into it's subchanges if it was merge commit (type e/expand and press Enter)
- * Ask changelogged to show commit contents (type r/remind and press Enter).
- * Set changelogged to always ignore commit this commit (it will never appear in interactive session)
-   (type i/ignore and press Enter).
-
-### Checking changelogs
-
-This is default feature. Changelogged will output all missing pull requests and commits with their messages.
-
-You can skip it with `--no-check` option or ignore results while bumping with `--force` option. Also you can check changelog from the first commit with `--from-bc`.
-
-### Bumping versions
-
-If changelogs are up to date changelogged will bump versions all over the project with command `bump-versions`.
-
-You can variously combine changelog checking and bumping versions. For example you may just want to be sure changelogs are up to date. You can just run `changelogged`
-By default new version is inferred from changelog.
-Default versioning: `app.major.minor.fix.doc`.
-If you use another versioning system or headers in changelog you can change `level_headers` in `.changelogged.yaml`
-
-You can specify new version explicitly with `--level` option. It's also the only way to bump version with `--no-check` option.
-
-### Multiple changelogs and subversions
-
-If you have a lot of changelog entries in `changelogged.yaml` you get it. There is no option to set explicit subversion for any changelog. `--api-level` is already deprecated.
-Also there will be option to check changelog passed by name in commang line args if it presents in config.
-
-### Writing changelogs.
-
-`--format=suggest` provides another format for records you see on the screen.
-`update-changelog` command will write these records to changelog. With any `format` option new entries will match `--format=suggest`.
-It's recommended to edit it manually after.
-
-## Development
+## Getting and building
 
 ### Requirements
 
 It works with Git projects only.
-It was never tested on Windows. Ideally it will work if you have Git Bash installed.
 
-### Getting and building
+Current version supports only GitHub and UNIX like OS.
+We are working on it.
 
 #### Installing from Hackage
 
@@ -188,6 +155,8 @@ stack install
 
 Bug reports and feature requests are welcome on
 [GitHub](https://github.com/GetShopTV/changelogged/issues)
+
+Code of conduct and contributing rules are coming soon.
 
 Pull requests are welcome!
 
