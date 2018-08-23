@@ -27,6 +27,9 @@ data Commit = Commit
 data Level = App | Major | Minor | Fix | Doc
   deriving (Generic, Show, Enum, Bounded, ToJSON)
 
+data GitHosting = GitHub | BitBucket | GitLab
+  deriving (Generic, Show, Enum, Bounded, ToJSON)
+
 showHumanReadableLevel :: Level -> Text
 showHumanReadableLevel App = "application level changes"
 showHumanReadableLevel Major = "major changes"

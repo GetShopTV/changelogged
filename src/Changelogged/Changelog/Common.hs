@@ -13,22 +13,40 @@ import qualified Data.Text            as Text
 import           System.Console.ANSI  (Color (..))
 
 import           Changelogged.Common
-import           Changelogged.Git     (getCommitTag)
+import           Changelogged.Git     (getCommitTag, parseHostingType)
 
 -- $setup
 -- >>> :set -XOverloadedStrings
 
--- |
--- >>> prLink (Link "https://github.com/GetShopTV/changelogged") (PR "#13")
--- Link {getLink = " https://github.com/GetShopTV/changelogged/pull/13 "}
 prLink :: Link -> PR -> Link
-prLink (Link link) (PR num) = Link $ " " <> link <> "/pull/" <> Text.drop 1 num <> " "
+prLink link pr =
+  let hostingType = parseHostingType link in
+  case hostingType of
+    GitHub -> githubPrLink link pr
+    -- FIXME: add builders for Bitbucket and Gitlab links.
+    BitBucket -> githubPrLink link pr
+    GitLab -> githubPrLink link pr
 
 -- |
--- >>> commitLink (Link "https://github.com/GetShopTV/changelogged") (SHA1 "9e14840")
--- Link {getLink = " https://github.com/GetShopTV/changelogged/commit/9e14840 "}
+-- >>> githubPrLink (Link "https://github.com/GetShopTV/changelogged") (PR "#13")
+-- Link {getLink = " https://github.com/GetShopTV/changelogged/pull/13 "}
+githubPrLink :: Link -> PR -> Link
+githubPrLink (Link link) (PR num) = Link $ " " <> link <> "/pull/" <> Text.drop 1 num <> " "
+
 commitLink :: Link -> SHA1 -> Link
-commitLink (Link link) (SHA1 sha) = Link $ " " <> link <> "/commit/" <> sha <> " "
+commitLink link hash =
+  let hostingType = parseHostingType link in
+  case hostingType of
+    GitHub -> githubCommitLink link hash
+    -- FIXME: add builders for Bitbucket and Gitlab links.
+    BitBucket -> githubCommitLink link hash
+    GitLab -> githubCommitLink link hash
+
+-- |
+-- >>> githubCommitLink (Link "https://github.com/GetShopTV/changelogged") (SHA1 "9e14840")
+-- Link {getLink = " https://github.com/GetShopTV/changelogged/commit/9e14840 "}
+githubCommitLink :: Link -> SHA1 -> Link
+githubCommitLink (Link link) (SHA1 sha) = Link $ " " <> link <> "/commit/" <> sha <> " "
 
 printCommitTag :: SHA1 -> Appl ()
 printCommitTag sha = getCommitTag sha >>= \tag -> case tag of

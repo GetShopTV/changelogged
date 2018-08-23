@@ -37,7 +37,7 @@ interactiveSession prompt entryPrefix repoUrl changelog (current@Commit{..}:rest
       addMissing entryPrefix repoUrl current changelog
       if (isMerge commitMessage || isJust commitIsPR) 
         then do
-          subChanges <- listPRCommits commitSHA
+          subChanges <- listPRCommits commitSHA repoUrl
           interactiveSession prompt ("  " <> entryPrefix) repoUrl changelog subChanges
         else return ()
       interactiveSession prompt entryPrefix repoUrl changelog rest
