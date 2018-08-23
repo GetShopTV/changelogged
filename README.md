@@ -13,7 +13,7 @@ You're encouraged to use `changelogged` when preparing a new release of your pro
 
 If you're using bash you probably want to enable autocompletion. You can do it with the following or equivalent:
 ```
-eval "$(changelogged --bash-completion-script changelogged)"
+changelogged --bash-completion-script changelogged >> ~/.bash_completion
 ```
 In new terminal sessions you will have it.
 
