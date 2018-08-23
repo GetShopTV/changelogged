@@ -16,7 +16,7 @@ import           Changelogged.Changelog.Interactive
 import           Changelogged.Changelog.Dry
 import           Changelogged.Common
 import           Changelogged.Pattern
-import           Changelogged.Git (retrieveCommitMessage)
+import           Changelogged.Git (retrieveCommitMessage, parseHostingType)
 
 checkChangelog :: GitInfo -> ChangelogConfig -> Appl ()
 checkChangelog gitInfo@GitInfo{..} config@ChangelogConfig{..} = do
@@ -45,11 +45,11 @@ checkChangelog gitInfo@GitInfo{..} config@ChangelogConfig{..} = do
               then interactiveWalk gitRemoteUrl changelogChangelog 
               else simpleWalk gitRemoteUrl changelogChangelog) $
             checkableCommits
-      success $ showPath changelogChangelog <> " is updated.\n"
-                   <> "You can edit it manually now.\n"
+      success $ showPath changelogChangelog <> " is updated.\nTrying to run editor."
 
 extractCommitMetadata :: GitInfo -> ChangelogConfig -> SHA1 -> Appl (Maybe Commit)
 extractCommitMetadata GitInfo{..} ChangelogConfig{..} commitSHA = do
+  let hosting = parseHostingType gitRemoteUrl
   ignoreChangeReasoned <- sequence $
     [ commitNotWatched changelogWatchFiles commitSHA
     , allFilesIgnored changelogIgnoreFiles commitSHA
@@ -58,7 +58,7 @@ extractCommitMetadata GitInfo{..} ChangelogConfig{..} commitSHA = do
     then return Nothing 
     else do
       -- FIXME: impossible.
-      commitIsPR <- fmap (PR . fromJustCustom "Cannot find commit hash in git log entry" . githubRefMatch . lineToText) <$>
-          fold (grep githubRefGrep (grep (has (text (getSHA1 commitSHA))) (select gitHistory))) Fold.head
+      commitIsPR <- fmap (PR . fromJustCustom "Cannot find commit hash in git log entry" . refMatch hosting . lineToText) <$>
+          fold (grep (refGrep hosting) (grep (has (text (getSHA1 commitSHA))) (select gitHistory))) Fold.head
       commitMessage <- retrieveCommitMessage commitIsPR commitSHA
       return $ Just Commit{..}

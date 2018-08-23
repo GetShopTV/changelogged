@@ -74,10 +74,19 @@ githubRefRegex = has $ "#" <> plus digit
 githubRefGrep :: Pattern Text
 githubRefGrep = has (text "pull request #")
 
--- >>> githubRefMatch "text #444 text"
+--FIXME: add regexps for Gitlab and Bitbucket.
+
+refGrep :: GitHosting -> Pattern Text
+refGrep GitHub = githubRefGrep
+refGrep GitLab = githubRefGrep
+refGrep BitBucket = githubRefGrep
+
+-- >>> refMatch GitHub "text #444 text"
 -- Just "#444"
-githubRefMatch :: Text -> Maybe Text
-githubRefMatch str = maxByLen $ match githubRefRegex str
+refMatch :: GitHosting -> Text -> Maybe Text
+refMatch GitHub str = maxByLen $ match githubRefRegex str
+refMatch GitLab str = maxByLen $ match githubRefRegex str
+refMatch BitBucket str = maxByLen $ match githubRefRegex str
 
 -- >>> isMerge "Merge branch 'release-v1.0'"
 -- True

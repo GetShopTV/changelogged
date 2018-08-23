@@ -5,6 +5,7 @@ module Changelogged.Changelog.Interactive where
 import           Prelude              hiding (FilePath)
 import           Turtle               hiding (stdout)
 
+import           Control.Monad        (when)
 import qualified Control.Foldl        as Fold
 
 import           Data.Maybe           (fromMaybe, isJust)
@@ -23,38 +24,38 @@ import           Changelogged.Pattern (isMerge)
 -- >>> :set -XOverloadedStrings
 
 -- It cannot be folded since we have 'Remind' option.
-interactiveSession :: Appl Interaction -> Text -> Link -> FilePath -> [Commit] -> Appl ()
-interactiveSession _ _ _ _ [] = return ()
-interactiveSession prompt entryPrefix repoUrl changelog (current@Commit{..}:rest) = do
-  suggestMissing entryPrefix repoUrl current
+interactiveSession :: Appl Interaction -> Bool -> Text -> Link -> FilePath -> [Commit] -> Appl ()
+interactiveSession _ _ _ _ _ [] = return ()
+interactiveSession prompt printSug entryPrefix repoUrl changelog (current@Commit{..}:rest) = do
+  when printSug $ suggestMissing entryPrefix repoUrl current
   action <- prompt
   Options{..} <- gets envOptions
   case action of
     Write -> do
       addMissing entryPrefix repoUrl current changelog
-      interactiveSession prompt entryPrefix repoUrl changelog rest
+      interactiveSession prompt printSug entryPrefix repoUrl changelog rest
     Expand -> do
       addMissing entryPrefix repoUrl current changelog
       if (isMerge commitMessage || isJust commitIsPR) 
         then do
-          subChanges <- listPRCommits commitSHA
-          interactiveSession prompt ("  " <> entryPrefix) repoUrl changelog subChanges
+          subChanges <- listPRCommits commitSHA repoUrl
+          interactiveSession prompt printSug ("  " <> entryPrefix) repoUrl changelog subChanges
         else return ()
-      interactiveSession prompt entryPrefix repoUrl changelog rest
-    Skip -> interactiveSession prompt entryPrefix repoUrl changelog rest
-    Remind -> showDiff commitSHA >> interactiveSession prompt "" repoUrl changelog (current:rest)
+      interactiveSession prompt printSug entryPrefix repoUrl changelog rest
+    Skip -> interactiveSession prompt printSug entryPrefix repoUrl changelog rest
+    Remind -> showDiff commitSHA >> interactiveSession prompt printSug "" repoUrl changelog (current:rest)
     IgnoreAlways -> do
       debug (showText changelog)
       addCommitToIgnored commitSHA changelog
-      interactiveSession prompt entryPrefix repoUrl changelog rest
-    Quit -> interactiveSession promptSkip "" repoUrl changelog rest
-    WriteRest -> interactiveSession promptSimple "" repoUrl changelog (current:rest)
+      interactiveSession prompt printSug entryPrefix repoUrl changelog rest
+    Quit -> interactiveSession promptSkip False "" repoUrl changelog rest
+    WriteRest -> interactiveSession promptSimple False "" repoUrl changelog (current:rest)
 
 interactiveWalk :: Link -> FilePath -> [Commit] -> Appl ()
-interactiveWalk = interactiveSession promptInteractive ""
+interactiveWalk = interactiveSession promptInteractive True ""
 
 simpleWalk :: Link -> FilePath -> [Commit] -> Appl ()
-simpleWalk = interactiveSession promptSimple ""
+simpleWalk = interactiveSession promptSimple False ""
 
 -- |
 suggestMissing :: Text -> Link -> Commit -> Appl ()

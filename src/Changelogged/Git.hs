@@ -1,7 +1,7 @@
--- | This module is intended to be pure git interface.
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE MultiWayIf          #-}
 module Changelogged.Git where
 
 import qualified System.Process as Proc
@@ -67,19 +67,26 @@ retrieveCommitMessage isPR (SHA1 commit) = do
     Just _  -> summary !! 2
     Nothing -> summary !! 0
 
-messageToCommitData :: Line -> Appl Commit
-messageToCommitData message = do
+parseHostingType :: Link -> GitHosting
+parseHostingType (Link url) = if
+  | "://github.com/" `Text.isInfixOf` url -> GitHub
+  | "://gitlab.com/" `Text.isInfixOf` url -> GitLab
+  | "://bitbucket.org/" `Text.isInfixOf` url -> BitBucket
+
+messageToCommitData :: Link -> Line -> Appl Commit
+messageToCommitData repoUrl message = do
+  let hosting = parseHostingType repoUrl
   --FIXME: departed proofs?
-  commitIsPR <- fmap (PR . fromJustCustom "Cannot find commit hash in git log entry" . githubRefMatch . lineToText) <$>
-    fold (grep githubRefGrep (select [message])) Fold.head
+  commitIsPR <- fmap (PR . fromJustCustom "Cannot find commit hash in git log entry" . refMatch hosting . lineToText) <$>
+    fold (grep (refGrep hosting) (select [message])) Fold.head
   let commitSHA = SHA1 . fst . Text.breakOn " " . lineToText $ message
   commitMessage <- retrieveCommitMessage commitIsPR commitSHA
   return Commit{..}
 
-listPRCommits :: SHA1 -> Appl [Commit]
-listPRCommits (SHA1 sha) = do
+listPRCommits :: SHA1 -> Link -> Appl [Commit]
+listPRCommits (SHA1 sha) repoUrl = do
   messages <- fold (inproc "git" ["log", "--oneline", sha <> "^1..." <> sha <> "^2"] empty) Fold.list
-  commits <- mapM messageToCommitData messages
+  commits <- mapM (messageToCommitData repoUrl) messages
   return . reverse $ commits
 
 getCommitTag :: SHA1 -> Appl (Maybe Text)

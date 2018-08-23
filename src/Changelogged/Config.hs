@@ -24,7 +24,7 @@ defaultConfig = Config
       }
   , configBranch = Nothing
   , configEntryFormat = Nothing
-  , configEditorCommand = Just "vim"
+  , configEditorCommand = Just "$EDITOR"
   }
 
 addCommitToIgnored :: SHA1 -> Turtle.FilePath -> Appl ()
