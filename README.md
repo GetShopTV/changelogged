@@ -24,6 +24,9 @@ changelogged
 ```
 
 After you refuse to do to interactive mode it will add missing entries to your changelogs and open editor for each if them.
+
+By default editor is set by `$EDITOR` variable.
+
 After you can bummp versions over whole project (usable if you have more than one version file).
 
 That's it! Now you have a proper changelog with no forgotten changes.

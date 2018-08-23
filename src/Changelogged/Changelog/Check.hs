@@ -45,7 +45,7 @@ checkChangelog gitInfo@GitInfo{..} config@ChangelogConfig{..} = do
               then interactiveWalk gitRemoteUrl changelogChangelog 
               else simpleWalk gitRemoteUrl changelogChangelog) $
             checkableCommits
-      success $ showPath changelogChangelog <> " is updated.\n"
+      success $ showPath changelogChangelog <> " is updated.\nTrying to run editor."
 
 extractCommitMetadata :: GitInfo -> ChangelogConfig -> SHA1 -> Appl (Maybe Commit)
 extractCommitMetadata GitInfo{..} ChangelogConfig{..} commitSHA = do
