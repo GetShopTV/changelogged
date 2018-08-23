@@ -4,6 +4,8 @@ module Main where
 
 import           Turtle                  hiding (FilePath)
 
+import           Control.Monad           (when)
+
 import           Data.Maybe              (fromMaybe)
 import           Data.Text               (pack, unpack)
 
@@ -32,11 +34,14 @@ prepareConfig configPath Options{..} = do
 
 main :: IO ()
 main = do
+  let defaultConfigPath = ".changelogged.yaml"
   -- parse command line options
   opts@Options{..} <- parseOptions
 
-  let configPath = fromMaybe ".changelogged.yaml" (unpack . showPath <$> optConfigPath)
+  let configPath = fromMaybe defaultConfigPath (unpack . showPath <$> optConfigPath)
   config@Config{..} <- prepareConfig configPath opts
+
+  when optDumpConfig $ dumpConfig config defaultConfigPath
 
   runInAppl opts config $ if optVersion
     then versionP changeloggedVersion

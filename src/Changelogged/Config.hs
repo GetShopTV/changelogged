@@ -37,10 +37,13 @@ addCommitToIgnored hash changelog = do
         . break (\cconf -> changelogChangelog cconf == changelog)
       cfg = cfg' {configChangelogs = replaceElem configChangelogs}
   put $ ChangeloggedEnv opts cfg
-  liftIO $ Yaml.encodeFile configPath cfg
+  liftIO $ dumpConfig cfg configPath
 
 loadConfig :: FilePath -> IO (Either Yaml.ParseException Config)
 loadConfig path = Yaml.decodeFileEither path >>= mapM adjustConfig
+
+dumpConfig :: Config -> FilePath -> IO ()
+dumpConfig = flip Yaml.encodeFile
 
 adjustConfig :: Config -> IO Config
 adjustConfig cfg'@Config{..} = do
