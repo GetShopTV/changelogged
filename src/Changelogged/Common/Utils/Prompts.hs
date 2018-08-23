@@ -11,8 +11,10 @@ import Changelogged.Common.Utils.Printing
 
 promptYesNo :: Text -> Appl Bool
 promptYesNo message = do
-  coloredPrint Yellow message
-  go
+  no <- gets (optNoPrompts . envOptions)
+  if no
+    then return False
+    else coloredPrint Yellow message >> go
   where go = do
           coloredPrint Cyan "(y/n):  \n"
           answer <- liftIO getLine
