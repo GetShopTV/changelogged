@@ -31,6 +31,8 @@ parser = Options
   <*> hiddenSwitch "from-beginning" "Check all changelogs from start of the project."
   <*> hiddenSwitch "no-colors" "Print all messages in standard terminal color."
   <*> longSwitch "dry-run" "Do not change files while running."
+  <*> hiddenSwitch "no-prompts" "Answer no to all prompts."
+  <*> hiddenSwitch "dump-config" "Dump used config into .changelogged.yaml."
   <*> optional targetChangelog
   <*> optional configPath
   <*> hiddenSwitch "verbose" "Turn verbose mode on (useful for developers)."

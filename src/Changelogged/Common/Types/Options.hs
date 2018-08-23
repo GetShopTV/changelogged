@@ -18,6 +18,10 @@ data Options = Options
   , optNoColors        :: Bool
     -- | Run avoiding changes in files.
   , optDryRun          :: Bool
+    -- | Say no to all question
+  , optNoPrompts       :: Bool
+    -- | Dump default config into file.
+  , optDumpConfig      :: Bool
     -- | Check exactly one target changelog.
   , optTargetChangelog :: Maybe Path.FilePath
     -- | Use specified config file.
